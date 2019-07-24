@@ -19,6 +19,7 @@ config_path = os.path.join(cwd, 'dlc/config.yaml')
 landmark_atlas_img = os.path.join(cwd, 'atlases/landmarks_atlas_512_512.png')
 sensory_atlas_img = os.path.join(cwd, 'atlases/sensorymap_atlas_512_512.png')
 haveMasks = False
+# status = 'Please select a folder with brain images at "Input Folder".'
 
 j = -1
 delta = 0
@@ -33,6 +34,8 @@ def OpenFile(openOrSave):
         try:
             folderName_str.set(newFolderName)
             global folderName
+            # global status
+            # status = 'Brain images found! Now select a folder to save outputs using the "Save Folder" box.'
             folderName = newFolderName
             ImageDisplay(1, folderName, 1)
             root.update()
@@ -53,9 +56,12 @@ def OpenFile(openOrSave):
             saveMatFileCheck.config(state='normal')
             predictLandmarksButton.config(state='normal')
             sensoryMapCheck.config(state='normal')
+            # status = "Save folder selected! Choose an option on the right to begin your analysis."
             root.update()
         except:
             print("No save file selected!")
+            # status = "No save file selected!"
+            # root.update()
 
 
 def ImageDisplay(delta, folderName, reset):
@@ -134,6 +140,9 @@ def backward(event):
 
 
 def PredictRegions(input_file, num_images, model, output, mat_save, threshold, mask_generate):
+    # global status
+    # status = "Processing..."
+    root.update()
     predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate)
     saveFolderName = output
     global folderName
@@ -143,12 +152,16 @@ def PredictRegions(input_file, num_images, model, output, mat_save, threshold, m
         haveMasks = True
     else:
         folderName = saveFolderName
+    # status = "Processing complete!"
     root.update()
     ImageDisplay(1, folderName, 1)
 
 
 def PredictDLC(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img, sensory_match, model, num_images,
                mat_save, threshold, mask_generate, haveMasks):
+    global status
+    status = "Processing..."
+    root.update()
     if mask_generate and not haveMasks:
         predictRegion(input_file, num_images, model, output, mat_save, threshold, True)
     DLCPredict(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img, sensory_match, mat_save,
@@ -159,6 +172,8 @@ def PredictDLC(config, input_file, output, atlas, landmark_atlas_img, sensory_at
         folderName = os.path.join(saveFolderName, "output_overlay")
     elif atlas:
         folderName = saveFolderName
+    status = "Processing complete! RED = poor region match or first image, GREEN = perfect region match, BLUE = close" \
+             "region match"
     root.update()
     ImageDisplay(1, folderName, 1)
 
@@ -234,13 +249,15 @@ predictDLCButton = Button(root, text="Predict brain regions\nusing landmarks",
                                                      landmark_atlas_img, sensory_atlas_img, int(sensory_align.get()),
                                                      os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
                                                      int(mat_save.get()), float(thresholdVar.get()), True, haveMasks))
-predictDLCButton.grid(row=11, column=4, padx=2, sticky=N+ W + E)
+predictDLCButton.grid(row=11, column=4, padx=2, sticky=N + W + E)
 predictLandmarksButton = Button(root, text="Predict landmark locations\nonly (no segmentation)",
                           command=lambda: PredictDLC(config_path, folderName, saveFolderName, True,
                                                      landmark_atlas_img, sensory_atlas_img, int(sensory_align.get()),
                                                      os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
                                                      int(mat_save.get()), float(thresholdVar.get()), False, haveMasks))
-predictLandmarksButton.grid(row=12, column=4, padx=2, sticky=N+ W + E)
+predictLandmarksButton.grid(row=12, column=4, padx=2, sticky=N + W + E)
+# statusLabel = Label(root, text=status, bd=1, relief=SUNKEN, anchor=W)
+# statusLabel.grid(row=14, column=0, columnspan=5, sticky=W + E)
 
 
 if saveFolderName == '' or imgDisplayed == 0:
