@@ -1,0 +1,11 @@
+# Packaging files
+build/
+dist/
+*.egg-info/
+*.egg
+
+# U-net models (user needs to download these manually as they are very large)
+mesonet/models/*.hdf5
+
+# Sensory map images (user needs to provide their own)
+mesonet/sensory/*
