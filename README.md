@@ -29,6 +29,7 @@ dependencies for MesoNet (installation via pip coming soon!)
 Follow our tutorial [on the wiki](https://github.com/bf777/MesoNet/wiki/Quick-Start-Guide).
 
 ## Contributors
-The code was written by [Brandon Forys](https://github.com/bf777) with contributions from 
-[Dongsheng Xiao](https://github.com/DongshengXiao) and Jeff LeDue in the 
+The code was written by [Brandon Forys](https://github.com/bf777);
+[Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, trained
+the U-net models provided with MesoNet, and developed the brain atlas alignment approach. They are in the
 [Murphy Lab](http://www.neuroscience.ubc.ca/faculty/murphy.html) in UBC's Department of Psychiatry.
