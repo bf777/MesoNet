@@ -6,14 +6,14 @@ import glob
 import os
 
 
-def DLCPredict(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img, sensory_match,
-               mat_save, threshold):
+def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
     :param config: The path to the DeepLabCut configuration file.
     :param input_file: The folder containing the brain images to be analyzed.
-    :param output: The folder to which we save the output brain image, labelled with the predicted locations of each landmark.
+    :param output: The folder to which we save the output brain image, labelled with the predicted locations of each
+    landmark.
     :param atlas: Checks if a brain atlas is to be aligned with the brain image using landmarks
     (based on choice made in GUI).
     """
@@ -68,21 +68,16 @@ def DLCPredict(config, input_file, output, atlas, landmark_atlas_img, sensory_at
         cv2.destroyAllWindows()
 
         if not atlas:
-             atlasBrainMatch(input_file, sensory_img_dir, landmark_atlas_img, sensory_atlas_img, coords_input,
-                             sensory_match, mat_save, threshold)
+             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold)
 
 
 def predict_dlc(config_file):
-    cwd = os.getcwd()
     cfg = parse_yaml(config_file)
     config = cfg['config']
     atlas = cfg['atlas']
-    landmark_atlas_img = os.path.join(cwd, cfg['landmark_atlas_img'])
-    sensory_atlas_img = os.path.join(cwd, cfg['sensory_atlas_img'])
     sensory_match = cfg['sensory_match']
     input_file = cfg['input_file']
     output = cfg['output']
     mat_save = cfg['mat_save']
     threshold = cfg['threshold']
-    DLCPredict(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img, sensory_match,
-               mat_save, threshold)
+    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold)

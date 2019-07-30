@@ -149,6 +149,10 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 ((x, y), r) = cv2.minEnclosingCircle(c)
                 # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
                 if mat_save == 1:
+                    mat_save = True
+                else:
+                    mat_save = False
+                if mat_save:
                     # Create an empty array of the same size as the contour, with the centre of the contour marked as
                     # "1"
                     c_total = np.zeros_like(mask)

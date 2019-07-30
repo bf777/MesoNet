@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 
 import os
 import fnmatch
+import glob
 
 # The main window of the app
 root = Tk()
@@ -49,7 +50,6 @@ def OpenFile(openOrSave):
             saveFolderName_str.set(newSaveFolderName)
             global saveFolderName
             saveFolderName = newSaveFolderName
-            thresholdEntryBox.config(state='normal')
             predictAllImButton.config(state='normal')
             generateMaskButton.config(state='normal')
             predictDLCButton.config(state='normal')
@@ -73,23 +73,20 @@ def ImageDisplay(delta, folderName, reset):
     if reset == 1:
         j = -1
     j += delta
-    fileList = []
-    for file in os.listdir(folderName):
-        if fnmatch.fnmatch(file, "*.png"):
-            fileList.append(file)
-            global picLen
-            picLen = len(fileList)
+    fileList = glob.glob(os.path.join(folderName, '*.png'))
+    global picLen
+    picLen = len(fileList)
     if j > picLen - 1:
         j = 0
     if j <= -1:
         j = picLen - 1
     if delta != 0:
-        for file in os.listdir(folderName):
-            if fnmatch.fnmatch(file, "{}_mask_segmented.png".format(j)) or \
-                    fnmatch.fnmatch(file, "{}.png".format(j)) or \
-                    fnmatch.fnmatch(file, "{}_mask.png".format(j)):
+        for file in fileList:
+            if fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask_segmented.png".format(j))) or \
+                    fnmatch.fnmatch(file, os.path.join(folderName, "{}.png".format(j))) or \
+                    fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask.png".format(j))):
                 global imageFileName
-                imageFileName = file
+                imageFileName = os.path.basename(file)
                 image = os.path.join(folderName, file)
                 image_orig = Image.open(image)
                 image_resize = image_orig.resize((512, 512))
@@ -127,7 +124,6 @@ def FindModelInFolder():
             model = modelListBox.get(selected)
             model = os.path.join(os.path.join(cwd, 'models', model))
             root.update()
-
         modelListBox.bind('<<ListboxSelect>>', onselect)
 
 
@@ -157,8 +153,8 @@ def PredictRegions(input_file, num_images, model, output, mat_save, threshold, m
     ImageDisplay(1, folderName, 1)
 
 
-def PredictDLC(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img, sensory_match, model, num_images,
-               mat_save, threshold, mask_generate, haveMasks):
+def PredictDLC(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img,
+               sensory_match, model, num_images, mat_save, threshold, mask_generate, haveMasks):
     global status
     status = "Processing..."
     root.update()
@@ -181,7 +177,7 @@ def PredictDLC(config, input_file, output, atlas, landmark_atlas_img, sensory_at
 Title = root.title("MesoNet Analyzer")
 
 canvas = Canvas(root, width=520, height=520)
-canvas.grid(row=3, column=0, columnspan=4, rowspan=10, sticky=N + S + W)
+canvas.grid(row=3, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
 
 # Render model selector listbox
 FindModelInFolder()
@@ -208,22 +204,13 @@ fileSaveBox.grid(row=1, column=1, padx=5, pady=5)
 # Image controls
 # Buttons below will only display if an image is displayed
 nextButton = Button(root, text="->", command=lambda: ImageDisplay(1, folderName, 0))
-nextButton.grid(row=13, column=2, columnspan=1)
+nextButton.grid(row=11, column=2, columnspan=1)
 previousButton = Button(root, text="<-", command=lambda: ImageDisplay(-1, folderName, 0))
-previousButton.grid(row=13, column=0, columnspan=1)
+previousButton.grid(row=11, column=0, columnspan=1)
 
 # Bind right and left arrow keys to forward/backward controls
 root.bind('<Right>', forward)
 root.bind('<Left>', backward)
-
-# Define threshold level for segmentation
-thresholdLabel = Label(root, text="Set segmentation\nthreshold:")
-thresholdLabel.grid(row=5, column=4, sticky=S)
-thresholdVar = StringVar(root, value=threshold)
-thresholdEntryBox = Entry(root, textvariable=thresholdVar)
-thresholdEntryBox.grid(row=6, column=4, sticky=N)
-threshold = thresholdVar.get()
-root.update()
 
 # Buttons for making predictions
 # Buttons below will only be active if a save file has been selected
@@ -231,37 +218,36 @@ mat_save = IntVar()
 atlas = IntVar()
 sensory_align = IntVar()
 saveMatFileCheck = Checkbutton(root, text="Save predicted regions\nas .mat files", variable=mat_save)
-saveMatFileCheck.grid(row=7, column=4, padx=2, sticky=S+W)
+saveMatFileCheck.grid(row=5, column=4, padx=2, sticky=N+S+W)
 sensoryMapCheck = Checkbutton(root, text="Align using sensory map", variable=sensory_align)
-sensoryMapCheck.grid(row=8, column=4, padx=2, sticky=S+W)
-predictAllImButton = Button(root, text="Predict brain regions\nusing U-net",
-                            command=lambda: PredictRegions(folderName, picLen, model, saveFolderName,
-                                                           int(mat_save.get()), float(thresholdVar.get()), False))
-predictAllImButton.grid(row=9, column=4, padx=2, sticky=S+ W + E)
-generateMaskButton = Button(root, text="Generate mask of\nbrain using U-net",
+sensoryMapCheck.grid(row=6, column=4, padx=2, sticky=N+S+W)
+generateMaskButton = Button(root, text="Get boundaries of brain\nusing U-net",
                             command=lambda: PredictRegions(folderName, picLen,
                                                            os.path.join(cwd, 'models/unet_bundary.hdf5'),
                                                            saveFolderName, int(mat_save.get()),
-                                                           float(thresholdVar.get()), True))
-generateMaskButton.grid(row=10, column=4, padx=2, sticky=S + W + E)
+                                                           threshold, True))
+generateMaskButton.grid(row=7, column=4, padx=2, sticky=N + S + W + E)
+predictLandmarksButton = Button(root, text="Predict landmark locations",
+                          command=lambda: PredictDLC(config_path, folderName, saveFolderName, True,
+                                                     landmark_atlas_img, sensory_atlas_img,
+                                                     int(sensory_align.get()),
+                                                     os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
+                                                     int(mat_save.get()), threshold, False, haveMasks))
+predictLandmarksButton.grid(row=8, column=4, padx=2, sticky=N + S + W + E)
 predictDLCButton = Button(root, text="Predict brain regions\nusing landmarks",
                           command=lambda: PredictDLC(config_path, folderName, saveFolderName, False,
-                                                     landmark_atlas_img, sensory_atlas_img, int(sensory_align.get()),
+                                                     landmark_atlas_img, sensory_atlas_img,
+                                                     int(sensory_align.get()),
                                                      os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
-                                                     int(mat_save.get()), float(thresholdVar.get()), True, haveMasks))
-predictDLCButton.grid(row=11, column=4, padx=2, sticky=N + W + E)
-predictLandmarksButton = Button(root, text="Predict landmark locations\nonly (no segmentation)",
-                          command=lambda: PredictDLC(config_path, folderName, saveFolderName, True,
-                                                     landmark_atlas_img, sensory_atlas_img, int(sensory_align.get()),
-                                                     os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
-                                                     int(mat_save.get()), float(thresholdVar.get()), False, haveMasks))
-predictLandmarksButton.grid(row=12, column=4, padx=2, sticky=N + W + E)
-# statusLabel = Label(root, text=status, bd=1, relief=SUNKEN, anchor=W)
-# statusLabel.grid(row=14, column=0, columnspan=5, sticky=W + E)
+                                                     int(mat_save.get()), threshold, True, haveMasks))
+predictDLCButton.grid(row=9, column=4, padx=2, sticky=N + S + W + E)
+predictAllImButton = Button(root, text="Predict brain regions directly\nusing pretrained U-net model",
+                            command=lambda: PredictRegions(folderName, picLen, model, saveFolderName,
+                                                           int(mat_save.get()), threshold, False))
+predictAllImButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
 
 
 if saveFolderName == '' or imgDisplayed == 0:
-    thresholdEntryBox.config(state='disabled')
     predictAllImButton.config(state='disabled')
     generateMaskButton.config(state='disabled')
     predictDLCButton.config(state='disabled')

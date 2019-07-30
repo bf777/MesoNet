@@ -40,7 +40,6 @@ def getMaskContour(mask_dir, atlas_img, heatmap_pts, circle_pts, cwd, n, sensory
     c_atlas_landmarks = np.empty([0, 2])
     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
     atlas_to_warp = atlas_img
-    # mask = cv2.resize(mask, (atlas_to_warp.shape[0], atlas_to_warp.shape[1]))
     mask = np.uint8(mask)
     mask_new, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     for cnt in cnts:
@@ -57,7 +56,7 @@ def getMaskContour(mask_dir, atlas_img, heatmap_pts, circle_pts, cwd, n, sensory
     return dst
 
 
-def atlasBrainMatch(brain_img_dir, sensory_img_dir, landmark_atlas_img, sensory_atlas_img, coords_input, sensory_match,
+def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                     mat_save, threshold):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
@@ -73,7 +72,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, landmark_atlas_img, sensory_
         if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
     i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
-    # i_coord, j_coord = coords_from_mat(os.path.join(cwd, 'atlases/landmarks_notransparent.png'))
 
     if sensory_match:
         for num, file in enumerate(os.listdir(sensory_img_dir)):
