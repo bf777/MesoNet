@@ -1,4 +1,5 @@
 import yaml
+import glob
 import os
 
 
@@ -9,11 +10,12 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5'):
     :param output_dir: The directory containing the output files
     :param output_dir: If train, generates a config file for training; if test, generates a config file for applying
     the model.
-    :param model_name: (optional) Set a new name for the unet model to be trained. Default is 'unet.hdf5'.tr
+    :param model_name: (optional) Set a new name for the unet model to be trained. Default is 'unet.hdf5'
     """
 
     if mode == 'test':
         filename = "mesonet_test_config.yaml"
+        num_images = len(glob.glob(os.path.join(input_dir, '*.png')))
         data = dict(
             config='dlc/config.yaml',
             input_file=input_dir,
@@ -21,10 +23,10 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5'):
             atlas=False,
             landmark_atlas_img='atlases/landmarks_atlas_512_512.png',
             sensory_atlas_img='atlases/sensorymap_atlas_512_512.png',
-            sensory_match=True,
+            sensory_match=False,
             mat_save=1,
-            threshold=0.001,
-            num_images=10,
+            threshold=0.0001,
+            num_images=num_images,
             model='models/unet_bundary.hdf5'
         )
     elif mode == 'train':

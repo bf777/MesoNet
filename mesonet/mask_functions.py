@@ -72,16 +72,10 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
-    print(mask_input.shape)
-    print(atlas.shape)
-    # kernel = np.ones((3, 3), np.uint8)
-    # atlas = cv2.erode(atlas, kernel, iterations=1)
-    # atlas = cv2.morphologyEx(atlas, cv2.MORPH_OPEN, kernel)
     io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
     mask_input = cv2.bitwise_and(atlas, mask_input)
     mask_input = cv2.bitwise_and(mask_input, mask_warped)
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
-    io.imsave(os.path.join(mask_output_path, "atlas.png"), atlas)
 
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold):
@@ -95,28 +89,23 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     :param mat_save: choose whether or not to output brain regions to .mat files
     :param threshold: set threshold for segmentation of foregrounds
     """
-    print(mat_save)
     image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
     region_bgr_lower = (100, 100, 100)
     region_bgr_upper = (255, 255, 255)
     cnt_array = []
     count = 0
-    print(os.listdir(mask_path))
     for i, item in enumerate(image_name_arr):
         new_data = []
         img = cv2.imread(item)
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
-        # mask = cv2.imread(os.path.join(mask_path, "0.png"))
-        print(mask.shape)
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
         mask_color = cv2.inRange(mask, region_bgr_lower, region_bgr_upper)
-        io.imsave(os.path.join(save_path, "%d_mask_binary.png" % i), mask_color)
-        img_edited = Image.open(os.path.join(save_path, "%d_mask_binary.png" % i))
+        io.imsave(os.path.join(save_path, "{}_mask_binary.png".format(i)), mask_color)
         # Marker labelling
         # noise removal
         kernel = np.ones((3, 3), np.uint8)
         mask_color = np.uint8(mask_color)
-        opening = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel, iterations=3)  # 3
+        opening = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel, iterations=1)  # 1
         # sure background area
         sure_bg = cv2.dilate(opening, kernel, iterations=7)  # 7
         # Finding sure foreground area
@@ -152,41 +141,24 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 # compute the center of the contour
                 if len(cnts) > 1:
                     z = 0
-                M = cv2.moments(cnt)
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
-                # Compare current contour to previous contours and label contours with small and large deviations
-                if i >= 1:
-                    len_to_prev = count - len(np.unique(labels))
-                    len_to_close_below = count - len(np.unique(labels)) - 1
-                    len_to_close_above = count - len(np.unique(labels)) + 1
-                    Mprev = cv2.moments(cnt_array[len_to_prev][z])
-                    Mprev_cb = cv2.moments(cnt_array[len_to_close_below][z])
-                    Mprev_ca = cv2.moments(cnt_array[len_to_close_above][z])
-                    cXprev = int(Mprev["m10"] / Mprev["m00"])
-                    cYprev = int(Mprev["m01"] / Mprev["m00"])
-                    cXprev_cb = int(Mprev_cb["m10"] / Mprev_cb["m00"])
-                    cXprev_ca = int(Mprev_ca["m10"] / Mprev_ca["m00"])
-                    cYprev_cb = int(Mprev_cb["m01"] / Mprev_cb["m00"])
-                    cYprev_ca = int(Mprev_ca["m01"] / Mprev_ca["m00"])
+                m = cv2.moments(cnt)
+                c_x = int(m["m10"] / m["m00"])
+                c_y = int(m["m01"] / m["m00"])
                 c = max(cnts, key=cv2.contourArea)
                 # draw a circle enclosing the object
                 ((x, y), r) = cv2.minEnclosingCircle(c)
-                # Create an empty array of the same size as the contour, with the centre of the contour marked as "1"
-                c_total = np.zeros_like(mask)
-                c_centre = np.zeros_like(mask)
-                # Follow the path of the contour, setting every pixel along the path to 255
-                # Fill in the contour area with 1s
-                cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
-
-                # Set a 10x10 region of pixels around the contour's centroid to 255
-                x_range = list(range(cX - 5, cX + 5))
-                y_range = list(range(cY - 5, cY + 5))
-                for k in x_range:
-                    for m in y_range:
-                        c_centre[k, m] = 255
                 # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
                 if mat_save == 1:
+                    # Create an empty array of the same size as the contour, with the centre of the contour marked as
+                    # "1"
+                    c_total = np.zeros_like(mask)
+                    c_centre = np.zeros_like(mask)
+                    # Follow the path of the contour, setting every pixel along the path to 255
+                    # Fill in the contour area with 1s
+                    cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
+                    # Set the contour's centroid to 255
+                    if c_x < mask.shape[0] and c_y < mask.shape[0]:
+                        c_centre[c_x, c_y] = 255
                     if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
                         os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
                     if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
@@ -197,22 +169,11 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                              'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, n, z)),
                                 {'vect': c_centre})
                 if label != -1:
-                    if i >= 1:
-                        if abs(cX - cXprev) <= 200 and abs(cY - cYprev) <= 200:
-                            cv2.putText(img, "{}".format(label), (int(x) - 10, int(y)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
-                        elif (abs(cX - cXprev_cb) <= 200 and abs(cY - cYprev_cb) <= 200) or \
-                                (abs(cX - cXprev_ca) <= 200 and abs(cY - cYprev_ca) <= 200):
-                            cv2.putText(img, "{}".format(label), (int(x) - 10, int(y)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
-                        else:
-                            cv2.putText(img, "{}".format(label), (int(x) - 10, int(y)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
-                    elif i == 0:
-                        cv2.putText(img, "{}".format(label), (int(x) - 10, int(y)),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
+                    cv2.putText(img, "{}".format(label), (int(x) - 10, int(y)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
             count += 1
         io.imsave(os.path.join(segmented_save_path, "%d_mask_segmented.png" % i), img)
+        img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
         img_rgba = img_edited.convert("RGBA")
         data = img_rgba.getdata()
         for pixel in data:
@@ -221,14 +182,12 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             else:
                 new_data.append(pixel)
         img_rgba.putdata(new_data)
-        img_rgba.save(os.path.join(save_path, "%d_mask_transparent.png" % i))
-        img_transparent = cv2.imread(os.path.join(save_path, "%d_mask_transparent.png" % i))
+        img_rgba.save(os.path.join(save_path, "{}_mask_transparent.png".format(i)))
+        img_transparent = cv2.imread(os.path.join(save_path, "{}_mask_transparent.png".format(i)))
         img_trans_for_mat = np.uint8(img_transparent)
         if mat_save == 1:
-            if not os.path.isdir(os.path.join(segmented_save_path, 'mat_overall')):
-                os.mkdir(os.path.join(segmented_save_path, 'mat_overall'))
-                sio.savemat(os.path.join(segmented_save_path,
-                                         'mat_contour/transparent_{}'.format(i)), {'vect': img_trans_for_mat})
-
+            sio.savemat(os.path.join(segmented_save_path, 'mat_contour/transparent_{}'.format(i)),
+                        {'vect': img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
-        io.imsave(os.path.join(save_path, "%d_overlay.png" % i), masked_img)
+        io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
+        print("Mask {} saved!".format(i))

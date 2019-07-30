@@ -29,5 +29,6 @@ dependencies for MesoNet (installation via pip coming soon!)
 Follow our tutorial [on the wiki](https://github.com/bf777/MesoNet/wiki/Quick-Start-Guide).
 
 ## Contributors
-The code was written by [Brandon Forys](https://github.com/bf777) with contributions from Dongsheng Xiao and
-Jeff LeDue in the [Murphy Lab](http://www.neuroscience.ubc.ca/faculty/murphy.html) in UBC's Department of Psychiatry.
+The code was written by [Brandon Forys](https://github.com/bf777) with contributions from 
+[Dongsheng Xiao](https://github.com/DongshengXiao) and Jeff LeDue in the 
+[Murphy Lab](http://www.neuroscience.ubc.ca/faculty/murphy.html) in UBC's Department of Psychiatry.

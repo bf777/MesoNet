@@ -42,7 +42,6 @@ def getMaskContour(mask_dir, atlas_img, heatmap_pts, circle_pts, cwd, n, sensory
     atlas_to_warp = atlas_img
     # mask = cv2.resize(mask, (atlas_to_warp.shape[0], atlas_to_warp.shape[1]))
     mask = np.uint8(mask)
-    print(mask.shape)
     mask_new, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     for cnt in cnts:
         cnt = cnt[:, 0, :]
@@ -51,10 +50,6 @@ def getMaskContour(mask_dir, atlas_img, heatmap_pts, circle_pts, cwd, n, sensory
         c_atlas_landmarks = np.concatenate((c_atlas_landmarks, cnt))
     c_landmarks = np.concatenate((c_landmarks, heatmap_pts))
     c_atlas_landmarks = np.concatenate((c_atlas_landmarks, circle_pts))
-    print(c_landmarks[-10:])
-    print(c_atlas_landmarks[-10:])
-    # print(c_landmarks.shape)
-    # print(c_atlas_landmarks.shape)
     tform = PiecewiseAffineTransform()
     tform.estimate(c_atlas_landmarks, c_landmarks)
     dst = warp(atlas_to_warp, tform, output_shape=(512, 512))
@@ -75,15 +70,14 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, landmark_atlas_img, sensory_
     brain_img_arr = []
     peak_arr = []
     for num, file in enumerate(os.listdir(brain_img_dir)):
-        if fnmatch.fnmatch(file, "%d.png" % num):
+        if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
     i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
     # i_coord, j_coord = coords_from_mat(os.path.join(cwd, 'atlases/landmarks_notransparent.png'))
 
     if sensory_match:
-        print("Sensory Match!")
         for num, file in enumerate(os.listdir(sensory_img_dir)):
-            if fnmatch.fnmatch(file, "%d.png" % num):
+            if fnmatch.fnmatch(file, "{}.png".format(num)):
                 peak = find_peaks(os.path.join(sensory_img_dir, file))
                 peak_arr.append(peak)
         peak_arr_flat = []
@@ -120,7 +114,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, landmark_atlas_img, sensory_
     if sensory_match:
         k_coord, m_coord = np.array([(189, 323, 435, 348), (315, 315, 350, 460)])
         coords_peak = peak_arr_flat
-        print(coords_peak)
         for img in brain_img_arr:
             for j in [1, 0, 3, 2]:  # Get peak values from heatmaps
                 sub_pts3.append([coords_peak[j][0], coords_peak[j][1]])
