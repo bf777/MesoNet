@@ -1,8 +1,10 @@
 """
-mask_functions.py
-Adapted from data.py in https://github.com/zhixuhao/unet
+MesoNet
+Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+https://github.com/bf777/MesoNet
+Licensed under the MIT License (see LICENSE for details)
+This file has been adapted from data.py in https://github.com/zhixuhao/unet
 """
-
 import numpy as np
 import scipy.io as sio
 import os
@@ -22,8 +24,6 @@ COLOR_DICT = np.array([Background, Region])
 def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_class=False, as_gray=True):
     """
     Import images and resize it to the target size of the model.
-
-    Keyword arguments:
     :param test_path: path to input images
     :param num_image: number of input images
     :param target_size: target image size as defined in the Keras model
@@ -42,7 +42,6 @@ def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_cl
 def labelVisualize(num_class, color_dict, img):
     """
     Visualize labels on image based on input classes.
-
     :param num_class: number of classes
     :param color_dict: dictionary of colours defined at top of file
     :param img: input image
@@ -57,7 +56,6 @@ def labelVisualize(num_class, color_dict, img):
 def saveResult(save_path, npyfile, mask_generate, flag_multi_class=True, num_class=2):
     """
     Saves the predicted mask from each brain image to the save folder.
-
     :param save_path: path to overall folder for saving images
     :param npyfile: results file output after model has made predictions
     :param flag_multi_class: flag the output images as having multiple classes
@@ -69,11 +67,23 @@ def saveResult(save_path, npyfile, mask_generate, flag_multi_class=True, num_cla
 
 
 def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_path, n):
+    """
+    Overlays the U-net mask and a smoothing mask for the cortical boundaries on the transformed brain atlas.
+    :param atlas_path: The path to the atlas to be transformed
+    :param mask_input_path: The path to the U-net mask corresponding to the input atlas
+    :param mask_warped_path: The path to a mask transformed alongside the atlas to correct for gaps between the U-net
+    cortical boundaries and the brain atlas.
+    :param mask_output_path: The output path of the completed atlas with overlaid masks
+    :param n: The number of the current atlas and corresponding transformed mask
+    """
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
     io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
+    # Adds the common white regions of the atlas and U-net mask together into a binary image.
     mask_input = cv2.bitwise_and(atlas, mask_input)
+    # Adds the common white regions of the mask created above and the corrective mask (correcting for gaps between U-net
+    # cortical boundaries and brain atlas) together into a binary image.
     mask_input = cv2.bitwise_and(mask_input, mask_warped)
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
 
@@ -81,7 +91,6 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
-
     :param image_path: path to folder where brain images are saved
     :param mask_path: path to folder where masks are saved
     :param save_path: path to overall folder for saving all images
@@ -178,6 +187,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             count += 1
         io.imsave(os.path.join(segmented_save_path, "%d_mask_segmented.png" % i), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
+        # Generates a transparent version of the brain atlas.
         img_rgba = img_edited.convert("RGBA")
         data = img_rgba.getdata()
         for pixel in data:

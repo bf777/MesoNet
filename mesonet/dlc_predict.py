@@ -1,3 +1,9 @@
+"""
+MesoNet
+Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+https://github.com/bf777/MesoNet
+Licensed under the MIT License (see LICENSE for details)
+"""
 import deeplabcut
 from mesonet.atlas_brain_matching import atlasBrainMatch
 from mesonet.utils import parse_yaml
@@ -72,6 +78,10 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
 
 
 def predict_dlc(config_file):
+    """
+    Loads parameters into DLCPredict from config file.
+    :param config_file: The full path to a MesoNet config file (generated using mesonet.config_project())
+    """
     cfg = parse_yaml(config_file)
     config = cfg['config']
     atlas = cfg['atlas']

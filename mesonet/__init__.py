@@ -1,3 +1,9 @@
+"""
+MesoNet
+Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+https://github.com/bf777/MesoNet
+Licensed under the MIT License (see LICENSE for details)
+"""
 # __init__.py
 __all__ = ['config_project', 'parse_yaml']
 from mesonet.utils import *

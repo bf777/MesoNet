@@ -1,3 +1,9 @@
+"""
+MesoNet
+Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+https://github.com/bf777/MesoNet
+Licensed under the MIT License (see LICENSE for details)
+"""
 from mesonet.model import *
 from mesonet.mask_functions import *
 import os
@@ -13,6 +19,7 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     :param output: Overall output folder into which all files will be saved
     :param mat_save: Choose whether or not to save each brain region contour and centre as a .mat file (for MATLAB)
     :param threshold: Threshold for segmentation algorithm
+    :param mask_generate: Choose whether or not to only generate masks of the brain contour from this function
     """
     # Create and define save folders for each output of the prediction
     # Output folder for basic mask (used later in prediction)
@@ -38,6 +45,10 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
 
 
 def predict_regions(config_file):
+    """
+    Loads parameters into predictRegion from config file.
+    :param config_file: The full path to a MesoNet config file (generated using mesonet.config_project())
+    """
     cwd = os.getcwd()
     cfg = parse_yaml(config_file)
     input_file = cfg['input_file']

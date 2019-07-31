@@ -1,3 +1,9 @@
+"""
+MesoNet
+Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+https://github.com/bf777/MesoNet
+Licensed under the MIT License (see LICENSE for details)
+"""
 import yaml
 import glob
 import os
@@ -5,14 +11,14 @@ import os
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5'):
     """
-    Generates a config file (mesonet_config.yaml)
+    Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
+    applying an existing model or training a new one).
     :param input_dir: The directory containing the input brain images
     :param output_dir: The directory containing the output files
-    :param output_dir: If train, generates a config file for training; if test, generates a config file for applying
+    :param mode: If train, generates a config file for training; if test, generates a config file for applying
     the model.
     :param model_name: (optional) Set a new name for the unet model to be trained. Default is 'unet.hdf5'
     """
-
     if mode == 'test':
         filename = "mesonet_test_config.yaml"
         num_images = len(glob.glob(os.path.join(input_dir, '*.png')))
@@ -40,6 +46,10 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5'):
 
 
 def parse_yaml(config_file):
+    """
+    Parses the config file and returns a dictionary with its parameters.
+    :param config_file: The full path to a MesoNet config file (generated using mesonet.config_project())
+    """
     with open(config_file, 'r') as stream:
         try:
             d = yaml.safe_load(stream)

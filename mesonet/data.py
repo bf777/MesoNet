@@ -1,8 +1,10 @@
 """
-data.py
-Adapted from data.py in https://github.com/zhixuhao/unet
+MesoNet
+Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+https://github.com/bf777/MesoNet
+Licensed under the MIT License (see LICENSE for details)
+This file has been adapted from data.py in https://github.com/zhixuhao/unet
 """
-
 from __future__ import print_function
 from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
