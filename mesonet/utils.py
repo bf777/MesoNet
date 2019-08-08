@@ -9,7 +9,9 @@ import glob
 import os
 
 
-def config_project(input_dir, output_dir, mode, model_name='unet.hdf5'):
+def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
+                   atlas=False, sensory_match=False, mat_save=True,
+                   threshold=0.0001, model='models/unet_bundary.hdf5'):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
     applying an existing model or training a new one).
@@ -18,20 +20,39 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5'):
     :param mode: If train, generates a config file for training; if test, generates a config file for applying
     the model.
     :param model_name: (optional) Set a new name for the unet model to be trained. Default is 'unet.hdf5'
+    :param config: Select the config file for the DeepLabCut model to be used for landmark estimation.
+    :param atlas:  Set to True to just predict the four cortical landmarks on your brain images, and not segment your
+    brain images by region. Upon running mesonet.predict_dlc(config_file), MesoNet will output your brain images
+    labelled with these landmarks as well as a file with the coordinates of these landmarks. Set to False to carry out
+    the full brain image segmentation workflow.
+    :param sensory_match: If True, MesoNet will attempt to align your brain images using peaks of sensory activation on
+    sensory maps that you provide in a folder named sensory inside your input images folder. If you do not have such
+    images, keep this value as False.
+    :param mat_save: Choose whether or not to export each predicted cortical region, each region's centrepoint, and the
+    overall region of the brain to a .mat file (True = output .mat files, False = don't output .mat files).
+    :param threshold:  Adjusts the sensitivity of the algorithm used to define individual brain regions from the brain
+    atlas. NOTE: Changing this number may significantly change the quality of the brain region predictions; only change
+    it if your brain images are not being segmented properly! In general, increasing this number causes each brain
+    region contour to be smaller (less like the brain atlas); decreasing this number causes each brain region contour to
+    be larger (more like the brain atlas).
+    :param model: The location (within the MesoNet repository) of a U-net model to be used for finding the boundaries
+    of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
+    segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have
+    another model that you would like to use for segmenting the brain.
     """
     if mode == 'test':
         filename = "mesonet_test_config.yaml"
         num_images = len(glob.glob(os.path.join(input_dir, '*.png')))
         data = dict(
-            config='dlc/config.yaml',
+            config=config,
             input_file=input_dir,
             output=output_dir,
-            atlas=False,
-            sensory_match=False,
-            mat_save=True,
-            threshold=0.0001,
+            atlas=atlas,
+            sensory_match=sensory_match,
+            mat_save=mat_save,
+            threshold=threshold,
             num_images=num_images,
-            model='models/unet_bundary.hdf5'
+            model=model
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"

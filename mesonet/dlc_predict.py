@@ -16,12 +16,24 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
-    :param config: The path to the DeepLabCut configuration file.
+    :param config: Select the config file for the DeepLabCut model to be used for landmark estimation.
     :param input_file: The folder containing the brain images to be analyzed.
     :param output: The folder to which we save the output brain image, labelled with the predicted locations of each
     landmark.
-    :param atlas: Checks if a brain atlas is to be aligned with the brain image using landmarks
-    (based on choice made in GUI).
+    :param atlas:  Set to True to just predict the four cortical landmarks on your brain images, and not segment your
+    brain images by region. Upon running mesonet.predict_dlc(config_file), MesoNet will output your brain images
+    labelled with these landmarks as well as a file with the coordinates of these landmarks. Set to False to carry out
+    the full brain image segmentation workflow.
+    :param sensory_match: If True, MesoNet will attempt to align your brain images using peaks of sensory activation on
+    sensory maps that you provide in a folder named sensory inside your input images folder. If you do not have such
+    images, keep this value as False.
+    :param mat_save: Choose whether or not to export each predicted cortical region, each region's centrepoint, and the
+    overall region of the brain to a .mat file (True = output .mat files, False = don't output .mat files).
+    :param threshold:  Adjusts the sensitivity of the algorithm used to define individual brain regions from the brain
+    atlas. NOTE: Changing this number may significantly change the quality of the brain region predictions; only change
+    it if your brain images are not being segmented properly! In general, increasing this number causes each brain
+    region contour to be smaller (less like the brain atlas); decreasing this number causes each brain region contour to
+    be larger (more like the brain atlas).
     """
     img_array = []
     if sensory_match == 1:
@@ -74,7 +86,45 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
         cv2.destroyAllWindows()
 
         if not atlas:
-             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold)
+            atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold)
+
+
+def DLCPredictBehavior(config, input_file, output):
+    """
+    Takes a video of animal behaviour and predicts body movements based on a supplied DeepLabCut body movement model.
+    :param config: The path to the DeepLabCut configuration file.
+    :param input_file: The folder containing the behavioural images to be analyzed.
+    :param output: The folder to which we save the predicted body movements.
+    """
+    video_array = []
+    img_array = []
+    print(input_file)
+    for filename in glob.glob(os.path.join(input_file, '*.mp4')):
+        video_array.append(os.path.join(input_file, filename))
+
+    for filename in glob.glob(os.path.join(input_file, '*.png')):
+        img = cv2.imread(filename)
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    if len(img_array) > 0:
+        video_output_path = os.path.join(output, 'dlc_output', 'behavior')
+        video_name = os.path.join(video_output_path, 'behavior_video.mp4')
+
+        if not os.path.isdir(video_output_path):
+            os.mkdir(video_output_path)
+        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+        out.release()
+    elif len(video_array) > 0:
+        video_output_path = video_array[0]
+        video_name = video_array[0]
+
+    deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True, destfolder=output)
+    deeplabcut.create_labeled_video(config, [video_name], filtered=True, destfolder=output)
+    cv2.destroyAllWindows()
 
 
 def predict_dlc(config_file):

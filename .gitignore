@@ -9,3 +9,6 @@ mesonet/models/*.hdf5
 
 # Sensory map images (user needs to provide their own)
 mesonet/sensory/*
+
+# Old versions of scripts kept as backups
+mesonet/*_old.py
