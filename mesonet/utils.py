@@ -7,6 +7,7 @@ Licensed under the MIT License (see LICENSE for details)
 import yaml
 import glob
 import os
+import re
 
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
@@ -39,6 +40,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
     segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have
     another model that you would like to use for segmenting the brain.
+    :return config_file: The path to the config_file. If you run this function as config_file = config_project(...) then
+    you can directly get the config file path to be used later.
     """
     if mode == 'test':
         filename = "mesonet_test_config.yaml"
@@ -65,6 +68,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     with open(os.path.join(output_dir, filename), 'w') as outfile:
         yaml.dump(data, outfile)
 
+    config_file = os.path.join(output_dir, filename)
+    return config_file
+
 
 def parse_yaml(config_file):
     """
@@ -77,3 +83,16 @@ def parse_yaml(config_file):
             return d
         except yaml.YAMLError as exc:
             print(exc)
+
+
+def natural_sort_key(s):
+    """
+    Alphanumeric sort workaround from
+    https://stackoverflow.com/questions/19366517/sorting-in-python-how-to-sort-a-list-containing-alphanumeric-values
+
+    :param s: The list to be sorted.
+    :return: Naturally sorted version of list.
+    """
+    _nsre = re.compile('([0-9]+)')
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(_nsre, s)]

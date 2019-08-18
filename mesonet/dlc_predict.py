@@ -6,21 +6,10 @@ Licensed under the MIT License (see LICENSE for details)
 """
 import deeplabcut
 from mesonet.atlas_brain_matching import atlasBrainMatch
-from mesonet.utils import parse_yaml
+from mesonet.utils import parse_yaml, natural_sort_key
 import cv2
 import glob
 import os
-import re
-
-
-# Alphanumeric sort workaround from
-# https://stackoverflow.com/questions/19366517/sorting-in-python-how-to-sort-a-list-containing-alphanumeric-values
-_nsre = re.compile('([0-9]+)')
-
-
-def natural_sort_key(s):
-    return [int(text) if text.isdigit() else text.lower()
-            for text in re.split(_nsre, s)]
 
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold):
@@ -98,6 +87,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
         cap.release()
         cv2.destroyAllWindows()
 
+        print("Landmark prediction complete!")
         if not atlas:
             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold)
 

@@ -173,12 +173,13 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
-        print("mask dir: {}".format(mask_dir))
+        print("Performing first transformation of atlas {}...".format(n))
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
         M = cv2.getAffineTransform(pts2[n][0:3], pts[n][0:3])
         atlas_warped = cv2.warpAffine(im, M, (512, 512))
         atlas_mask_warped = cv2.warpAffine(atlas_mask, M, (512, 512))
         # Second alignment of brain atlas using four cortical landmarks and piecewise affine transform
+        print("Performing second transformation of atlas {}...".format(n))
         dst = getMaskContour(mask_dir, atlas_warped, pts[n], pts2[n], cwd, n)
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
         # sensory activity

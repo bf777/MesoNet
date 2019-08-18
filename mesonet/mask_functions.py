@@ -5,6 +5,7 @@ https://github.com/bf777/MesoNet
 Licensed under the MIT License (see LICENSE for details)
 This file has been adapted from data.py in https://github.com/zhixuhao/unet
 """
+from mesonet.utils import natural_sort_key
 import numpy as np
 import scipy.io as sio
 import os
@@ -18,21 +19,11 @@ import scipy
 from PIL import Image
 import pandas as pd
 import matplotlib
-import re
 
 Background = [128, 128, 128]
 Region = [255, 255, 255]
 
 COLOR_DICT = np.array([Background, Region])
-
-# Alphanumeric sort workaround from
-# https://stackoverflow.com/questions/19366517/sorting-in-python-how-to-sort-a-list-containing-alphanumeric-values
-_nsre = re.compile('([0-9]+)')
-
-
-def natural_sort_key(s):
-    return [int(text) if text.isdigit() else text.lower()
-            for text in re.split(_nsre, s)]
 
 
 def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_class=False, as_gray=True):
@@ -225,8 +216,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
                             max_bc[0] - 75 <= max_c[0] <= max_bc[0] + 75 and \
                                 max_bc[1] - 75 <= max_c[1] <= max_bc[1] + 75 and label_num == 0:
-                            print("Current contour top left corner: {},{}".format(min_c[0], min_c[1]))
-                            print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
+                            # print("Current contour top left corner: {},{}".format(min_c[0], min_c[1]))
+                            # print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
                             closest_label = r.name
                             label_color = (0, 0, 255)
                             cv2.putText(img, "{} ({})".format(closest_label, r.Index),
@@ -278,4 +269,5 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         d = {'region': labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
         df = pd.DataFrame(data=d)
         df.to_csv("{}_region_labels_new.csv".format(i))
+    print('Analysis complete! Check the outputs in the folders of {}.'.format(save_path))
     os.chdir('../..')
