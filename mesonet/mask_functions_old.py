@@ -8,31 +8,18 @@ This file has been adapted from data.py in https://github.com/zhixuhao/unet
 import numpy as np
 import scipy.io as sio
 import os
-import random
 import glob
 import skimage.io as io
 import skimage.transform as trans
 import cv2
 import imutils
-import scipy
 from PIL import Image
 import pandas as pd
-import matplotlib
-import re
 
 Background = [128, 128, 128]
 Region = [255, 255, 255]
 
 COLOR_DICT = np.array([Background, Region])
-
-# Alphanumeric sort workaround from
-# https://stackoverflow.com/questions/19366517/sorting-in-python-how-to-sort-a-list-containing-alphanumeric-values
-_nsre = re.compile('([0-9]+)')
-
-
-def natural_sort_key(s):
-    return [int(text) if text.isdigit() else text.lower()
-            for text in re.split(_nsre, s)]
 
 
 def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_class=False, as_gray=True):
@@ -116,28 +103,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     region_bgr_lower = (100, 100, 100)
     region_bgr_upper = (255, 255, 255)
     cnt_array = []
-    base_c_max = []
     count = 0
-    cwd = os.getcwd()
     regions = pd.read_csv(os.path.join(mask_path, "../../atlases/region_labels.csv"))
-    cmap = matplotlib.cm.get_cmap('hsv')
-    # Find the contours of an existing set of brain regions (to be used to identify each new brain region by shape)
-    mat_files = glob.glob(os.path.join(cwd, '../../atlases/mat_contour_base/*.mat'))
-    mat_files.sort(key=natural_sort_key)
-    for file in mat_files:
-        mat = scipy.io.loadmat(os.path.join(cwd, '../../atlases/mat_contour_base/', file))
-        mat = mat['vect']
-        ret, thresh = cv2.threshold(mat, 5, 255, cv2.THRESH_BINARY)
-        io.imsave('cnt_{}.png', thresh)
-        base_c = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        base_c = imutils.grab_contours(base_c)
-        base_c_max.append(max(base_c, key=cv2.contourArea))
     for i, item in enumerate(image_name_arr):
         new_data = []
         img = cv2.imread(item)
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
-        # Get the region of the mask that is white
         mask_color = cv2.inRange(mask, region_bgr_lower, region_bgr_upper)
         io.imsave(os.path.join(save_path, "{}_mask_binary.png".format(i)), mask_color)
         # Marker labelling
@@ -164,11 +136,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         img[labels == -1] = [255, 0, 0]
         labels_x = []
         labels_y = []
-        areas = []
         labels_arr = []
-        label_jitter = random.randrange(-2, 2)
         for n, label in enumerate(np.unique(labels)):
-            label_num = 0
             # if the label is zero, we are examining the 'background'
             # so simply ignore it
             if label == 0:
@@ -195,65 +164,30 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                     mat_save = True
                 else:
                     mat_save = False
-                # Prepares lists of the contours identified in the brain image, in the order that they are found by
-                # OpenCV
-                labels_arr.append(label)
-                labels_x.append(int(c_x))
-                labels_y.append(int(c_y))
-                areas.append(cv2.contourArea(c))
-                # The first contour just outlines the entire image (which does not provide a useful label or .mat
-                # contour) so we'll ignore it
-                if label != -1:
-                    # Cross-references each contour with a set of contours from a base brain atlas that was manually
-                    # labelled with brain regions (as defined in 'region_labels.csv' in the 'atlases' folder). If the
-                    # area of the contour is within 5000 square px of the original region and the centre of the contour
-                    # is at most 100 px away from the centre of the original contour, label the contour with its
-                    # corresponding brain region. Until we figure out how to consistently and accurately label small
-                    # brain regions, we only label brain regions with an area greater than 1000 square px.
-                    shape_list = []
-                    for n_bc, bc in enumerate(base_c_max):
-                        shape_compare = cv2.matchShapes(c, bc, 1, 0.0)
-                        shape_list.append(shape_compare)
-                    for (n_r, r), (n_bc, bc) in zip(enumerate(regions.itertuples()), enumerate(base_c_max)):
-                        min_bc = list(bc[0][0])
-                        min_c = list(c[0][0])
-                        max_bc = list(bc[0][-1])
-                        max_c = list(c[0][-1])
-
-                        if (min(shape_list) - 0.3 <= cv2.matchShapes(c, bc, 1, 0.0) <= min(shape_list) + 0.3) and \
-                            min_bc[0] - 75 <= min_c[0] <= min_bc[0] + 75 and \
-                            min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
-                            max_bc[0] - 75 <= max_c[0] <= max_bc[0] + 75 and \
-                                max_bc[1] - 75 <= max_c[1] <= max_bc[1] + 75 and label_num == 0:
-                            print("Current contour top left corner: {},{}".format(min_c[0], min_c[1]))
-                            print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
-                            closest_label = r.name
-                            label_color = (0, 0, 255)
-                            cv2.putText(img, "{} ({})".format(closest_label, r.Index),
-                                        (int(c_x + label_jitter), int(c_y + label_jitter)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
-                            label_num += 1
-                            if mat_save and n > 0:
-                                # Create an empty array of the same size as the contour, with the centre of the contour
-                                # marked as "255"
-                                c_total = np.zeros_like(mask)
-                                c_centre = np.zeros_like(mask)
-                                # Follow the path of the contour, setting every pixel along the path to 255
-                                # Fill in the contour area with 1s
-                                cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
-                                # Set the contour's centroid to 255
-                                if c_x < mask.shape[0] and c_y < mask.shape[0]:
-                                    c_centre[c_x, c_y] = 255
-                                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
-                                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
-                                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
-                                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
-                                sio.savemat(os.path.join(segmented_save_path,
-                                                         'mat_contour/roi_{}_{}_{}'.format(i, r.Index, z)),
-                                            {'vect': c_total})
-                                sio.savemat(os.path.join(segmented_save_path,
-                                                         'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, r.Index, z)),
-                                            {'vect': c_centre})
+                if label != -1 and n > 0:
+                    cv2.putText(img, "{}".format(label), (int(c_x - 10), int(c_y)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
+                    if mat_save:
+                        # Create an empty array of the same size as the contour, with the centre of the contour
+                        # marked as "255"
+                        c_total = np.zeros_like(mask)
+                        c_centre = np.zeros_like(mask)
+                        # Follow the path of the contour, setting every pixel along the path to 255
+                        # Fill in the contour area with 1s
+                        cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
+                        # Set the contour's centroid to 255
+                        if c_x < mask.shape[0] and c_y < mask.shape[0]:
+                            c_centre[c_x, c_y] = 255
+                        if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
+                            os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
+                        if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
+                            os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
+                        sio.savemat(os.path.join(segmented_save_path,
+                                                 'mat_contour/roi_{}_{}_{}'.format(i, n, z)),
+                                    {'vect': c_total})
+                        sio.savemat(os.path.join(segmented_save_path,
+                                                 'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, n, z)),
+                                    {'vect': c_centre})
             count += 1
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
@@ -275,7 +209,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))
-        d = {'region': labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
+        d = {'region': labels_arr, 'x': labels_x, 'y': labels_y}
         df = pd.DataFrame(data=d)
         df.to_csv("{}_region_labels_new.csv".format(i))
-    os.chdir('../..')

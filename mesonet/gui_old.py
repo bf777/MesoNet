@@ -5,8 +5,7 @@ https://github.com/bf777/MesoNet
 Licensed under the MIT License (see LICENSE for details)
 """
 from mesonet.predict_regions import predictRegion
-from mesonet.dlc_predict import DLCPredict, DLCPredictBehavior
-from mesonet.utils import config_project
+from mesonet.dlc_predict import DLCPredict
 from tkinter import *  # Python 3.x
 from tkinter import filedialog
 from PIL import Image, ImageTk
@@ -21,12 +20,11 @@ root.resizable(False, False)
 
 cwd = os.getcwd()
 folderName = cwd
-BfolderName = cwd
 saveFolderName = ''
-saveBFolderName = ''
 threshold = 0.001
 config_path = os.path.join(cwd, 'dlc/config.yaml')
-behavior_config_path = os.path.join(cwd, 'dlc/behavior/config.yaml')
+landmark_atlas_img = os.path.join(cwd, 'atlases/landmarks_atlas_512_512.png')
+sensory_atlas_img = os.path.join(cwd, 'atlases/sensorymap_atlas_512_512.png')
 haveMasks = False
 # status = 'Please select a folder with brain images at "Input Folder".'
 
@@ -72,37 +70,6 @@ def OpenFile(openOrSave):
             # root.update()
 
 
-def OpenBFile(openOrSave):
-    if openOrSave == 0:
-        newBFolderName = filedialog.askdirectory(initialdir=cwd,
-                                                title="Choose folder containing the brain images you want to analyze")
-        # Using try in case user types in unknown file or closes without choosing a file.
-        try:
-            BfolderName_str.set(newBFolderName)
-            global BfolderName
-            # global status
-            # status = 'Brain images found! Now select a folder to save outputs using the "Save Folder" box.'
-            BfolderName = newBFolderName
-            root.update()
-        except:
-            print("No image file selected!")
-
-    elif openOrSave == 1:
-        newSaveBFolderName = filedialog.askdirectory(initialdir=cwd,
-                                                    title="Choose folder for saving files")
-        # Using try in case user types in unknown file or closes without choosing a file.
-        try:
-            saveBFolderName_str.set(newSaveBFolderName)
-            global saveBFolderName
-            saveBFolderName = newSaveBFolderName
-            predictBehaviourButton.config(state='normal')
-            root.update()
-        except:
-            print("No save file selected!")
-            # status = "No save file selected!"
-            # root.update()
-
-
 def ImageDisplay(delta, folderName, reset):
     # Set up canvas on which images will be displayed
     global imgDisplayed
@@ -138,9 +105,9 @@ def ImageDisplay(delta, folderName, reset):
     imageNum = 'Image {}/{}'.format(j + 1, picLen)
     imageNumPrep = StringVar(root, value=imageNum)
     imageNameLabel = Label(root, textvariable=imageName)
-    imageNameLabel.grid(row=4, column=0, columnspan=1)
+    imageNameLabel.grid(row=2, column=0, columnspan=1)
     imageNumLabel = Label(root, textvariable=imageNumPrep)
-    imageNumLabel.grid(row=4, column=2, columnspan=1)
+    imageNumLabel.grid(row=2, column=2, columnspan=1)
 
 
 def FindModelInFolder():
@@ -151,8 +118,8 @@ def FindModelInFolder():
 
     modelLabel = Label(root, text="If using U-net,\nselect a model to\nanalyze the brain regions:")
     modelListBox = Listbox(root)
-    modelLabel.grid(row=4, column=4, padx=2, sticky=S)
-    modelListBox.grid(row=5, column=4, sticky=N)
+    modelLabel.grid(row=3, column=4, padx=2, sticky=S)
+    modelListBox.grid(row=4, column=4, sticky=N)
     for item in modelSelect:
         modelListBox.insert(END, item)
     if len(modelSelect) > 0:
@@ -192,22 +159,23 @@ def PredictRegions(input_file, num_images, model, output, mat_save, threshold, m
     ImageDisplay(1, folderName, 1)
 
 
-def PredictDLC(config, input_file, output, atlas, sensory_match, model, num_images, mat_save, threshold, mask_generate,
-               haveMasks):
+def PredictDLC(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img,
+               sensory_match, model, num_images, mat_save, threshold, mask_generate, haveMasks):
     global status
     status = "Processing..."
     root.update()
     if mask_generate and not haveMasks:
         predictRegion(input_file, num_images, model, output, mat_save, threshold, True)
-    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold)
+    DLCPredict(config, input_file, output, atlas, landmark_atlas_img, sensory_atlas_img, sensory_match, mat_save,
+               threshold)
     saveFolderName = output
     global folderName
     if not atlas:
         folderName = os.path.join(saveFolderName, "output_overlay")
     elif atlas:
-        folderName = os.path.join(saveFolderName, "dlc_output")
-    config_project(input_file, saveFolderName, 'test', config=config, atlas=atlas, sensory_match=sensory_match,
-                   mat_save=mat_save, threshold=threshold, model=model)
+        folderName = saveFolderName
+    status = "Processing complete! RED = poor region match or first image, GREEN = perfect region match, BLUE = close" \
+             "region match"
     root.update()
     ImageDisplay(1, folderName, 1)
 
@@ -215,7 +183,7 @@ def PredictDLC(config, input_file, output, atlas, sensory_match, model, num_imag
 Title = root.title("MesoNet Analyzer")
 
 canvas = Canvas(root, width=520, height=520)
-canvas.grid(row=5, column=0, columnspan=4, rowspan=9, sticky=N + S + W)
+canvas.grid(row=3, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
 
 # Render model selector listbox
 FindModelInFolder()
@@ -239,31 +207,12 @@ fileSaveButton.grid(row=1, column=2, sticky=E)
 fileSaveBox = Entry(root, textvariable=saveFolderName_str, width=60)
 fileSaveBox.grid(row=1, column=1, padx=5, pady=5)
 
-# Set behavioural data files
-BfileEntryLabel = Label(root, text="Behavior Input folder")
-BfileEntryLabel.grid(row=2, column=0, sticky=E + W)
-BfileEntryButton = Button(root, text="Browse...", command=lambda: OpenBFile(0))
-
-BfolderName_str = StringVar(root, value=folderName)
-BfileEntryButton.grid(row=2, column=2, sticky=E)
-BfileEntryBox = Entry(root, textvariable=BfolderName_str, width=60)
-BfileEntryBox.grid(row=2, column=1, padx=5, pady=5)
-
-BfileSaveLabel = Label(root, text="Behavior Save folder")
-BfileSaveLabel.grid(row=3, column=0, sticky=E + W)
-BfileSaveButton = Button(root, text="Browse...", command=lambda: OpenBFile(1))
-
-saveBFolderName_str = StringVar(root, value=saveBFolderName)
-BfileSaveButton.grid(row=3, column=2, sticky=E)
-BfileSaveBox = Entry(root, textvariable=saveBFolderName_str, width=60)
-BfileSaveBox.grid(row=3, column=1, padx=5, pady=5)
-
 # Image controls
 # Buttons below will only display if an image is displayed
 nextButton = Button(root, text="->", command=lambda: ImageDisplay(1, folderName, 0))
-nextButton.grid(row=13, column=2, columnspan=1)
+nextButton.grid(row=11, column=2, columnspan=1)
 previousButton = Button(root, text="<-", command=lambda: ImageDisplay(-1, folderName, 0))
-previousButton.grid(row=13, column=0, columnspan=1)
+previousButton.grid(row=11, column=0, columnspan=1)
 
 # Bind right and left arrow keys to forward/backward controls
 root.bind('<Right>', forward)
@@ -275,34 +224,34 @@ mat_save = IntVar()
 atlas = IntVar()
 sensory_align = IntVar()
 saveMatFileCheck = Checkbutton(root, text="Save predicted regions\nas .mat files", variable=mat_save)
-saveMatFileCheck.grid(row=6, column=4, padx=2, sticky=N+S+W)
+saveMatFileCheck.grid(row=5, column=4, padx=2, sticky=N+S+W)
 sensoryMapCheck = Checkbutton(root, text="Align using sensory map", variable=sensory_align)
-sensoryMapCheck.grid(row=7, column=4, padx=2, sticky=N+S+W)
+sensoryMapCheck.grid(row=6, column=4, padx=2, sticky=N+S+W)
 generateMaskButton = Button(root, text="Get boundaries of brain\nusing U-net",
                             command=lambda: PredictRegions(folderName, picLen,
                                                            os.path.join(cwd, 'models/unet_bundary.hdf5'),
                                                            saveFolderName, int(mat_save.get()),
                                                            threshold, True))
-generateMaskButton.grid(row=8, column=4, padx=2, sticky=N + S + W + E)
+generateMaskButton.grid(row=7, column=4, padx=2, sticky=N + S + W + E)
 predictLandmarksButton = Button(root, text="Predict landmark locations",
                           command=lambda: PredictDLC(config_path, folderName, saveFolderName, True,
+                                                     landmark_atlas_img, sensory_atlas_img,
                                                      int(sensory_align.get()),
                                                      os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
                                                      int(mat_save.get()), threshold, False, haveMasks))
-predictLandmarksButton.grid(row=9, column=4, padx=2, sticky=N + S + W + E)
+predictLandmarksButton.grid(row=8, column=4, padx=2, sticky=N + S + W + E)
 predictDLCButton = Button(root, text="Predict brain regions\nusing landmarks",
                           command=lambda: PredictDLC(config_path, folderName, saveFolderName, False,
+                                                     landmark_atlas_img, sensory_atlas_img,
                                                      int(sensory_align.get()),
                                                      os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
                                                      int(mat_save.get()), threshold, True, haveMasks))
-predictDLCButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
+predictDLCButton.grid(row=9, column=4, padx=2, sticky=N + S + W + E)
 predictAllImButton = Button(root, text="Predict brain regions directly\nusing pretrained U-net model",
                             command=lambda: PredictRegions(folderName, picLen, model, saveFolderName,
                                                            int(mat_save.get()), threshold, False))
-predictAllImButton.grid(row=11, column=4, padx=2, sticky=N + S + W + E)
-predictBehaviourButton = Button(root, text="Predict animal movements",
-                                command=lambda: DLCPredictBehavior(behavior_config_path, BfolderName, saveBFolderName))
-predictBehaviourButton.grid(row=12, column=4, padx=2, sticky=N + S + W + E)
+predictAllImButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
+
 
 if saveFolderName == '' or imgDisplayed == 0:
     predictAllImButton.config(state='disabled')
@@ -311,5 +260,4 @@ if saveFolderName == '' or imgDisplayed == 0:
     saveMatFileCheck.config(state='disabled')
     predictLandmarksButton.config(state='disabled')
     sensoryMapCheck.config(state='disabled')
-    predictBehaviourButton.config(state='disabled')
 root.mainloop()

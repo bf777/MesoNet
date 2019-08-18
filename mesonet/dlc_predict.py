@@ -10,6 +10,17 @@ from mesonet.utils import parse_yaml
 import cv2
 import glob
 import os
+import re
+
+
+# Alphanumeric sort workaround from
+# https://stackoverflow.com/questions/19366517/sorting-in-python-how-to-sort-a-list-containing-alphanumeric-values
+_nsre = re.compile('([0-9]+)')
+
+
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(_nsre, s)]
 
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold):
@@ -44,7 +55,9 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
         sensory_img_dir = os.path.join(input_file, 'sensory')
     else:
         sensory_img_dir = ''
-    for filename in glob.glob(os.path.join(input_file, '*.png')):
+    filenames = glob.glob(os.path.join(input_file, '*.png'))
+    filenames.sort(key=natural_sort_key)
+    for filename in filenames:
         img = cv2.imread(filename)
         height, width, layers = img.shape
         size = (width, height)
@@ -103,6 +116,9 @@ def DLCPredictBehavior(config, input_file, output):
         video_array.append(os.path.join(input_file, filename))
 
     for filename in glob.glob(os.path.join(input_file, '*.png')):
+        _nsre = re.compile('([0-9]+)')
+        return [int(text) if text.isdigit() else text.lower()
+                for text in re.split(_nsre, s)]
         img = cv2.imread(filename)
         height, width, layers = img.shape
         size = (width, height)
@@ -111,6 +127,8 @@ def DLCPredictBehavior(config, input_file, output):
     if len(img_array) > 0:
         video_output_path = os.path.join(output, 'dlc_output', 'behavior')
         video_name = os.path.join(video_output_path, 'behavior_video.mp4')
+        video_output_path = [video_output_path]
+        video_name = [video_name]
 
         if not os.path.isdir(video_output_path):
             os.mkdir(video_output_path)
@@ -119,11 +137,11 @@ def DLCPredictBehavior(config, input_file, output):
             out.write(img_array[i])
         out.release()
     elif len(video_array) > 0:
-        video_output_path = video_array[0]
-        video_name = video_array[0]
+        video_output_path = video_array
+        video_name = video_array
 
-    deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True, destfolder=output)
-    deeplabcut.create_labeled_video(config, [video_name], filtered=True, destfolder=output)
+    deeplabcut.analyze_videos(config, video_output_path, videotype='.mp4', save_as_csv=True, destfolder=output)
+    deeplabcut.create_labeled_video(config, video_name, filtered=True, destfolder=output)
     cv2.destroyAllWindows()
 
 
