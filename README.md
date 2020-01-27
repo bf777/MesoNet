@@ -32,4 +32,4 @@ Follow our tutorial [on the wiki](https://github.com/bf777/MesoNet/wiki/Quick-St
 The code was written by [Brandon Forys](https://github.com/bf777);
 [Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, trained
 the U-net models provided with MesoNet, and developed the brain atlas alignment approach. They are in the
-[Murphy Lab](http://www.neuroscience.ubc.ca/faculty/murphy.html) in UBC's Department of Psychiatry.
+[Murphy Lab](https://murphylab.med.ubc.ca/) in UBC's Department of Psychiatry.
