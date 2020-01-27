@@ -149,9 +149,9 @@ def FindModelInFolder():
         if fnmatch.fnmatch(file, "*.hdf5"):
             modelSelect.append(file)
 
-    modelLabel = Label(root, text="If using U-net,\nselect a model to\nanalyze the brain regions:")
+    modelLabel = Label(root, text="If using U-net, select a model\nto analyze the brain regions:")
     modelListBox = Listbox(root)
-    modelLabel.grid(row=4, column=4, padx=2, sticky=S)
+    modelLabel.grid(row=4, column=4, sticky=S)
     modelListBox.grid(row=5, column=4, sticky=N)
     for item in modelSelect:
         modelListBox.insert(END, item)
@@ -214,8 +214,8 @@ def PredictDLC(config, input_file, output, atlas, sensory_match, model, num_imag
 
 Title = root.title("MesoNet Analyzer")
 
-canvas = Canvas(root, width=520, height=520)
-canvas.grid(row=5, column=0, columnspan=4, rowspan=9, sticky=N + S + W)
+canvas = Canvas(root, width=512, height=512)
+canvas.grid(row=5, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
 
 # Render model selector listbox
 FindModelInFolder()

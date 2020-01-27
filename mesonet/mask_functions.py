@@ -202,6 +202,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                     # corresponding brain region. Until we figure out how to consistently and accurately label small
                     # brain regions, we only label brain regions with an area greater than 1000 square px.
                     shape_list = []
+                    label_color = (0, 0, 255)
                     for n_bc, bc in enumerate(base_c_max):
                         shape_compare = cv2.matchShapes(c, bc, 1, 0.0)
                         shape_list.append(shape_compare)
@@ -211,40 +212,48 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                         max_bc = list(bc[0][-1])
                         max_c = list(c[0][-1])
 
-                        if (min(shape_list) - 0.3 <= cv2.matchShapes(c, bc, 1, 0.0) <= min(shape_list) + 0.3) and \
-                            min_bc[0] - 75 <= min_c[0] <= min_bc[0] + 75 and \
-                            min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
-                            max_bc[0] - 75 <= max_c[0] <= max_bc[0] + 75 and \
-                                max_bc[1] - 75 <= max_c[1] <= max_bc[1] + 75 and label_num == 0:
+                        num_labels_only = False
+                        if label_num == 0 and num_labels_only:
+                            cv2.putText(img, str(label),
+                                        (int(c_x + label_jitter), int(c_y + label_jitter)),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
+                            label_num += 1
+
+                        # 0.3, 75
+                        if label_num == 0 and not num_labels_only and \
+                                (min(shape_list) - 0.3 <= cv2.matchShapes(c, bc, 1, 0.0) <= min(shape_list) + 0.3) and \
+                                min_bc[0] - 75 <= min_c[0] <= min_bc[0] + 75 and \
+                                min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
+                                max_bc[0] - 75 <= max_c[0] <= max_bc[0] + 75 and \
+                                max_bc[1] - 75 <= max_c[1] <= max_bc[1] + 75:
                             # print("Current contour top left corner: {},{}".format(min_c[0], min_c[1]))
                             # print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
                             closest_label = r.name
-                            label_color = (0, 0, 255)
                             cv2.putText(img, "{} ({})".format(closest_label, r.Index),
                                         (int(c_x + label_jitter), int(c_y + label_jitter)),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
                             label_num += 1
-                            if mat_save and n > 0:
-                                # Create an empty array of the same size as the contour, with the centre of the contour
-                                # marked as "255"
-                                c_total = np.zeros_like(mask)
-                                c_centre = np.zeros_like(mask)
-                                # Follow the path of the contour, setting every pixel along the path to 255
-                                # Fill in the contour area with 1s
-                                cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
-                                # Set the contour's centroid to 255
-                                if c_x < mask.shape[0] and c_y < mask.shape[0]:
-                                    c_centre[c_x, c_y] = 255
-                                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
-                                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
-                                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
-                                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
-                                sio.savemat(os.path.join(segmented_save_path,
-                                                         'mat_contour/roi_{}_{}_{}'.format(i, r.Index, z)),
-                                            {'vect': c_total})
-                                sio.savemat(os.path.join(segmented_save_path,
-                                                         'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, r.Index, z)),
-                                            {'vect': c_centre})
+                        if mat_save and n > 0:
+                            # Create an empty array of the same size as the contour, with the centre of the contour
+                            # marked as "255"
+                            c_total = np.zeros_like(mask)
+                            c_centre = np.zeros_like(mask)
+                            # Follow the path of the contour, setting every pixel along the path to 255
+                            # Fill in the contour area with 1s
+                            cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
+                            # Set the contour's centroid to 255
+                            if c_x < mask.shape[0] and c_y < mask.shape[0]:
+                                c_centre[c_x, c_y] = 255
+                            if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
+                                os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
+                            if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
+                                os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
+                            sio.savemat(os.path.join(segmented_save_path,
+                                                     'mat_contour/roi_{}_{}_{}'.format(i, r.Index, z)),
+                                        {'vect': c_total})
+                            sio.savemat(os.path.join(segmented_save_path,
+                                                     'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, r.Index, z)),
+                                        {'vect': c_centre})
             count += 1
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
