@@ -18,6 +18,7 @@ import imutils
 import scipy
 from PIL import Image
 import pandas as pd
+import pandas as pd
 import matplotlib
 
 Background = [128, 128, 128]
@@ -93,7 +94,7 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
 
 
-def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold):
+def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
     :param image_path: path to folder where brain images are saved
@@ -110,13 +111,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     base_c_max = []
     count = 0
     cwd = os.getcwd()
-    regions = pd.read_csv(os.path.join(mask_path, "../../atlases/region_labels.csv"))
+    regions = pd.read_csv(os.path.join(git_repo_base, "atlases/region_labels.csv"))
     cmap = matplotlib.cm.get_cmap('hsv')
     # Find the contours of an existing set of brain regions (to be used to identify each new brain region by shape)
-    mat_files = glob.glob(os.path.join(cwd, '../../atlases/mat_contour_base/*.mat'))
+    mat_files = glob.glob(os.path.join(git_repo_base, 'atlases/mat_contour_base/*.mat'))
     mat_files.sort(key=natural_sort_key)
     for file in mat_files:
-        mat = scipy.io.loadmat(os.path.join(cwd, '../../atlases/mat_contour_base/', file))
+        mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))
         mat = mat['vect']
         ret, thresh = cv2.threshold(mat, 5, 255, cv2.THRESH_BINARY)
         io.imsave('cnt_{}.png', thresh)

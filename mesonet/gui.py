@@ -6,7 +6,7 @@ Licensed under the MIT License (see LICENSE for details)
 """
 from mesonet.predict_regions import predictRegion
 from mesonet.dlc_predict import DLCPredict, DLCPredictBehavior
-from mesonet.utils import config_project
+from mesonet.utils import config_project, find_git_repo
 from tkinter import *  # Python 3.x
 from tkinter import filedialog
 from PIL import Image, ImageTk
@@ -14,6 +14,8 @@ from PIL import Image, ImageTk
 import os
 import fnmatch
 import glob
+from os.path import join
+from sys import platform
 
 # The main window of the app
 root = Tk()
@@ -25,14 +27,21 @@ BfolderName = cwd
 saveFolderName = ''
 saveBFolderName = ''
 threshold = 0.001
-config_path = os.path.join(cwd, 'dlc/config.yaml')
-behavior_config_path = os.path.join(cwd, 'dlc/behavior/config.yaml')
 haveMasks = False
 # status = 'Please select a folder with brain images at "Input Folder".'
 
 j = -1
 delta = 0
 imgDisplayed = 0
+
+config_dir = 'dlc'
+model_dir = 'models'
+
+git_repo_base = find_git_repo()
+
+config_path = os.path.join(git_repo_base, config_dir, 'config.yaml')
+behavior_config_path = os.path.join(git_repo_base, config_dir, 'behavior',' config.yaml')
+model_top_dir = os.path.join(git_repo_base, model_dir)
 
 
 def OpenFile(openOrSave):
@@ -145,7 +154,7 @@ def ImageDisplay(delta, folderName, reset):
 
 def FindModelInFolder():
     modelSelect = []
-    for file in os.listdir(os.path.join(cwd, 'models')):
+    for file in os.listdir(model_top_dir):
         if fnmatch.fnmatch(file, "*.hdf5"):
             modelSelect.append(file)
 
@@ -161,7 +170,7 @@ def FindModelInFolder():
             w = evt.widget
             selected = int(w.curselection()[0])
             model = modelListBox.get(selected)
-            model = os.path.join(os.path.join(cwd, 'models', model))
+            model = os.path.join(git_repo_base, model_dir, model)
             root.update()
         modelListBox.bind('<<ListboxSelect>>', onselect)
 
@@ -193,13 +202,13 @@ def PredictRegions(input_file, num_images, model, output, mat_save, threshold, m
 
 
 def PredictDLC(config, input_file, output, atlas, sensory_match, model, num_images, mat_save, threshold, mask_generate,
-               haveMasks):
+               haveMasks, git_repo_base):
     global status
     status = "Processing..."
     root.update()
     if mask_generate and not haveMasks:
         predictRegion(input_file, num_images, model, output, mat_save, threshold, True)
-    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold)
+    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base)
     saveFolderName = output
     global folderName
     if not atlas:
@@ -280,21 +289,21 @@ sensoryMapCheck = Checkbutton(root, text="Align using sensory map", variable=sen
 sensoryMapCheck.grid(row=7, column=4, padx=2, sticky=N+S+W)
 generateMaskButton = Button(root, text="Get boundaries of brain\nusing U-net",
                             command=lambda: PredictRegions(folderName, picLen,
-                                                           os.path.join(cwd, 'models/unet_bundary.hdf5'),
+                                                           os.path.join(model_top_dir, 'unet_bundary.hdf5'),
                                                            saveFolderName, int(mat_save.get()),
                                                            threshold, True))
 generateMaskButton.grid(row=8, column=4, padx=2, sticky=N + S + W + E)
 predictLandmarksButton = Button(root, text="Predict landmark locations",
                           command=lambda: PredictDLC(config_path, folderName, saveFolderName, True,
                                                      int(sensory_align.get()),
-                                                     os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
-                                                     int(mat_save.get()), threshold, False, haveMasks))
+                                                     os.path.join(model_top_dir, 'unet_bundary.hdf5'), picLen,
+                                                     int(mat_save.get()), threshold, False, haveMasks, git_repo_base))
 predictLandmarksButton.grid(row=9, column=4, padx=2, sticky=N + S + W + E)
 predictDLCButton = Button(root, text="Predict brain regions\nusing landmarks",
                           command=lambda: PredictDLC(config_path, folderName, saveFolderName, False,
                                                      int(sensory_align.get()),
-                                                     os.path.join(cwd, 'models/unet_bundary.hdf5'), picLen,
-                                                     int(mat_save.get()), threshold, True, haveMasks))
+                                                     os.path.join(model_top_dir, 'unet_bundary.hdf5'), picLen,
+                                                     int(mat_save.get()), threshold, True, haveMasks, git_repo_base))
 predictDLCButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
 predictAllImButton = Button(root, text="Predict brain regions directly\nusing pretrained U-net model",
                             command=lambda: PredictRegions(folderName, picLen, model, saveFolderName,
@@ -312,4 +321,11 @@ if saveFolderName == '' or imgDisplayed == 0:
     predictLandmarksButton.config(state='disabled')
     sensoryMapCheck.config(state='disabled')
     predictBehaviourButton.config(state='disabled')
-root.mainloop()
+
+
+def gui(root):
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    gui(root)

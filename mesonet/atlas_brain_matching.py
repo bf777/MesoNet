@@ -85,7 +85,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n):
 
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
-                    mat_save, threshold):
+                    mat_save, threshold, git_repo_base):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used
@@ -166,10 +166,11 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             os.mkdir(output_mask_path)
         if not os.path.isdir(output_overlay_path):
             os.mkdir(output_overlay_path)
-        im = atlas_from_mat(os.path.join(cwd, '../../atlases/atlas_512_512.mat'))
+        # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet/'
+        im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_512_512.mat'))
         io.imsave(os.path.join(cwd, "../output_mask/im.png".format(n)), im)
         cv2.imread(os.path.join(cwd, "../output_mask/im.png".format(n)), cv2.IMREAD_GRAYSCALE)
-        atlas_mask_dir = os.path.join(cwd, "../../atlases/atlas_mask.png")
+        atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_mask.png")
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
@@ -194,4 +195,4 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         io.imsave(mask_warped_path, atlas_mask_warped)
         atlas_to_mask(atlas_path, mask_dir, mask_warped_path, output_mask_path, n)
     # Converts the transformed brain atlas into a segmentation method for the original brain image
-    applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold)
+    applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold, git_repo_base)

@@ -8,6 +8,9 @@ import yaml
 import glob
 import os
 import re
+import os
+from os.path import join
+from sys import platform
 
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
@@ -43,6 +46,13 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     :return config_file: The path to the config_file. If you run this function as config_file = config_project(...) then
     you can directly get the config file path to be used later.
     """
+
+    # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet'
+    git_repo_base = find_git_repo()
+    print(git_repo_base)
+    config = join(git_repo_base, config)
+    model = join(git_repo_base, model)
+
     if mode == 'test':
         filename = "mesonet_test_config.yaml"
         num_images = len(glob.glob(os.path.join(input_dir, '*.png')))
@@ -55,7 +65,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             mat_save=mat_save,
             threshold=threshold,
             num_images=num_images,
-            model=model
+            model=model,
+            git_repo_base=git_repo_base
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"
@@ -96,3 +107,27 @@ def natural_sort_key(s):
     _nsre = re.compile('([0-9]+)')
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split(_nsre, s)]
+
+
+def find_git_repo():
+    # Preferred (faster) option to find mesonet git repo is to set it as an environment variable
+    try:
+        git_repo_base = os.environ['MESONET_GIT']
+    except:
+        # If we can't find the environment variable, search for the mesonet git repository
+        # solution to find git repository on computer adapted from:
+        # https://stackoverflow.com/questions/5153317/python-how-to-do-a-system-wide-search-for-a-file-when-just-the-filename-not-pa
+
+        git_repo_marker = "mesonet.txt"
+        if platform == "linux" or platform == "linux2" or platform == "darwin":
+            # linux or mac
+            root_folder = '~/'
+        elif platform == "win32":
+            # Windows
+            root_folder = 'C:\\'
+        for root, dirs, files in os.walk(root_folder):
+            if git_repo_marker in files:
+                git_repo_base = root
+                break
+    return(git_repo_base)
+

@@ -12,7 +12,7 @@ import glob
 import os
 
 
-def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold):
+def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -65,7 +65,11 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
 
         deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True)
         deeplabcut.create_labeled_video(config, [video_name], filtered=True)
-        for filename in glob.glob(os.path.join(video_output_path, 'tmp_videoDeepCut*.*')):
+        if '2.0' in deeplabcut.__version__:
+            scorer_name = 'DeepCut'
+        else:
+            scorer_name = 'DLC'
+        for filename in glob.glob(os.path.join(video_output_path, 'tmp_video' + scorer_name + '*.*')):
             try:
                 if '.mp4' in filename:
                     output_video_name = filename
@@ -89,7 +93,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
 
         print("Landmark prediction complete!")
         if not atlas:
-            atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold)
+            atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base)
 
 
 def DLCPredictBehavior(config, input_file, output):
@@ -148,4 +152,5 @@ def predict_dlc(config_file):
     output = cfg['output']
     mat_save = cfg['mat_save']
     threshold = cfg['threshold']
-    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold)
+    git_repo_base = cfg['git_repo_base']
+    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base)
