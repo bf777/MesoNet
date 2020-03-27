@@ -21,7 +21,7 @@ import pandas as pd
 import pandas as pd
 import matplotlib
 
-Background = [128, 128, 128]
+Background = [0, 0, 0]
 Region = [255, 255, 255]
 
 COLOR_DICT = np.array([Background, Region])
