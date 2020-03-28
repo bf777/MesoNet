@@ -59,7 +59,7 @@ def labelVisualize(num_class, color_dict, img):
     return img_out / 255
 
 
-def saveResult(save_path, npyfile, mask_generate, flag_multi_class=True, num_class=2):
+def saveResult(save_path, npyfile, mask_generate, flag_multi_class=False, num_class=2):
     """
     Saves the predicted mask from each brain image to the save folder.
     :param save_path: path to overall folder for saving images
