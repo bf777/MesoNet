@@ -12,7 +12,7 @@ from keras.callbacks import ModelCheckpoint
 from mesonet.utils import parse_yaml
 
 
-def trainModel(input_file, model_name, log_folder):
+def trainModel(input_file, model_name, log_folder, git_repo_base):
     """
     Trains a U-Net model based on the brain images and corresponding masks supplied to input_file
     :param input_file: A directory containing an 'image' folder with brain images, and a 'label' folder with
@@ -33,7 +33,7 @@ def trainModel(input_file, model_name, log_folder):
     np_acc_hist = np.array(acc_history)
     np.savetxt(os.path.join(log_folder, "loss_history.csv"), np_loss_hist, delimiter=",")
     np.savetxt(os.path.join(log_folder, "acc_history.csv"), np_acc_hist, delimiter=",")
-    model.save(os.path.join('models', model_name))
+    model.save(os.path.join(git_repo_base, 'models', model_name))
 
 
 def train_model(config_file):
@@ -46,4 +46,5 @@ def train_model(config_file):
     input_file = cfg['input_file']
     model_name = cfg['model_name']
     log_folder = cfg['log_folder']
-    trainModel(input_file, model_name, log_folder)
+    git_repo_base = cfg['git_repo_base']
+    trainModel(input_file, model_name, log_folder, git_repo_base)

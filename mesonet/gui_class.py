@@ -123,7 +123,7 @@ class Gui:
                                                                              os.path.join(self.model_top_dir,
                                                                                           'unet_bundary.hdf5'),
                                                                              self.saveFolderName, int(self.mat_save.get()),
-                                                                             self.threshold, True))
+                                                                             self.threshold, True, self.git_repo_base))
         self.generateMaskButton.grid(row=8, column=4, padx=2, sticky=N + S + W + E)
         self.predictLandmarksButton = Button(self.root, text="Predict landmark locations",
                                              command=lambda: self.PredictDLC(self.config_path, self.folderName,
@@ -149,7 +149,7 @@ class Gui:
         self.predictAllImButton = Button(self.root, text="Predict brain regions directly\nusing pretrained U-net model",
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model, self.saveFolderName,
                                                                              int(self.mat_save.get()), self.threshold,
-                                                                             False))
+                                                                             False, self.git_repo_base))
         self.predictAllImButton.grid(row=11, column=4, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
@@ -287,10 +287,10 @@ class Gui:
     def backward(self, event):
         self.ImageDisplay(-1, self.folderName, 0)
 
-    def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate):
+    def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base):
         self.status = "Processing..."
         self.root.update()
-        predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate)
+        predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base)
         self.saveFolderName = output
         if mask_generate:
             self.folderName = os.path.join(self.saveFolderName, "output_mask")
@@ -307,7 +307,7 @@ class Gui:
         self.status = "Processing..."
         self.root.update()
         if mask_generate and not haveMasks:
-            predictRegion(input_file, num_images, model, output, mat_save, threshold, True)
+            predictRegion(input_file, num_images, model, output, mat_save, threshold, True, git_repo_base)
         DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base)
         saveFolderName = output
         if not atlas:

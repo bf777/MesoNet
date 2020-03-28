@@ -6,7 +6,6 @@ Licensed under the MIT License (see LICENSE for details)
 """
 import yaml
 import glob
-import os
 import re
 import os
 from os.path import join
@@ -73,7 +72,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
         data = dict(
             input_file=input_dir,
             model_name=model_name,
-            log_folder=output_dir
+            log_folder=output_dir,
+            git_repo_base=git_repo_base
         )
 
     with open(os.path.join(output_dir, filename), 'w') as outfile:

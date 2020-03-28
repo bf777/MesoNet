@@ -18,10 +18,10 @@ import imutils
 import scipy
 from PIL import Image
 import pandas as pd
-import pandas as pd
-import matplotlib
 
+# Set background colour as black to fix issue with more than one background region being identified.
 Background = [0, 0, 0]
+# Foreground (cortex) should be rendered as white.
 Region = [255, 255, 255]
 
 COLOR_DICT = np.array([Background, Region])
@@ -110,9 +110,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     cnt_array = []
     base_c_max = []
     count = 0
-    cwd = os.getcwd()
     regions = pd.read_csv(os.path.join(git_repo_base, "atlases/region_labels.csv"))
-    cmap = matplotlib.cm.get_cmap('hsv')
     # Find the contours of an existing set of brain regions (to be used to identify each new brain region by shape)
     mat_files = glob.glob(os.path.join(git_repo_base, 'atlases/mat_contour_base/*.mat'))
     mat_files.sort(key=natural_sort_key)

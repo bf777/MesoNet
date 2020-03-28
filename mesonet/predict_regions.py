@@ -10,7 +10,7 @@ import os
 from mesonet.utils import parse_yaml
 
 
-def predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate):
+def predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base):
     """
     Segment brain images to predict the location of brain regions.
     :param input_file: Input folder containing brain images
@@ -34,14 +34,14 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     print(model)
     model = load_model(model)
     # Resizes and prepares images for prediction
-    testGene = testGenerator(input_file, num_images)
+    test_gen = testGenerator(input_file, num_images)
     # Makes predictions on each image
-    results = model.predict_generator(testGene, num_images, verbose=1)
+    results = model.predict_generator(test_gen, num_images, verbose=1)
     # Saves output mask
     saveResult(output_mask_path, results, mask_generate)
     if not mask_generate:
         # Predicts and identifies brain regions based on output mask
-        applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold)
+        applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base)
 
 
 def predict_regions(config_file):
@@ -57,5 +57,6 @@ def predict_regions(config_file):
     output = cfg['output']
     mat_save = cfg['mat_save']
     threshold = cfg['threshold']
+    git_repo_base = cfg['git_repo_base']
     mask_generate = True
-    predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate)
+    predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base)
