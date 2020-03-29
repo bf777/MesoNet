@@ -227,10 +227,10 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                         (int(c_x + label_jitter), int(c_y + label_jitter)),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
                             label_num += 1
-                        elif label_num == 0:
-                            cv2.putText(img, "{}".format(label),
+                        if label_num == 0 and not region_labels:
+                            cv2.putText(img, label,
                                         (int(c_x + label_jitter), int(c_y + label_jitter)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, label_color, 1)
                             label_num += 1
                         if mat_save and n > 0:
                             # Create an empty array of the same size as the contour, with the centre of the contour
