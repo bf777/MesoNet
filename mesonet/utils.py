@@ -14,7 +14,7 @@ from sys import platform
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
                    atlas=False, sensory_match=False, mat_save=True,
-                   threshold=0.0001, model='models/unet_bundary.hdf5'):
+                   threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=True):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
     applying an existing model or training a new one).
@@ -65,7 +65,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             threshold=threshold,
             num_images=num_images,
             model=model,
-            git_repo_base=git_repo_base
+            git_repo_base=git_repo_base,
+            region_labels=region_labels
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"

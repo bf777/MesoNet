@@ -85,7 +85,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n):
 
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
-                    mat_save, threshold, git_repo_base):
+                    mat_save, threshold, git_repo_base, region_labels):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used
@@ -195,4 +195,5 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         io.imsave(mask_warped_path, atlas_mask_warped)
         atlas_to_mask(atlas_path, mask_dir, mask_warped_path, output_mask_path, n)
     # Converts the transformed brain atlas into a segmentation method for the original brain image
-    applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold, git_repo_base)
+    applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold, git_repo_base,
+              region_labels)

@@ -94,7 +94,8 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
 
 
-def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base):
+def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base,
+              region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
     :param image_path: path to folder where brain images are saved
@@ -103,6 +104,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     :param segmented_save_path: path to overall folder for saving segmented/labelled brain images
     :param mat_save: choose whether or not to output brain regions to .mat files
     :param threshold: set threshold for segmentation of foregrounds
+    :param region_labels: choose whether to est
     """
     image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
     region_bgr_lower = (100, 100, 100)
@@ -211,15 +213,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                         max_bc = list(bc[0][-1])
                         max_c = list(c[0][-1])
 
-                        num_labels_only = False
-                        if label_num == 0 and num_labels_only:
-                            cv2.putText(img, str(label),
-                                        (int(c_x + label_jitter), int(c_y + label_jitter)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
-                            label_num += 1
-
                         # 0.3, 75
-                        if label_num == 0 and not num_labels_only and \
+                        if label_num == 0 and region_labels and \
                                 (min(shape_list) - 0.3 <= cv2.matchShapes(c, bc, 1, 0.0) <= min(shape_list) + 0.3) and \
                                 min_bc[0] - 75 <= min_c[0] <= min_bc[0] + 75 and \
                                 min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
@@ -229,6 +224,11 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             # print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
                             closest_label = r.name
                             cv2.putText(img, "{} ({})".format(closest_label, r.Index),
+                                        (int(c_x + label_jitter), int(c_y + label_jitter)),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
+                            label_num += 1
+                        elif label_num == 0:
+                            cv2.putText(img, "{}".format(label),
                                         (int(c_x + label_jitter), int(c_y + label_jitter)),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
                             label_num += 1
