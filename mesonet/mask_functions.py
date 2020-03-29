@@ -94,7 +94,7 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
 
 
-def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base,
+def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
               region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
@@ -125,6 +125,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         base_c = imutils.grab_contours(base_c)
         base_c_max.append(max(base_c, key=cv2.contourArea))
     for i, item in enumerate(image_name_arr):
+        bregma_x, bregma_y = bregma_list[i]
         new_data = []
         img = cv2.imread(item)
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
@@ -181,6 +182,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 m = cv2.moments(cnt)
                 c_x = int(m["m10"] / m["m00"])
                 c_y = int(m["m01"] / m["m00"])
+                # compute center relative to bregma
+                # rel_x = contour centre x coordinate - bregma x coordinate
+                # rel_y = contour centre y coordinate - bregma y coordinate
+                rel_x = c_x - bregma_x
+                rel_y = c_y - bregma_y
+                print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
+
                 c = max(cnts, key=cv2.contourArea)
                 # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
                 if mat_save == 1:

@@ -126,6 +126,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     sub_pts3 = []
     sub_pts4 = []
 
+    bregma_list = []
+
     coords = pd.read_csv(coords_input)
     x_coord = coords.iloc[2:, 1::3]
     y_coord = coords.iloc[2:, 2::3]
@@ -194,6 +196,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         io.imsave(atlas_path, dst)
         io.imsave(mask_warped_path, atlas_mask_warped)
         atlas_to_mask(atlas_path, mask_dir, mask_warped_path, output_mask_path, n)
+        bregma_list.append(pts[n][3])
     # Converts the transformed brain atlas into a segmentation method for the original brain image
+    print("Bregma list: {}".format(bregma_list))
     applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold, git_repo_base,
-              region_labels)
+              bregma_list, region_labels)
