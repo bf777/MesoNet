@@ -37,11 +37,9 @@ class Gui:
         self.imgDisplayed = 0
         self.picLen = 0
         self.imageFileName = ''
-        self.folderName = ''
         self.model = ''
-        self.BFolderName = ''
-        self.saveBFolderName = ''
         self.status = 'Please select a folder with brain images at "Input Folder".'
+        self.status_str = StringVar(self.root, value=self.status)
         self.haveMasks = False
         self.imgDisplayed = 0
 
@@ -80,7 +78,7 @@ class Gui:
         self.fileSaveBox = Entry(self.root, textvariable=self.saveFolderName_str, width=60)
         self.fileSaveBox.grid(row=1, column=1, padx=5, pady=5)
 
-        self.sensoryEntryLabel = Label(self.root, text="Input folder")
+        self.sensoryEntryLabel = Label(self.root, text="Sensory map folder")
         self.sensoryEntryLabel.grid(row=2, column=0, sticky=E + W)
         self.sensoryEntryButton = Button(self.root, text="Browse...", command=lambda: self.OpenFile(2))
 
@@ -90,7 +88,7 @@ class Gui:
         self.sensoryEntryBox.grid(row=2, column=1, padx=5, pady=5)
 
         # Set behavioural data files
-        self.BfileEntryLabel = Label(self.root, text="Behavior Input folder")
+        self.BfileEntryLabel = Label(self.root, text="Behavior input folder")
         self.BfileEntryLabel.grid(row=3, column=0, sticky=E + W)
         self.BfileEntryButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(0))
 
@@ -115,6 +113,9 @@ class Gui:
         self.previousButton = Button(self.root, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName, 0))
         self.previousButton.grid(row=14, column=0, columnspan=1)
 
+        self.statusBar = Label(self.root, textvariable=self.status_str, bd=1, relief=SUNKEN, anchor=W)
+        self.statusBar.grid(row=15, column=0, columnspan=5, sticky='we')
+
         # Bind right and left arrow keys to forward/backward controls
         self.root.bind('<Right>', self.forward)
         self.root.bind('<Left>', self.backward)
@@ -125,11 +126,14 @@ class Gui:
         self.atlas = IntVar()
         self.sensory_align = IntVar()
         self.region_labels = IntVar()
-        self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files", variable=self.mat_save)
+        self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files",
+                                            variable=self.mat_save)
         self.saveMatFileCheck.grid(row=7, column=4, padx=2, sticky=N + S + W)
-        self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)", variable=self.region_labels)
+        self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)",
+                                            variable=self.region_labels)
         self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
-        self.sensoryMapCheck = Checkbutton(self.root, text="Align using sensory map", variable=self.sensory_align)
+        self.sensoryMapCheck = Checkbutton(self.root, text="Align using sensory map",
+                                           variable=self.sensory_align)
         self.sensoryMapCheck.grid(row=9, column=4, padx=2, sticky=N + S + W)
 
         self.predictDLCButton = Button(self.root, text="Predict brain regions\nusing landmarks",
@@ -164,12 +168,6 @@ class Gui:
             self.regionLabelCheck.config(state='disabled')
             self.sensoryMapCheck.config(state='disabled')
             self.predictBehaviourButton.config(state='disabled')
-        if self.sensory_align.get() is False:
-            self.sensoryEntryBox.config(state='disabled')
-            self.sensoryEntryButton.config(state='disabled')
-        elif self.sensory_align.get() is True:
-            self.sensoryEntryBox.config(state='normal')
-            self.sensoryEntryButton.config(state='normal')
 
     def OpenFile(self, openOrSave):
         if openOrSave == 0:
@@ -180,6 +178,8 @@ class Gui:
                 self.folderName_str.set(newFolderName)
                 self.folderName = newFolderName
                 self.ImageDisplay(1, self.folderName, 1)
+                self.status = 'Please select a folder to save your images to at "Save Folder".'
+                self.status_str.set(self.status)
                 self.root.update()
             except:
                 print("No image file selected!")
@@ -195,12 +195,14 @@ class Gui:
                 self.saveMatFileCheck.config(state='normal')
                 self.regionLabelCheck.config(state='normal')
                 self.sensoryMapCheck.config(state='normal')
-                # status = "Save folder selected! Choose an option on the right to begin your analysis."
+                self.status = "Save folder selected! Choose an option on the right to begin your analysis."
+                self.status_str.set(self.status)
                 self.root.update()
             except:
                 print("No save file selected!")
-                # status = "No save file selected!"
-                # self.root.update()
+                self.status = "No save file selected!"
+                self.status_str.set(self.status)
+                self.root.update()
         elif openOrSave == 2:
             newSensoryName = filedialog.askdirectory(initialdir=self.cwd,
                                                     title="Choose folder containing the sensory images you want to use")
@@ -231,11 +233,14 @@ class Gui:
                 self.saveBFolderName_str.set(newSaveBFolderName)
                 self.saveBFolderName = newSaveBFolderName
                 self.predictBehaviourButton.config(state='normal')
+                self.status = 'Save folder selected! Click "Predict animal movements" to begin your analysis.'
+                self.status_str.set(self.status)
                 self.root.update()
             except:
                 print("No save file selected!")
-                # status = "No save file selected!"
-                # self.root.update()
+                self.status = "No save file selected!"
+                self.status_str.set(self.status)
+                self.root.update()
 
     def ImageDisplay(self, delta, folderName, reset):
         # Set up canvas on which images will be displayed
@@ -244,7 +249,12 @@ class Gui:
         if reset == 1:
             self.j = -1
         self.j += delta
-        fileList = glob.glob(os.path.join(folderName, '*.png'))
+        if glob.glob(os.path.join(folderName, '*_mask_segmented.png')):
+            fileList = glob.glob(os.path.join(folderName, '*_mask_segmented.png'))
+        elif glob.glob(os.path.join(folderName, '*_mask.png')):
+            fileList = glob.glob(os.path.join(folderName, '*_mask.png'))
+        else:
+            fileList = glob.glob(os.path.join(folderName, '*.png'))
         self.picLen = len(fileList)
         if self.j > self.picLen - 1:
             self.j = 0
@@ -303,6 +313,7 @@ class Gui:
     def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                        region_labels):
         self.status = "Processing..."
+        self.status_str.set(self.status)
         self.root.update()
         predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                       region_labels)
@@ -312,13 +323,15 @@ class Gui:
             self.haveMasks = True
         else:
             self.folderName = self.saveFolderName
-        # status = "Processing complete!"
+        self.status = "Processing complete!"
+        self.status_str.set(self.status)
         self.root.update()
         self.ImageDisplay(1, self.folderName, 1)
 
     def PredictDLC(self, config, input_file, output, atlas, sensory_match, sensory_path, model, num_images, mat_save, threshold,
                    mask_generate, haveMasks, git_repo_base, region_labels):
         self.status = "Processing..."
+        self.status_str.set(self.status)
         self.root.update()
         if mask_generate and not haveMasks:
             predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
@@ -332,6 +345,8 @@ class Gui:
             self.folderName = os.path.join(saveFolderName, "dlc_output")
         config_project(input_file, saveFolderName, 'test', config=config, atlas=atlas, sensory_match=sensory_match,
                        mat_save=mat_save, threshold=threshold, model=model, region_labels=region_labels)
+        self.status = "Processing complete!"
+        self.status_str.set(self.status)
         self.root.update()
         self.ImageDisplay(1, self.folderName, 1)
 
