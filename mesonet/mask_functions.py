@@ -245,12 +245,15 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             # marked as "255"
                             c_total = np.zeros_like(mask)
                             c_centre = np.zeros_like(mask)
+                            c_rel_centre = np.zeros_like(mask)
                             # Follow the path of the contour, setting every pixel along the path to 255
                             # Fill in the contour area with 1s
                             cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
                             # Set the contour's centroid to 255
                             if c_x < mask.shape[0] and c_y < mask.shape[0]:
                                 c_centre[c_x, c_y] = 255
+                            if c_x < mask.shape[0] and c_y < mask.shape[0]:
+                                c_rel_centre[int(rel_x), int(rel_y)] = 255
                             if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
                                 os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
                             if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
@@ -261,6 +264,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             sio.savemat(os.path.join(segmented_save_path,
                                                      'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, r.Index, z)),
                                         {'vect': c_centre})
+                            sio.savemat(os.path.join(segmented_save_path,
+                                                     'mat_contour_centre/rel_roi_centre_{}_{}_{}'.format(i, r.Index, z)),
+                                        {'vect': c_rel_centre})
             count += 1
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))

@@ -25,6 +25,7 @@ class Gui:
 
         self.cwd = os.getcwd()
         self.folderName = self.cwd
+        self.sensoryName = self.cwd
         self.BFolderName = self.cwd
         self.saveFolderName = ''
         self.saveBFolderName = ''
@@ -55,7 +56,7 @@ class Gui:
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=5, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
+        self.canvas.grid(row=6, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
 
         # Render model selector listbox
         self.FindModelInFolder()
@@ -79,31 +80,40 @@ class Gui:
         self.fileSaveBox = Entry(self.root, textvariable=self.saveFolderName_str, width=60)
         self.fileSaveBox.grid(row=1, column=1, padx=5, pady=5)
 
+        self.sensoryEntryLabel = Label(self.root, text="Input folder")
+        self.sensoryEntryLabel.grid(row=2, column=0, sticky=E + W)
+        self.sensoryEntryButton = Button(self.root, text="Browse...", command=lambda: self.OpenFile(2))
+
+        self.sensoryName_str = StringVar(self.root, value=self.sensoryName)
+        self.sensoryEntryButton.grid(row=2, column=2, sticky=E)
+        self.sensoryEntryBox = Entry(self.root, textvariable=self.sensoryName_str, width=60)
+        self.sensoryEntryBox.grid(row=2, column=1, padx=5, pady=5)
+
         # Set behavioural data files
         self.BfileEntryLabel = Label(self.root, text="Behavior Input folder")
-        self.BfileEntryLabel.grid(row=2, column=0, sticky=E + W)
+        self.BfileEntryLabel.grid(row=3, column=0, sticky=E + W)
         self.BfileEntryButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(0))
 
         self.BfolderName_str = StringVar(self.root, value=self.folderName)
-        self.BfileEntryButton.grid(row=2, column=2, sticky=E)
+        self.BfileEntryButton.grid(row=3, column=2, sticky=E)
         self.BfileEntryBox = Entry(self.root, textvariable=self.BfolderName_str, width=60)
-        self.BfileEntryBox.grid(row=2, column=1, padx=5, pady=5)
+        self.BfileEntryBox.grid(row=3, column=1, padx=5, pady=5)
 
         self.BfileSaveLabel = Label(self.root, text="Behavior Save folder")
-        self.BfileSaveLabel.grid(row=3, column=0, sticky=E + W)
+        self.BfileSaveLabel.grid(row=4, column=0, sticky=E + W)
         self.BfileSaveButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(1))
 
         self.saveBFolderName_str = StringVar(self.root, value=self.saveBFolderName)
-        self.BfileSaveButton.grid(row=3, column=2, sticky=E)
+        self.BfileSaveButton.grid(row=4, column=2, sticky=E)
         self.BfileSaveBox = Entry(self.root, textvariable=self.saveBFolderName_str, width=60)
-        self.BfileSaveBox.grid(row=3, column=1, padx=5, pady=5)
+        self.BfileSaveBox.grid(row=4, column=1, padx=5, pady=5)
 
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(self.root, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
-        self.nextButton.grid(row=13, column=2, columnspan=1)
+        self.nextButton.grid(row=14, column=2, columnspan=1)
         self.previousButton = Button(self.root, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName, 0))
-        self.previousButton.grid(row=13, column=0, columnspan=1)
+        self.previousButton.grid(row=14, column=0, columnspan=1)
 
         # Bind right and left arrow keys to forward/backward controls
         self.root.bind('<Right>', self.forward)
@@ -116,33 +126,17 @@ class Gui:
         self.sensory_align = IntVar()
         self.region_labels = IntVar()
         self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files", variable=self.mat_save)
-        self.saveMatFileCheck.grid(row=6, column=4, padx=2, sticky=N + S + W)
+        self.saveMatFileCheck.grid(row=7, column=4, padx=2, sticky=N + S + W)
         self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)", variable=self.region_labels)
-        self.regionLabelCheck.grid(row=7, column=4, padx=2, sticky=N + S + W)
+        self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
         self.sensoryMapCheck = Checkbutton(self.root, text="Align using sensory map", variable=self.sensory_align)
-        self.sensoryMapCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
-        self.generateMaskButton = Button(self.root, text="Get boundaries of brain\nusing U-net",
-                                         command=lambda: self.PredictRegions(self.folderName, self.picLen,
-                                                                             os.path.join(self.model_top_dir,
-                                                                                          'unet_bundary.hdf5'),
-                                                                             self.saveFolderName, int(self.mat_save.get()),
-                                                                             self.threshold, True, self.git_repo_base,
-                                                                             self.region_labels.get()))
-        self.generateMaskButton.grid(row=9, column=4, padx=2, sticky=N + S + W + E)
-        self.predictLandmarksButton = Button(self.root, text="Predict landmark locations",
-                                             command=lambda: self.PredictDLC(self.config_path, self.folderName,
-                                                                             self.saveFolderName, True,
-                                                                             int(self.sensory_align.get()),
-                                                                             os.path.join(self.model_top_dir,
-                                                                                          'unet_bundary.hdf5'), self.picLen,
-                                                                             int(self.mat_save.get()), self.threshold,
-                                                                             False, self.haveMasks, self.git_repo_base,
-                                                                             self.region_labels.get()))
-        self.predictLandmarksButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
+        self.sensoryMapCheck.grid(row=9, column=4, padx=2, sticky=N + S + W)
+
         self.predictDLCButton = Button(self.root, text="Predict brain regions\nusing landmarks",
                                        command=lambda: self.PredictDLC(self.config_path, self.folderName,
                                                                        self.saveFolderName, False,
                                                                        int(self.sensory_align.get()),
+                                                                       self.sensoryName,
                                                                        os.path.join(self.model_top_dir,
                                                                                     'unet_bundary.hdf5'),
                                                                        self.picLen,
@@ -150,28 +144,32 @@ class Gui:
                                                                        self.haveMasks,
                                                                        self.git_repo_base,
                                                                        self.region_labels.get()))
-        self.predictDLCButton.grid(row=11, column=4, padx=2, sticky=N + S + W + E)
+        self.predictDLCButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
         self.predictAllImButton = Button(self.root, text="Predict brain regions directly\nusing pretrained U-net model",
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model,
                                                                              self.saveFolderName,
                                                                              int(self.mat_save.get()), self.threshold,
-                                                                             False, self.git_repo_base))
-        self.predictAllImButton.grid(row=12, column=4, padx=2, sticky=N + S + W + E)
+                                                                             False, self.git_repo_base, self.region_labels.get()))
+        self.predictAllImButton.grid(row=11, column=4, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
                                                                                 self.BFolderName,
                                                                                 self.saveBFolderName))
-        self.predictBehaviourButton.grid(row=13, column=4, padx=2, sticky=N + S + W + E)
+        self.predictBehaviourButton.grid(row=12, column=4, padx=2, sticky=N + S + W + E)
 
         if self.saveFolderName == '' or self.imgDisplayed == 0:
             self.predictAllImButton.config(state='disabled')
-            self.generateMaskButton.config(state='disabled')
             self.predictDLCButton.config(state='disabled')
             self.saveMatFileCheck.config(state='disabled')
             self.regionLabelCheck.config(state='disabled')
-            self.predictLandmarksButton.config(state='disabled')
             self.sensoryMapCheck.config(state='disabled')
             self.predictBehaviourButton.config(state='disabled')
+        if self.sensory_align.get() is False:
+            self.sensoryEntryBox.config(state='disabled')
+            self.sensoryEntryButton.config(state='disabled')
+        elif self.sensory_align.get() is True:
+            self.sensoryEntryBox.config(state='normal')
+            self.sensoryEntryButton.config(state='normal')
 
     def OpenFile(self, openOrSave):
         if openOrSave == 0:
@@ -193,11 +191,9 @@ class Gui:
                 self.saveFolderName_str.set(newSaveFolderName)
                 self.saveFolderName = newSaveFolderName
                 self.predictAllImButton.config(state='normal')
-                self.generateMaskButton.config(state='normal')
                 self.predictDLCButton.config(state='normal')
                 self.saveMatFileCheck.config(state='normal')
                 self.regionLabelCheck.config(state='normal')
-                self.predictLandmarksButton.config(state='normal')
                 self.sensoryMapCheck.config(state='normal')
                 # status = "Save folder selected! Choose an option on the right to begin your analysis."
                 self.root.update()
@@ -205,6 +201,15 @@ class Gui:
                 print("No save file selected!")
                 # status = "No save file selected!"
                 # self.root.update()
+        elif openOrSave == 2:
+            newSensoryName = filedialog.askdirectory(initialdir=self.cwd,
+                                                    title="Choose folder containing the sensory images you want to use")
+            try:
+                self.sensoryName_str.set(newSensoryName)
+                self.sensoryName = newSensoryName
+                self.root.update()
+            except:
+                print("No sensory image file selected!")
 
     def OpenBFile(self, openOrSave):
         if openOrSave == 0:
@@ -263,9 +268,9 @@ class Gui:
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root, value=imageNum)
         imageNameLabel = Label(self.root, textvariable=imageName)
-        imageNameLabel.grid(row=4, column=0, columnspan=1)
+        imageNameLabel.grid(row=5, column=0, columnspan=1)
         imageNumLabel = Label(self.root, textvariable=imageNumPrep)
-        imageNumLabel.grid(row=4, column=2, columnspan=1)
+        imageNumLabel.grid(row=5, column=2, columnspan=1)
 
     def FindModelInFolder(self):
         modelSelect = []
@@ -275,8 +280,8 @@ class Gui:
 
         modelLabel = Label(self.root, text="If using U-net, select a model\nto analyze the brain regions:")
         modelListBox = Listbox(self.root)
-        modelLabel.grid(row=4, column=4, sticky=S)
-        modelListBox.grid(row=5, column=4, sticky=N)
+        modelLabel.grid(row=5, column=4, sticky=S)
+        modelListBox.grid(row=6, column=4, sticky=N)
         for item in modelSelect:
             modelListBox.insert(END, item)
         if len(modelSelect) > 0:
@@ -311,13 +316,15 @@ class Gui:
         self.root.update()
         self.ImageDisplay(1, self.folderName, 1)
 
-    def PredictDLC(self, config, input_file, output, atlas, sensory_match, model, num_images, mat_save, threshold,
+    def PredictDLC(self, config, input_file, output, atlas, sensory_match, sensory_path, model, num_images, mat_save, threshold,
                    mask_generate, haveMasks, git_repo_base, region_labels):
         self.status = "Processing..."
         self.root.update()
         if mask_generate and not haveMasks:
-            predictRegion(input_file, num_images, model, output, mat_save, threshold, True, git_repo_base, region_labels)
-        DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base, region_labels)
+            predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
+                          region_labels)
+        DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
+                   mat_save, threshold, git_repo_base, region_labels)
         saveFolderName = output
         if not atlas:
             self.folderName = os.path.join(saveFolderName, "output_overlay")

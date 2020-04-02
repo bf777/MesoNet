@@ -12,7 +12,8 @@ import glob
 import os
 
 
-def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base, region_labels):
+def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
+               mat_save, threshold, git_repo_base, region_labels):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -41,7 +42,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, thres
     else:
         sensory_match = False
     if sensory_match:
-        sensory_img_dir = os.path.join(input_file, 'sensory')
+        sensory_img_dir = sensory_path
     else:
         sensory_img_dir = ''
     filenames = glob.glob(os.path.join(input_file, '*.png'))
@@ -149,10 +150,12 @@ def predict_dlc(config_file):
     config = cfg['config']
     atlas = cfg['atlas']
     sensory_match = cfg['sensory_match']
+    sensory_path = cfg['sensory_path']
     input_file = cfg['input_file']
     output = cfg['output']
     mat_save = cfg['mat_save']
     threshold = cfg['threshold']
     git_repo_base = cfg['git_repo_base']
     region_labels = cfg['region_labels']
-    DLCPredict(config, input_file, output, atlas, sensory_match, mat_save, threshold, git_repo_base, region_labels)
+    DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
+               region_labels)
