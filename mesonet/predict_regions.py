@@ -40,7 +40,6 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     results = model.predict_generator(test_gen, num_images, verbose=1)
     # Saves output mask
     saveResult(output_mask_path, results, mask_generate)
-    print(mask_generate)
     if not mask_generate:
         # Predicts and identifies brain regions based on output mask
         applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base,

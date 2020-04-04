@@ -10,9 +10,11 @@ import pandas as pd
 import cv2
 import scipy.io
 import skimage.io as io
+import skimage.transform as trans
 from skimage.transform import PiecewiseAffineTransform, warp
 import os
 import fnmatch
+import glob
 
 
 def find_peaks(img):
@@ -33,7 +35,7 @@ def find_peaks(img):
     maxLoc[0] = maxLoc[0] + x_min
     maxLoc = tuple(maxLoc)
     maxLocArr.append(maxLoc)
-    if maxVal2 == maxVal:
+    if (maxVal - 30) <= maxVal2 <= (maxVal + 30):
         maxLocArr.append(maxLoc2)
     return maxLocArr
 
@@ -108,14 +110,23 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
 
     if sensory_match:
-        for num, file in enumerate(os.listdir(sensory_img_dir)):
-            if fnmatch.fnmatch(file, "{}.png".format(num)):
-                peak = find_peaks(os.path.join(sensory_img_dir, file))
-                peak_arr.append(peak)
         peak_arr_flat = []
-        for x in peak_arr:
-            for y in x:
-                peak_arr_flat.append(y)
+        peak_arr_total = []
+        for num, file in enumerate(os.listdir(brain_img_dir)):
+            sensory_img_for_brain = os.path.join(sensory_img_dir, str(num))
+            if glob.glob(sensory_img_for_brain):
+                for num_im, file_im in enumerate(os.listdir(sensory_img_for_brain)):
+                    sensory_im = io.imread(os.path.join(sensory_img_dir, str(num), file_im))
+                    sensory_im = trans.resize(sensory_im, (512, 512))
+                    io.imsave(os.path.join(sensory_img_dir, str(num), file_im), sensory_im)
+                    peak = find_peaks(os.path.join(sensory_img_dir, str(num), file_im))
+                    peak_arr.append(peak)
+            for x in peak_arr:
+                for y in x:
+                    peak_arr_flat.append(y)
+            peak_arr_total.append(peak_arr_flat)
+            peak_arr_flat = []
+            peak_arr = []
 
     pts = []
     pts2 = []
@@ -147,10 +158,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     pts, pts2 = np.asarray(pts).astype('float32'), np.asarray(pts2).astype('float32')
     if sensory_match:
         k_coord, m_coord = np.array([(189, 323, 435, 348), (315, 315, 350, 460)])
-        coords_peak = peak_arr_flat
-        for img in brain_img_arr:
+        coords_peak = peak_arr_total
+        for img_num, img in enumerate(brain_img_arr):
             for j in [1, 0, 3, 2]:  # Get peak values from heatmaps
-                sub_pts3.append([coords_peak[j][0], coords_peak[j][1]])
+                sub_pts3.append([coords_peak[img_num][j][0], coords_peak[img_num][j][1]])
             for j in [0, 1, 2, 3]:  # Get circle locations
                 sub_pts4.append([k_coord[j], m_coord[j]])
             pts3.append(sub_pts3)

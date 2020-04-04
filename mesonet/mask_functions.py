@@ -40,6 +40,7 @@ def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_cl
         img = io.imread(os.path.join(test_path, "%d.png" % i), as_gray=as_gray)
         img = img / 255
         img = trans.resize(img, target_size)
+        io.imsave(os.path.join(test_path, "{}.png".format(i)), img)
         img = np.reshape(img, img.shape + (1,)) if (not flag_multi_class) else img
         img = np.reshape(img, (1,) + img.shape)
         yield img
@@ -187,7 +188,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 # rel_y = contour centre y coordinate - bregma y coordinate
                 rel_x = c_x - bregma_x
                 rel_y = c_y - bregma_y
-                print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
+                # print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
 
                 c = max(cnts, key=cv2.contourArea)
                 # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
