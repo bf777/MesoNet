@@ -14,7 +14,7 @@ from sys import platform
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
                    atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True,
-                   threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=True):
+                   threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=False):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
     applying an existing model or training a new one).
@@ -31,6 +31,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     :param sensory_match: If True, MesoNet will attempt to align your brain images using peaks of sensory activation on
     sensory maps that you provide in a folder named sensory inside your input images folder. If you do not have such
     images, keep this value as False.
+    :param sensory_path: If sensory_match is True, this should be set to the path to a folder containing sensory maps
+    for each brain image. For each brain, put your sensory maps in a folder with the same name as the brain image (0, 1,
+    2, ...).
     :param mat_save: Choose whether or not to export each predicted cortical region, each region's centrepoint, and the
     overall region of the brain to a .mat file (True = output .mat files, False = don't output .mat files).
     :param threshold:  Adjusts the sensitivity of the algorithm used to define individual brain regions from the brain
@@ -42,6 +45,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
     segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have
     another model that you would like to use for segmenting the brain.
+    :param region_labels: If True, MesoNet will attempt to label each brain region according to the Allen Institute's
+    Mouse Brain Atlas. Otherwise, MesoNet will label each region with a number. Please note that this feature is
+    experimental!
     :return config_file: The path to the config_file. If you run this function as config_file = config_project(...) then
     you can directly get the config file path to be used later.
     """
@@ -51,6 +57,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     print(git_repo_base)
     config = join(git_repo_base, config)
     model = join(git_repo_base, model)
+    filename = "mesonet_config.yaml"
+    data = dict()
 
     if mode == 'test':
         filename = "mesonet_test_config.yaml"
@@ -113,13 +121,15 @@ def natural_sort_key(s):
 
 def find_git_repo():
     # Preferred (faster) option to find mesonet git repo is to set it as an environment variable
+    git_repo_base = ''
     try:
         git_repo_base = os.environ['MESONET_GIT']
-    except:
+    except FileNotFoundError:
         # If we can't find the environment variable, search for the mesonet git repository
         # solution to find git repository on computer adapted from:
         # https://stackoverflow.com/questions/5153317/python-how-to-do-a-system-wide-search-for-a-file-when-just-the-filename-not-pa
 
+        root_folder = 'C:\\'
         git_repo_marker = "mesonet.txt"
         if platform == "linux" or platform == "linux2" or platform == "darwin":
             # linux or mac
@@ -131,5 +141,4 @@ def find_git_repo():
             if git_repo_marker in files:
                 git_repo_base = root
                 break
-    return(git_repo_base)
-
+    return git_repo_base

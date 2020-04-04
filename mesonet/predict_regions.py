@@ -14,13 +14,17 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
                   region_labels):
     """
     Segment brain images to predict the location of brain regions.
-    :param input_file: Input folder containing brain images
-    :param num_images: Number of brain images to be analyzed
-    :param model: Prediction model (.hdf5 file) to be used
-    :param output: Overall output folder into which all files will be saved
-    :param mat_save: Choose whether or not to save each brain region contour and centre as a .mat file (for MATLAB)
-    :param threshold: Threshold for segmentation algorithm
-    :param mask_generate: Choose whether or not to only generate masks of the brain contour from this function
+    :param input_file: Input folder containing brain images.
+    :param num_images: Number of brain images to be analyzed.
+    :param model: Prediction model (.hdf5 file) to be used.
+    :param output: Overall output folder into which all files will be saved.
+    :param mat_save: Choose whether or not to save each brain region contour and centre as a .mat file (for MATLAB).
+    :param threshold: Threshold for segmentation algorithm.
+    :param mask_generate: Choose whether or not to only generate masks of the brain contour from this function.
+    :param git_repo_base: The path to the base git repository containing necessary resources for MesoNet (reference
+    atlases, DeepLabCut config files, etc.)
+    :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
+    Mouse Brain Atlas.
     """
     # Create and define save folders for each output of the prediction
     # Output folder for basic mask (used later in prediction)
@@ -39,7 +43,7 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     # Makes predictions on each image
     results = model.predict_generator(test_gen, num_images, verbose=1)
     # Saves output mask
-    saveResult(output_mask_path, results, mask_generate)
+    saveResult(output_mask_path, results)
     if not mask_generate:
         # Predicts and identifies brain regions based on output mask
         applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base,

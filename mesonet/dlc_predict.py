@@ -28,6 +28,9 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     :param sensory_match: If True, MesoNet will attempt to align your brain images using peaks of sensory activation on
     sensory maps that you provide in a folder named sensory inside your input images folder. If you do not have such
     images, keep this value as False.
+    :param sensory_path: If sensory_match is True, this should be set to the path to a folder containing sensory maps
+    for each brain image. For each brain, put your sensory maps in a folder with the same name as the brain image (0, 1,
+    2, ...).
     :param mat_save: Choose whether or not to export each predicted cortical region, each region's centrepoint, and the
     overall region of the brain to a .mat file (True = output .mat files, False = don't output .mat files).
     :param threshold:  Adjusts the sensitivity of the algorithm used to define individual brain regions from the brain
@@ -35,6 +38,10 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     it if your brain images are not being segmented properly! In general, increasing this number causes each brain
     region contour to be smaller (less like the brain atlas); decreasing this number causes each brain region contour to
     be larger (more like the brain atlas).
+    :param git_repo_base: The path to the base git repository containing necessary resources for MesoNet (reference
+    atlases, DeepLabCut config files, etc.)
+    :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
+    Mouse Brain Atlas.
     """
     img_array = []
     if sensory_match == 1:
@@ -47,6 +54,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         sensory_img_dir = ''
     filenames = glob.glob(os.path.join(input_file, '*.png'))
     filenames.sort(key=natural_sort_key)
+    size = (512, 512)
     for filename in filenames:
         img = cv2.imread(filename)
         height, width, layers = img.shape
@@ -70,6 +78,8 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
             scorer_name = 'DeepCut'
         else:
             scorer_name = 'DLC'
+        output_video_name = ''
+        coords_input = ''
         for filename in glob.glob(os.path.join(video_output_path, 'tmp_video' + scorer_name + '*.*')):
             try:
                 if '.mp4' in filename:
