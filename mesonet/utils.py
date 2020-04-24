@@ -8,6 +8,7 @@ import yaml
 import glob
 import re
 import os
+import pandas as pd
 from os.path import join
 from sys import platform
 
@@ -124,7 +125,7 @@ def find_git_repo():
     git_repo_base = ''
     try:
         git_repo_base = os.environ['MESONET_GIT']
-    except FileNotFoundError:
+    except:
         # If we can't find the environment variable, search for the mesonet git repository
         # solution to find git repository on computer adapted from:
         # https://stackoverflow.com/questions/5153317/python-how-to-do-a-system-wide-search-for-a-file-when-just-the-filename-not-pa

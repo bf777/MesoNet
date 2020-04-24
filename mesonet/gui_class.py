@@ -129,9 +129,9 @@ class Gui:
         self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files",
                                             variable=self.mat_save)
         self.saveMatFileCheck.grid(row=7, column=4, padx=2, sticky=N + S + W)
-        self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)",
-                                            variable=self.region_labels)
-        self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
+        # self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)",
+        #                                     variable=self.region_labels)
+        # self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
         self.sensoryMapCheck = Checkbutton(self.root, text="Align using sensory map",
                                            variable=self.sensory_align)
         self.sensoryMapCheck.grid(row=9, column=4, padx=2, sticky=N + S + W)
@@ -165,7 +165,7 @@ class Gui:
             self.predictAllImButton.config(state='disabled')
             self.predictDLCButton.config(state='disabled')
             self.saveMatFileCheck.config(state='disabled')
-            self.regionLabelCheck.config(state='disabled')
+            # self.regionLabelCheck.config(state='disabled')
             self.sensoryMapCheck.config(state='disabled')
             self.predictBehaviourButton.config(state='disabled')
 
@@ -193,7 +193,7 @@ class Gui:
                 self.predictAllImButton.config(state='normal')
                 self.predictDLCButton.config(state='normal')
                 self.saveMatFileCheck.config(state='normal')
-                self.regionLabelCheck.config(state='normal')
+                # self.regionLabelCheck.config(state='normal')
                 self.sensoryMapCheck.config(state='normal')
                 self.status = "Save folder selected! Choose an option on the right to begin your analysis."
                 self.status_str.set(self.status)

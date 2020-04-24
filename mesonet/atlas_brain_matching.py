@@ -40,6 +40,37 @@ def find_peaks(img):
     return maxLocArr
 
 
+def coords_to_mat(sub_pts, i, output_mask_path):
+    x_bregma, y_bregma = sub_pts[3]
+    landmark_names = ['left', 'lambda', 'right', 'bregma']
+    for pt, landmark in zip(sub_pts, landmark_names):
+        x_pt = pt[0]
+        y_pt = pt[1]
+        pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
+        pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
+        print("landmark position:{}".format(pt_adj))
+        if not os.path.isdir(os.path.join(output_mask_path, 'mat_coords')):
+            os.mkdir(os.path.join(output_mask_path, 'mat_coords'))
+        scipy.io.savemat(os.path.join(output_mask_path,
+                                 'mat_coords/landmarks_{}_{}.mat'.format(i, landmark)),
+                    {'landmark_coords_{}_{}'.format(i, landmark): pt_adj_to_mat}, appendmat=False)
+
+
+def sensory_to_mat(sub_pts, bregma_pt, i, output_mask_path):
+    x_bregma, y_bregma = bregma_pt
+    sensory_names = ['tail_left', 'tail_right', 'visual', 'whisker']
+    for pt, landmark in zip(sub_pts, sensory_names):
+        x_pt = pt[0]
+        y_pt = pt[1]
+        pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
+        pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
+        if not os.path.isdir(os.path.join(output_mask_path, 'mat_coords')):
+            os.mkdir(os.path.join(output_mask_path, 'mat_coords'))
+        scipy.io.savemat(os.path.join(output_mask_path,
+                                 'mat_coords/sensory_peaks_{}_{}.mat'.format(i, landmark)),
+                    {'sensory_peaks_{}_{}'.format(i, landmark): pt_adj_to_mat}, appendmat=False)
+
+
 def atlas_from_mat(input_file):
     """
     Generates a binary brain atlas from a .mat file.
@@ -108,6 +139,20 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     # load brain images folder
     brain_img_arr = []
     peak_arr = []
+
+    # Prepare output folder
+    cwd = os.getcwd()
+    output_mask_path = os.path.join(cwd, "../output_mask")
+    # Output folder for transparent masks and masks overlaid onto brain image
+    output_overlay_path = os.path.join(cwd, "../output_overlay")
+    if not os.path.isdir(output_mask_path):
+        os.mkdir(output_mask_path)
+    if not os.path.isdir(output_overlay_path):
+        os.mkdir(output_overlay_path)
+
+    # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet/'
+    im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_512_512.mat'))
+
     for num, file in enumerate(os.listdir(brain_img_dir)):
         if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
@@ -157,8 +202,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             sub_pts2.append([i_coord[j], j_coord[j]])
         pts.append(sub_pts)
         pts2.append(sub_pts2)
+        coords_to_mat(sub_pts, i, output_mask_path)
         sub_pts = []
         sub_pts2 = []
+
     pts, pts2 = np.asarray(pts).astype('float32'), np.asarray(pts2).astype('float32')
     if sensory_match:
         k_coord, m_coord = np.array([(189, 323, 435, 348), (315, 315, 350, 460)])
@@ -170,21 +217,12 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 sub_pts4.append([k_coord[j], m_coord[j]])
             pts3.append(sub_pts3)
             pts4.append(sub_pts4)
+            sensory_to_mat(sub_pts3, pts[img_num][3], img_num, output_mask_path)
             sub_pts3 = []
             sub_pts4 = []
         pts3, pts4 = np.asarray(pts3).astype('float32'), np.asarray(pts4).astype('float32')
 
     for n, br in enumerate(brain_img_arr):
-        cwd = os.getcwd()
-        output_mask_path = os.path.join(cwd, "../output_mask")
-        # Output folder for transparent masks and masks overlaid onto brain image
-        output_overlay_path = os.path.join(cwd, "../output_overlay")
-        if not os.path.isdir(output_mask_path):
-            os.mkdir(output_mask_path)
-        if not os.path.isdir(output_overlay_path):
-            os.mkdir(output_overlay_path)
-        # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet/'
-        im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_512_512.mat'))
         io.imsave(os.path.join(cwd, "../output_mask/im.png".format(n)), im)
         cv2.imread(os.path.join(cwd, "../output_mask/im.png".format(n)), cv2.IMREAD_GRAYSCALE)
         atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_mask.png")

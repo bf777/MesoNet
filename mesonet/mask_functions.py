@@ -13,11 +13,13 @@ import random
 import glob
 import skimage.io as io
 import skimage.transform as trans
+from skimage.util import img_as_ubyte
 import cv2
 import imutils
 import scipy
 from PIL import Image
 import pandas as pd
+from keras import backend as K
 
 # Set background colour as black to fix issue with more than one background region being identified.
 Background = [0, 0, 0]
@@ -37,10 +39,12 @@ def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_cl
     :param as_gray: if input image is grayscale, process data input accordingly
     """
     for i in range(num_image):
+        img = io.imread(os.path.join(test_path, "%d.png" % i))
+        img = trans.resize(img, target_size)
+        img = img_as_ubyte(img)
+        io.imsave(os.path.join(test_path, "{}.png".format(i)), img)
         img = io.imread(os.path.join(test_path, "%d.png" % i), as_gray=as_gray)
         img = img / 255
-        img = trans.resize(img, target_size)
-        io.imsave(os.path.join(test_path, "{}.png".format(i)), img)
         img = np.reshape(img, img.shape + (1,)) if (not flag_multi_class) else img
         img = np.reshape(img, (1,) + img.shape)
         yield img
@@ -121,7 +125,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))
         mat = mat['vect']
         ret, thresh = cv2.threshold(mat, 5, 255, cv2.THRESH_BINARY)
-        io.imsave('cnt_{}.png', thresh)
+        # io.imsave('cnt_{}.png'.format(thresh))
         base_c = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         base_c = imutils.grab_contours(base_c)
         base_c_max.append(max(base_c, key=cv2.contourArea))
@@ -176,6 +180,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                     cv2.CHAIN_APPROX_NONE)
             cnts = imutils.grab_contours(cnts)
             cnt_array.append(cnts)
+            edge_coords_x = []
+            edge_coords_y = []
             for z, cnt in enumerate(cnts):
                 # compute the center of the contour
                 if len(cnts) > 1:
@@ -183,14 +189,38 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 m = cv2.moments(cnt)
                 c_x = int(m["m10"] / m["m00"])
                 c_y = int(m["m01"] / m["m00"])
+
+                c = max(cnts, key=cv2.contourArea)
+
+                # The centroid of the contour works as the contour centre in most cases. However, sometimes the
+                # centroid is outside of the contour. As such, using the average x and y positions of the contour edges
+                # that intersect with the centroid could be a safer option. We try to find this average position and if
+                # there are more than two intersecting edges or if the average position is over 200 px from the
+                # centroid, we fall back to using the centroid as our measure of the centre of the contour.
+                for coord in cnt:
+                    if coord[0][0] == c_x:
+                        edge_coords_y.append(coord[0].tolist())
+                    if coord[0][1] == c_y:
+                        edge_coords_x.append(coord[0].tolist())
+                print("{}: edge coords x: {}, edge coords y: {}".format(label, edge_coords_x, edge_coords_y))
+                adj_centre_x = int(np.mean([edge_coords_x[0][0], edge_coords_x[-1][0]]))
+                adj_centre_y = int(np.mean([edge_coords_y[0][1], edge_coords_y[-1][1]]))
+                adj_centre = [adj_centre_x, adj_centre_y]
+                if abs(adj_centre_x - c_x) <= 100 and abs(adj_centre_x - c_y) <= 100:
+                    print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+                    c_x, c_y = (adj_centre[0], adj_centre[1])
+                edge_coords_x = []
+                edge_coords_y = []
                 # compute center relative to bregma
                 # rel_x = contour centre x coordinate - bregma x coordinate
                 # rel_y = contour centre y coordinate - bregma y coordinate
                 rel_x = c_x - bregma_x
                 rel_y = c_y - bregma_y
                 # print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
+                c_rel_centre = [rel_x, rel_y]
+                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
+                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
 
-                c = max(cnts, key=cv2.contourArea)
                 # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
                 if mat_save == 1:
                     mat_save = True
@@ -237,7 +267,12 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
                             label_num += 1
                         if label_num == 0 and not region_labels:
-                            cv2.putText(img, "{}".format(label),
+                            (text_width, text_height) = cv2.getTextSize(str(label), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
+                                                                        thickness=1)[0]
+                            cv2.rectangle(img, (c_x + label_jitter, c_y + label_jitter),
+                                          (c_x + label_jitter + text_width, c_y + label_jitter - text_height),
+                                          (255, 255, 255), cv2.FILLED)
+                            cv2.putText(img, str(label),
                                         (int(c_x + label_jitter), int(c_y + label_jitter)),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
                             label_num += 1
@@ -246,28 +281,25 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             # marked as "255"
                             c_total = np.zeros_like(mask)
                             c_centre = np.zeros_like(mask)
-                            c_rel_centre = np.zeros_like(mask)
                             # Follow the path of the contour, setting every pixel along the path to 255
                             # Fill in the contour area with 1s
                             cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
                             # Set the contour's centroid to 255
                             if c_x < mask.shape[0] and c_y < mask.shape[0]:
                                 c_centre[c_x, c_y] = 255
-                            if c_x < mask.shape[0] and c_y < mask.shape[0]:
-                                c_rel_centre[int(rel_x), int(rel_y)] = 255
                             if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
                                 os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
                             if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
                                 os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
                             sio.savemat(os.path.join(segmented_save_path,
-                                                     'mat_contour/roi_{}_{}_{}'.format(i, r.Index, z)),
-                                        {'vect': c_total})
+                                                     'mat_contour/roi_{}_{}_{}.mat'.format(i, label, z)),
+                                        {'vect': c_total}, appendmat=False)
                             sio.savemat(os.path.join(segmented_save_path,
-                                                     'mat_contour_centre/roi_centre_{}_{}_{}'.format(i, r.Index, z)),
-                                        {'vect': c_centre})
+                                                     'mat_contour_centre/roi_centre_{}_{}_{}.mat'.format(i, label, z)),
+                                        {'vect': c_centre}, appendmat=False)
                             sio.savemat(os.path.join(segmented_save_path,
-                                                     'mat_contour_centre/rel_roi_centre_{}_{}_{}'.format(i, r.Index, z)),
-                                        {'vect': c_rel_centre})
+                                                     'mat_contour_centre/rel_roi_centre_{}_{}_{}.mat'.format(i, label, z)),
+                                        {'vect': c_rel_centre}, appendmat=False)
             count += 1
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
@@ -293,4 +325,5 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         df = pd.DataFrame(data=d)
         df.to_csv("{}_region_labels_new.csv".format(i))
     print('Analysis complete! Check the outputs in the folders of {}.'.format(save_path))
+    K.clear_session()
     os.chdir('../..')
