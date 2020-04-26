@@ -151,6 +151,46 @@ def DLCPredictBehavior(config, input_file, output):
     cv2.destroyAllWindows()
 
 
+def DLCPrep(project_name, your_name, img_path, output_dir_base, copy_videos_bool=True):
+    img_array = []
+    filenames = glob.glob(os.path.join(img_path, '*.png'))
+    filenames.sort(key=natural_sort_key)
+    size = (512, 512)
+    for filename in filenames:
+        img = cv2.imread(filename)
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    if len(img_array) > 0:
+        if not os.path.isdir(os.path.join(output_dir_base, 'img_for_label')):
+            os.mkdir(os.path.join(output_dir_base, 'img_for_label'))
+        video_output_path = os.path.join(output_dir_base, 'img_for_label')
+        video_name = os.path.join(video_output_path, 'video_for_label.mp4')
+
+        if not os.path.isdir(video_output_path):
+            os.mkdir(video_output_path)
+        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+        out.release()
+
+        config_path = deeplabcut.create_new_project(project_name, your_name, [video_name], copy_videos=copy_videos_bool,
+                                                    working_directory=output_dir_base)
+        return config_path
+
+
+def DLCLabel(config_path):
+    deeplabcut.extract_frames(config_path, crop=False)
+    deeplabcut.label_frames(config_path)
+    deeplabcut.check_labels(config_path)
+
+
+def DLCTrain(config_path):
+    deeplabcut.create_training_dataset(config_path)
+    deeplabcut.train_network(config_path)
+
+
 def predict_dlc(config_file):
     """
     Loads parameters into DLCPredict from config file.

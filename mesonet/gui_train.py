@@ -8,14 +8,14 @@ Licensed under the MIT License (see LICENSE for details)
 import fnmatch
 import glob
 import os
-import aggdraw
 from tkinter import *  # Python 3.x
 from tkinter import filedialog
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 
 from mesonet.train_model import trainModel
 from mesonet.utils import config_project, find_git_repo
+from mesonet.dlc_predict import DLCPrep
 
 
 class GuiTrain:
@@ -27,6 +27,7 @@ class GuiTrain:
 
         self.root_train = Tk()
         self.root_train.resizable(False, False)
+        self.Title = self.root_train.title("MesoNet Trainer")
 
         self.status = 'Please select a folder with brain images at "Input Folder".'
         self.status_str = StringVar(self.root_train, value=self.status)
@@ -37,20 +38,34 @@ class GuiTrain:
         self.folderName = self.cwd
         self.saveFolderName = self.cwd
         self.model_name = 'my_unet.hdf5'
+        self.dlc_folder = self.cwd
+        self.name = 'MesoNet'
 
         self.line_width = self.DEFAULT_PEN_SIZE
         self.color = self.DEFAULT_COLOUR
         self.cv_dim = 512
         self.canvas = Canvas(self.root_train, width=self.cv_dim, height=self.cv_dim)
-        self.canvas.grid(row=6, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
+        self.canvas.grid(row=7, column=0, columnspan=4, rowspan=7, sticky=N + S + W)
         self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
-        self.draw = aggdraw.Draw(self.mask)
+        self.draw = ImageDraw.Draw(self.mask)
 
         self.line_width_str = StringVar(self.root_train, value=self.line_width)
         self.lineWidthLabel = Label(self.root_train, text="Brush size")
         self.lineWidthLabel.grid(row=3, column=0, sticky=E + W)
         self.lineWidthBox = Entry(self.root_train, textvariable=self.line_width_str, width=60)
         self.lineWidthBox.grid(row=3, column=1, padx=5, pady=5)
+
+        self.model_name_str = StringVar(self.root_train, value=self.model_name)
+        self.modelNameLabel = Label(self.root_train, text="Model name")
+        self.modelNameLabel.grid(row=4, column=0, sticky=E + W)
+        self.modelNameBox = Entry(self.root_train, textvariable=self.model_name_str, width=60)
+        self.modelNameBox.grid(row=4, column=1, padx=5, pady=5)
+
+        self.dlc_folder_str = StringVar(self.root_train, value=self.dlc_folder)
+        self.dlcFolderLabel = Label(self.root_train, text="DLC Folder")
+        self.dlcFolderLabel.grid(row=5, column=0, sticky=E + W)
+        self.dlcNameBox = Entry(self.root_train, textvariable=self.dlc_folder_str, width=60)
+        self.dlcNameBox.grid(row=5, column=1, padx=5, pady=5)
 
         # Set file input and output
         self.fileEntryLabel = Label(self.root_train, text="Input folder")
@@ -71,10 +86,10 @@ class GuiTrain:
 
         self.logSaveLabel = Label(self.root_train, text="Log folder")
         self.logSaveLabel.grid(row=2, column=0, sticky=E + W)
-        self.logSaveButton = Button(self.root_train, text="Browse...", command=lambda: self.OpenFile(1))
+        self.logSaveButton = Button(self.root_train, text="Browse...", command=lambda: self.OpenFile(2))
         self.logName_str = StringVar(self.root_train, value=self.logName)
         self.logSaveButton.grid(row=2, column=2, sticky=E)
-        self.logSaveBox = Entry(self.root_train, textvariable=self.saveFolderName_str, width=60)
+        self.logSaveBox = Entry(self.root_train, textvariable=self.logName_str, width=60)
         self.logSaveBox.grid(row=2, column=1, padx=5, pady=5)
 
         # Image controls
@@ -89,14 +104,20 @@ class GuiTrain:
         self.root_train.bind('<Right>', self.forward)
         self.root_train.bind('<Left>', self.backward)
 
+        # Saving and training setup buttons
         self.saveButton = Button(self.root_train, text="Save all masks to file",
                                  command=lambda: self.mask_save(self.saveFolderName, self.j))
-        self.saveButton.grid(row=13, column=3,  padx=2, sticky=N + S + W + E)
+        self.saveButton.grid(row=11, column=4,  padx=2, sticky=N + S + W + E)
 
         self.trainButton = Button(self.root_train, text="Train U-net model",
                                   command=lambda: self.trainModelGUI(self.saveFolderName, self.model_name, self.logName,
                                                                      self.git_repo_base))
-        self.trainButton.grid(row=14, column=3, padx=2, sticky=N + S + W + E)
+        self.trainButton.grid(row=12, column=4, padx=2, sticky=N + S + W + E)
+
+        # Generate DLC config file
+        self.dlcConfigButton = Button(self.root_train, text="Generate DLC config file",
+                                      command=lambda: DLCPrep(self.dlc_folder, self.name, self.folderName, self.logName))
+        self.dlcConfigButton.grid(row=13, column=4, padx=2, sticky=N + S + W + E)
         self.paint_setup()
 
     def OpenFile(self, openOrSave):
@@ -174,9 +195,9 @@ class GuiTrain:
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root_train, value=imageNum)
         imageNameLabel = Label(self.root_train, textvariable=imageName)
-        imageNameLabel.grid(row=5, column=0, columnspan=1)
+        imageNameLabel.grid(row=6, column=0, columnspan=1)
         imageNumLabel = Label(self.root_train, textvariable=imageNumPrep)
-        imageNumLabel.grid(row=5, column=2, columnspan=1)
+        imageNumLabel.grid(row=6, column=2, columnspan=1)
 
     def forward(self, event):
         self.ImageDisplay(1, self.folderName, 0)
@@ -197,13 +218,12 @@ class GuiTrain:
         """
         line_width = int(self.lineWidthBox.get())
         paint_color = self.color
-        pen = aggdraw.Pen(color=paint_color, width=line_width)
+        # pen = aggdraw.Pen(paint_color, width=line_width, linecap=2)
         if self.old_x and self.old_y:
-            self.canvas.create_line(self.old_x, self.old_y, event.x, event.y,
-                                    width=line_width, fill=paint_color,
-                                    capstyle=ROUND, smooth=TRUE, splinesteps=36)
-            self.draw.line((self.old_x, self.old_y, event.x, event.y), pen)
-            self.draw.flush()
+            self.canvas.create_oval(event.x - (line_width/2), event.y - (line_width/2), event.x + (line_width/2),
+                               event.y + (line_width/2), fill=paint_color, outline=paint_color)
+            self.draw.ellipse((event.x - (line_width/2), event.y - (line_width/2), event.x + (line_width/2),
+                               event.y + (line_width/2)), fill=paint_color, outline=paint_color)
         self.old_x = event.x
         self.old_y = event.y
 
