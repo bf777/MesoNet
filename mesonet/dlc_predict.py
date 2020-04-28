@@ -186,9 +186,9 @@ def DLCLabel(config_path):
     deeplabcut.check_labels(config_path)
 
 
-def DLCTrain(config_path):
+def DLCTrain(config_path, displayiters, saveiters, maxiters):
     deeplabcut.create_training_dataset(config_path)
-    deeplabcut.train_network(config_path)
+    deeplabcut.train_network(config_path, displayiters=displayiters, saveiters=saveiters, maxiters=maxiters)
 
 
 def predict_dlc(config_file):

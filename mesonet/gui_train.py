@@ -15,7 +15,7 @@ from PIL import Image, ImageTk, ImageDraw
 
 from mesonet.train_model import trainModel
 from mesonet.utils import config_project, find_git_repo
-from mesonet.dlc_predict import DLCPrep
+from mesonet.dlc_predict import DLCPrep, DLCLabel, DLCTrain
 
 
 class GuiTrain:
@@ -39,7 +39,9 @@ class GuiTrain:
         self.saveFolderName = self.cwd
         self.model_name = 'my_unet.hdf5'
         self.dlc_folder = self.cwd
-        self.name = 'MesoNet'
+        self.task = 'MesoNet'
+        self.name = 'Labeler'
+        self.config_path = ''
 
         self.line_width = self.DEFAULT_PEN_SIZE
         self.color = self.DEFAULT_COLOUR
@@ -48,24 +50,6 @@ class GuiTrain:
         self.canvas.grid(row=7, column=0, columnspan=4, rowspan=7, sticky=N + S + W)
         self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
         self.draw = ImageDraw.Draw(self.mask)
-
-        self.line_width_str = StringVar(self.root_train, value=self.line_width)
-        self.lineWidthLabel = Label(self.root_train, text="Brush size")
-        self.lineWidthLabel.grid(row=3, column=0, sticky=E + W)
-        self.lineWidthBox = Entry(self.root_train, textvariable=self.line_width_str, width=60)
-        self.lineWidthBox.grid(row=3, column=1, padx=5, pady=5)
-
-        self.model_name_str = StringVar(self.root_train, value=self.model_name)
-        self.modelNameLabel = Label(self.root_train, text="Model name")
-        self.modelNameLabel.grid(row=4, column=0, sticky=E + W)
-        self.modelNameBox = Entry(self.root_train, textvariable=self.model_name_str, width=60)
-        self.modelNameBox.grid(row=4, column=1, padx=5, pady=5)
-
-        self.dlc_folder_str = StringVar(self.root_train, value=self.dlc_folder)
-        self.dlcFolderLabel = Label(self.root_train, text="DLC Folder")
-        self.dlcFolderLabel.grid(row=5, column=0, sticky=E + W)
-        self.dlcNameBox = Entry(self.root_train, textvariable=self.dlc_folder_str, width=60)
-        self.dlcNameBox.grid(row=5, column=1, padx=5, pady=5)
 
         # Set file input and output
         self.fileEntryLabel = Label(self.root_train, text="Input folder")
@@ -92,6 +76,85 @@ class GuiTrain:
         self.logSaveBox = Entry(self.root_train, textvariable=self.logName_str, width=60)
         self.logSaveBox.grid(row=2, column=1, padx=5, pady=5)
 
+        self.line_width_str = StringVar(self.root_train, value=self.line_width)
+        self.lineWidthLabel = Label(self.root_train, text="Brush size")
+        self.lineWidthLabel.grid(row=3, column=0, sticky=E + W)
+        self.lineWidthBox = Entry(self.root_train, textvariable=self.line_width_str, width=60)
+        self.lineWidthBox.grid(row=3, column=1, padx=5, pady=5)
+
+        self.model_name_str = StringVar(self.root_train, value=self.model_name)
+        self.modelNameLabel = Label(self.root_train, text="Model name")
+        self.modelNameLabel.grid(row=4, column=0, sticky=E + W)
+        self.modelNameBox = Entry(self.root_train, textvariable=self.model_name_str, width=60)
+        self.modelNameBox.grid(row=4, column=1, padx=5, pady=5)
+
+        self.dlc_folder_str = StringVar(self.root_train, value=self.dlc_folder)
+        self.dlcFolderLabel = Label(self.root_train, text="DLC Folder")
+        self.dlcFolderLabel.grid(row=5, column=0, sticky=E + W)
+        self.dlcFolderButton = Button(self.root_train, text="Browse...", command=lambda: self.OpenFile(3))
+        self.dlcFolderButton.grid(row=5, column=2, sticky=E)
+        self.dlcFolderBox = Entry(self.root_train, textvariable=self.dlc_folder_str, width=60)
+        self.dlcFolderBox.grid(row=5, column=1, padx=5, pady=5)
+
+        # Saving and training setup buttons
+        self.saveButton = Button(self.root_train, text="Save current mask to file",
+                                 command=lambda: self.mask_save(self.saveFolderName, self.j))
+        self.saveButton.grid(row=9, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
+
+        self.trainButton = Button(self.root_train, text="Train U-net model",
+                                  command=lambda: self.trainModelGUI(self.saveFolderName, self.model_name, self.logName,
+                                                                     self.git_repo_base))
+        self.trainButton.grid(row=10, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
+
+        # Setup DLC training options
+        self.task_str = StringVar(self.root_train, value=self.task)
+        self.taskLabel = Label(self.root_train, text="Task")
+        self.taskLabel.grid(row=0, column=4, sticky=E + W)
+        self.taskBox = Entry(self.root_train, textvariable=self.task_str, width=20)
+        self.taskBox.grid(row=0, column=5)
+
+        self.name_str = StringVar(self.root_train, value=self.name)
+        self.nameLabel = Label(self.root_train, text="Name")
+        self.nameLabel.grid(row=1, column=4, sticky=E + W)
+        self.nameBox = Entry(self.root_train, textvariable=self.name_str, width=20)
+        self.nameBox.grid(row=1, column=5)
+
+        self.displayiters = 100
+        self.displayiters_str = StringVar(self.root_train, value=self.displayiters)
+        self.displayitersLabel = Label(self.root_train, text="Display iters")
+        self.displayitersLabel.grid(row=6, column=4, sticky=E + W)
+        self.displayitersBox = Entry(self.root_train, textvariable=self.displayiters_str, width=20)
+        self.displayitersBox.grid(row=6, column=5)
+
+        self.saveiters = 1000
+        self.saveiters_str = StringVar(self.root_train, value=self.saveiters)
+        self.saveitersLabel = Label(self.root_train, text="Save iters")
+        self.saveitersLabel.grid(row=7, column=4, sticky=E + W)
+        self.saveitersBox = Entry(self.root_train, textvariable=self.saveiters_str, width=20)
+        self.saveitersBox.grid(row=7, column=5)
+
+        self.maxiters = 30000
+        self.maxiters_str = StringVar(self.root_train, value=self.maxiters)
+        self.maxitersLabel = Label(self.root_train, text="Max iters")
+        self.maxitersLabel.grid(row=8, column=4, sticky=E + W)
+        self.maxitersBox = Entry(self.root_train, textvariable=self.maxiters_str, width=20)
+        self.maxitersBox.grid(row=8, column=5)
+
+        # Generate DLC config file
+        self.dlcConfigButton = Button(self.root_train, text="Generate DLC config file",
+                                      command=lambda:
+                                      self.getDLCConfig(self.task, self.name, self.folderName, self.dlc_folder))
+        self.dlcConfigButton.grid(row=11, column=4, columnspan=2, sticky=N + S + W + E)
+
+        self.dlcLabelButton = Button(self.root_train, text="Label brain images\nwith landmarks",
+                                 command=lambda: DLCLabel(self.config_path))
+        self.dlcLabelButton.grid(row=12, column=4, columnspan=2, sticky=N + S + W + E)
+
+        self.dlcTrainButton = Button(self.root_train, text="Train DLC model",
+                                 command=lambda: DLCTrain(self.config_path, self.displayiters, self.saveiters,
+                                                          self.maxiters))
+        self.dlcTrainButton.grid(row=13, column=4, columnspan=2, sticky=N + S + W + E)
+
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(self.root_train, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
@@ -104,20 +167,6 @@ class GuiTrain:
         self.root_train.bind('<Right>', self.forward)
         self.root_train.bind('<Left>', self.backward)
 
-        # Saving and training setup buttons
-        self.saveButton = Button(self.root_train, text="Save all masks to file",
-                                 command=lambda: self.mask_save(self.saveFolderName, self.j))
-        self.saveButton.grid(row=11, column=4,  padx=2, sticky=N + S + W + E)
-
-        self.trainButton = Button(self.root_train, text="Train U-net model",
-                                  command=lambda: self.trainModelGUI(self.saveFolderName, self.model_name, self.logName,
-                                                                     self.git_repo_base))
-        self.trainButton.grid(row=12, column=4, padx=2, sticky=N + S + W + E)
-
-        # Generate DLC config file
-        self.dlcConfigButton = Button(self.root_train, text="Generate DLC config file",
-                                      command=lambda: DLCPrep(self.dlc_folder, self.name, self.folderName, self.logName))
-        self.dlcConfigButton.grid(row=13, column=4, padx=2, sticky=N + S + W + E)
         self.paint_setup()
 
     def OpenFile(self, openOrSave):
@@ -157,7 +206,16 @@ class GuiTrain:
                 self.logName = newLogName
                 self.root_train.update()
             except:
-                print("No sensory image file selected!")
+                print("No log folder selected!")
+        elif openOrSave == 3:
+            newDLCFolder = filedialog.askdirectory(initialdir=self.cwd,
+                                                     title="Choose folder for DLC project")
+            try:
+                self.dlc_folder_str.set(newDLCFolder)
+                self.dlc_folder = newDLCFolder
+                self.root_train.update()
+            except:
+                print("No DLC folder selected!")
 
     def ImageDisplay(self, delta, folderName, reset):
         # Set up canvas on which images will be displayed
@@ -241,6 +299,10 @@ class GuiTrain:
 
     def trainModelGUI(self, mask_folder, model_name, log_folder, git_repo_base):
         trainModel(mask_folder, model_name, log_folder, git_repo_base)
+
+    def getDLCConfig(self, project_name, your_name, img_path, output_dir_base):
+        config_path = DLCPrep(project_name, your_name, img_path, output_dir_base)
+        self.config_path = config_path
 
 
 def gui():
