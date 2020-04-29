@@ -105,7 +105,9 @@ class GuiTrain:
         self.saveButton.grid(row=9, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
 
         self.trainButton = Button(self.root_train, text="Train U-net model",
-                                  command=lambda: self.trainModelGUI(self.saveFolderName, self.modelNameBox.get(),
+                                  command=lambda: self.trainModelGUI(self.saveFolderName,
+                                                                     os.path.join(self.git_repo_base,
+                                                                                  'models', self.modelNameBox.get()),
                                                                      self.logName,
                                                                      self.git_repo_base))
         self.trainButton.grid(row=10, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
