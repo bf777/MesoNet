@@ -105,7 +105,8 @@ class GuiTrain:
         self.saveButton.grid(row=9, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
 
         self.trainButton = Button(self.root_train, text="Train U-net model",
-                                  command=lambda: self.trainModelGUI(self.saveFolderName, self.model_name, self.logName,
+                                  command=lambda: self.trainModelGUI(self.saveFolderName, self.modelNameBox.get(),
+                                                                     self.logName,
                                                                      self.git_repo_base))
         self.trainButton.grid(row=10, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
 
@@ -146,7 +147,8 @@ class GuiTrain:
         # Generate DLC config file
         self.dlcConfigButton = Button(self.root_train, text="Generate DLC config file",
                                       command=lambda:
-                                      self.getDLCConfig(self.task, self.name, self.folderName, self.dlc_folder))
+                                      self.getDLCConfig(self.taskBox.get(), self.nameBox.get(),
+                                                        self.folderName, self.dlc_folder))
         self.dlcConfigButton.grid(row=11, column=4, columnspan=2, sticky=N + S + W + E)
 
         self.dlcLabelButton = Button(self.root_train, text="Label brain images\nwith landmarks",
@@ -154,8 +156,8 @@ class GuiTrain:
         self.dlcLabelButton.grid(row=12, column=4, columnspan=2, sticky=N + S + W + E)
 
         self.dlcTrainButton = Button(self.root_train, text="Train DLC model",
-                                 command=lambda: DLCTrain(self.config_path, self.displayiters, self.saveiters,
-                                                          self.maxiters))
+                                 command=lambda: DLCTrain(self.config_path, self.displayitersBox.get(),
+                                                          self.saveitersBox.get(), self.maxitersBox.get()))
         self.dlcTrainButton.grid(row=13, column=4, columnspan=2, sticky=N + S + W + E)
 
         # Image controls
