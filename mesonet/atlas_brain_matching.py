@@ -158,9 +158,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             brain_img_arr.append(os.path.join(brain_img_dir, file))
     i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
 
+    peak_arr_flat = []
+    peak_arr_total = []
+
     if sensory_match:
-        peak_arr_flat = []
-        peak_arr_total = []
         for num, file in enumerate(os.listdir(brain_img_dir)):
             sensory_img_for_brain = os.path.join(sensory_img_dir, str(num))
             if glob.glob(sensory_img_for_brain):

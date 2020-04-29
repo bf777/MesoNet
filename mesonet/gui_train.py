@@ -19,7 +19,9 @@ from mesonet.dlc_predict import DLCPrep, DLCLabel, DLCTrain
 
 
 class GuiTrain:
-
+    """
+    The main GUI interface for training new U-Net and DLC models for use in MesoNet.
+    """
     DEFAULT_PEN_SIZE = 20
     DEFAULT_COLOUR = 'white'
     DEFAULT_MODEL_NAME = 'my_unet.hdf5'
@@ -45,6 +47,8 @@ class GuiTrain:
         self.task = self.DEFAULT_TASK
         self.name = self.DEFAULT_NAME
         self.config_path = ''
+        self.steps_per_epoch = 300
+        self.epochs = 60
 
         self.line_width = self.DEFAULT_PEN_SIZE
         self.color = self.DEFAULT_COLOUR
@@ -283,7 +287,6 @@ class GuiTrain:
         """
         line_width = int(self.lineWidthBox.get())
         paint_color = self.color
-        # pen = aggdraw.Pen(paint_color, width=line_width, linecap=2)
         if self.old_x and self.old_y:
             self.canvas.create_oval(event.x - (line_width/2), event.y - (line_width/2), event.x + (line_width/2),
                                event.y + (line_width/2), fill=paint_color, outline=paint_color)
@@ -305,7 +308,7 @@ class GuiTrain:
         self.mask.save(os.path.join(mask_folder, "label", "{}.png".format(img_name)))
 
     def trainModelGUI(self, mask_folder, model_name, log_folder, git_repo_base):
-        trainModel(mask_folder, model_name, log_folder, git_repo_base)
+        trainModel(mask_folder, model_name, log_folder, git_repo_base, self.steps_per_epoch, self.epochs)
         config_project(mask_folder, log_folder, 'train', model_name=model_name)
 
     def getDLCConfig(self, project_name, your_name, img_path, output_dir_base):

@@ -14,7 +14,8 @@ from sys import platform
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
                    atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True,
-                   threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=False):
+                   threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=False, steps_per_epoch=300,
+                   epochs=60):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
     applying an existing model or training a new one).
@@ -48,6 +49,10 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     :param region_labels: If True, MesoNet will attempt to label each brain region according to the Allen Institute's
     Mouse Brain Atlas. Otherwise, MesoNet will label each region with a number. Please note that this feature is
     experimental!
+    :param steps_per_epoch: During U-Net training, the number of steps that the model will take per epoch. Defaults to
+    300 steps per epoch.
+    :param epochs: During U-Net training, the number of epochs for which the model will run. Defaults to 60 epochs (set
+    lower for online learning, e.g. if augmenting existing model).
     :return config_file: The path to the config_file. If you run this function as config_file = config_project(...) then
     you can directly get the config file path to be used later.
     """
@@ -83,7 +88,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             input_file=input_dir,
             model_name=model_name,
             log_folder=output_dir,
-            git_repo_base=git_repo_base
+            git_repo_base=git_repo_base,
+            steps_per_epoch=steps_per_epoch,
+            epochs=epochs
         )
 
     with open(os.path.join(output_dir, filename), 'w') as outfile:

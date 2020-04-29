@@ -18,6 +18,9 @@ from mesonet.utils import config_project, find_git_repo
 
 
 class Gui:
+    """
+    The main GUI interface for applying MesoNet to a new dataset.
+    """
     def __init__(self):
         # The main window of the app
         self.root = Tk()
