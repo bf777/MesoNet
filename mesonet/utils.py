@@ -8,7 +8,6 @@ import yaml
 import glob
 import re
 import os
-import pandas as pd
 from os.path import join
 from sys import platform
 

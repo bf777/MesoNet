@@ -22,6 +22,9 @@ class GuiTrain:
 
     DEFAULT_PEN_SIZE = 20
     DEFAULT_COLOUR = 'white'
+    DEFAULT_MODEL_NAME = 'my_unet.hdf5'
+    DEFAULT_TASK = 'MesoNet'
+    DEFAULT_NAME = 'Labeler'
 
     def __init__(self):
 
@@ -37,17 +40,17 @@ class GuiTrain:
         self.git_repo_base = find_git_repo()
         self.folderName = self.cwd
         self.saveFolderName = self.cwd
-        self.model_name = 'my_unet.hdf5'
+        self.model_name = self.DEFAULT_MODEL_NAME
         self.dlc_folder = self.cwd
-        self.task = 'MesoNet'
-        self.name = 'Labeler'
+        self.task = self.DEFAULT_TASK
+        self.name = self.DEFAULT_NAME
         self.config_path = ''
 
         self.line_width = self.DEFAULT_PEN_SIZE
         self.color = self.DEFAULT_COLOUR
         self.cv_dim = 512
         self.canvas = Canvas(self.root_train, width=self.cv_dim, height=self.cv_dim)
-        self.canvas.grid(row=7, column=0, columnspan=4, rowspan=7, sticky=N + S + W)
+        self.canvas.grid(row=5, column=0, columnspan=4, rowspan=9, sticky=N + S + W)
         self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
         self.draw = ImageDraw.Draw(self.mask)
 
@@ -78,23 +81,23 @@ class GuiTrain:
 
         self.line_width_str = StringVar(self.root_train, value=self.line_width)
         self.lineWidthLabel = Label(self.root_train, text="Brush size")
-        self.lineWidthLabel.grid(row=3, column=0, sticky=E + W)
-        self.lineWidthBox = Entry(self.root_train, textvariable=self.line_width_str, width=60)
-        self.lineWidthBox.grid(row=3, column=1, padx=5, pady=5)
+        self.lineWidthLabel.grid(row=2, column=4, sticky=E + W)
+        self.lineWidthBox = Entry(self.root_train, textvariable=self.line_width_str, width=20)
+        self.lineWidthBox.grid(row=2, column=5)
 
         self.model_name_str = StringVar(self.root_train, value=self.model_name)
         self.modelNameLabel = Label(self.root_train, text="Model name")
-        self.modelNameLabel.grid(row=4, column=0, sticky=E + W)
-        self.modelNameBox = Entry(self.root_train, textvariable=self.model_name_str, width=60)
-        self.modelNameBox.grid(row=4, column=1, padx=5, pady=5)
+        self.modelNameLabel.grid(row=3, column=4, sticky=E + W)
+        self.modelNameBox = Entry(self.root_train, textvariable=self.model_name_str, width=20)
+        self.modelNameBox.grid(row=3, column=5)
 
         self.dlc_folder_str = StringVar(self.root_train, value=self.dlc_folder)
         self.dlcFolderLabel = Label(self.root_train, text="DLC Folder")
-        self.dlcFolderLabel.grid(row=5, column=0, sticky=E + W)
+        self.dlcFolderLabel.grid(row=3, column=0, sticky=E + W)
         self.dlcFolderButton = Button(self.root_train, text="Browse...", command=lambda: self.OpenFile(3))
-        self.dlcFolderButton.grid(row=5, column=2, sticky=E)
+        self.dlcFolderButton.grid(row=3, column=2, sticky=E)
         self.dlcFolderBox = Entry(self.root_train, textvariable=self.dlc_folder_str, width=60)
-        self.dlcFolderBox.grid(row=5, column=1, padx=5, pady=5)
+        self.dlcFolderBox.grid(row=3, column=1, padx=5, pady=5)
 
         # Saving and training setup buttons
         self.saveButton = Button(self.root_train, text="Save current mask to file",
@@ -200,7 +203,7 @@ class GuiTrain:
                 self.root_train.update()
         elif openOrSave == 2:
             newLogName = filedialog.askdirectory(initialdir=self.cwd,
-                                                     title="Choose folder for saving model training logs")
+                                                 title="Choose folder for saving model training logs")
             try:
                 self.logName_str.set(newLogName)
                 self.logName = newLogName
@@ -209,7 +212,7 @@ class GuiTrain:
                 print("No log folder selected!")
         elif openOrSave == 3:
             newDLCFolder = filedialog.askdirectory(initialdir=self.cwd,
-                                                     title="Choose folder for DLC project")
+                                                   title="Choose folder for DLC project")
             try:
                 self.dlc_folder_str.set(newDLCFolder)
                 self.dlc_folder = newDLCFolder
@@ -253,9 +256,9 @@ class GuiTrain:
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root_train, value=imageNum)
         imageNameLabel = Label(self.root_train, textvariable=imageName)
-        imageNameLabel.grid(row=6, column=0, columnspan=1)
+        imageNameLabel.grid(row=4, column=0, columnspan=1)
         imageNumLabel = Label(self.root_train, textvariable=imageNumPrep)
-        imageNumLabel.grid(row=6, column=2, columnspan=1)
+        imageNumLabel.grid(row=4, column=2, columnspan=1)
 
     def forward(self, event):
         self.ImageDisplay(1, self.folderName, 0)
@@ -299,6 +302,7 @@ class GuiTrain:
 
     def trainModelGUI(self, mask_folder, model_name, log_folder, git_repo_base):
         trainModel(mask_folder, model_name, log_folder, git_repo_base)
+        config_project(mask_folder, log_folder, 'train', model_name=model_name)
 
     def getDLCConfig(self, project_name, your_name, img_path, output_dir_base):
         config_path = DLCPrep(project_name, your_name, img_path, output_dir_base)

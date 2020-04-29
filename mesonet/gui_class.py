@@ -27,8 +27,8 @@ class Gui:
         self.folderName = self.cwd
         self.sensoryName = self.cwd
         self.BFolderName = self.cwd
-        self.saveFolderName = ''
-        self.saveBFolderName = ''
+        self.saveFolderName = self.cwd
+        self.saveBFolderName = self.cwd
         self.threshold = 0.001
         self.haveMasks = False
 
@@ -37,7 +37,7 @@ class Gui:
         self.imgDisplayed = 0
         self.picLen = 0
         self.imageFileName = ''
-        self.model = ''
+        self.model = 'unet_bundary.hdf5'
         self.status = 'Please select a folder with brain images at "Input Folder".'
         self.status_str = StringVar(self.root, value=self.status)
         self.haveMasks = False
@@ -54,10 +54,23 @@ class Gui:
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=6, column=0, columnspan=4, rowspan=8, sticky=N + S + W)
+        self.canvas.grid(row=7, column=0, columnspan=4, rowspan=7, sticky=N + S + W)
 
         # Render model selector listbox
-        self.FindModelInFolder()
+        self.modelSelect = []
+        for file in os.listdir(self.model_top_dir):
+            if fnmatch.fnmatch(file, "*.hdf5"):
+                self.modelSelect.append(file)
+
+        self.modelLabel = Label(self.root, text="If using U-net, select a model\nto analyze the brain regions:")
+        self.modelListBox = Listbox(self.root)
+        self.modelLabel.grid(row=0, column=4, sticky=S)
+        self.modelListBox.grid(row=1, rowspan=4, column=4, sticky=N)
+        for item in self.modelSelect:
+            self.modelListBox.insert(END, item)
+
+        if len(self.modelSelect) > 0:
+            self.modelListBox.bind('<<ListboxSelect>>', self.onSelect)
 
         # Set file input and output
         self.fileEntryLabel = Label(self.root, text="Input folder")
@@ -87,24 +100,33 @@ class Gui:
         self.sensoryEntryBox = Entry(self.root, textvariable=self.sensoryName_str, width=60)
         self.sensoryEntryBox.grid(row=2, column=1, padx=5, pady=5)
 
+        self.configDLCLabel = Label(self.root, text="DLC config folder")
+        self.configDLCLabel.grid(row=3, column=0, sticky=E + W)
+        self.configDLCButton = Button(self.root, text="Browse...", command=lambda: self.OpenFile(3))
+
+        self.configDLCName_str = StringVar(self.root, value=self.config_path)
+        self.configDLCButton.grid(row=3, column=2, sticky=E)
+        self.configDLCEntryBox = Entry(self.root, textvariable=self.configDLCName_str, width=60)
+        self.configDLCEntryBox.grid(row=3, column=1, padx=5, pady=5)
+
         # Set behavioural data files
         self.BfileEntryLabel = Label(self.root, text="Behavior input folder")
-        self.BfileEntryLabel.grid(row=3, column=0, sticky=E + W)
+        self.BfileEntryLabel.grid(row=4, column=0, sticky=E + W)
         self.BfileEntryButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(0))
 
         self.BfolderName_str = StringVar(self.root, value=self.folderName)
-        self.BfileEntryButton.grid(row=3, column=2, sticky=E)
+        self.BfileEntryButton.grid(row=4, column=2, sticky=E)
         self.BfileEntryBox = Entry(self.root, textvariable=self.BfolderName_str, width=60)
-        self.BfileEntryBox.grid(row=3, column=1, padx=5, pady=5)
+        self.BfileEntryBox.grid(row=4, column=1, padx=5, pady=5)
 
         self.BfileSaveLabel = Label(self.root, text="Behavior Save folder")
-        self.BfileSaveLabel.grid(row=4, column=0, sticky=E + W)
+        self.BfileSaveLabel.grid(row=5, column=0, sticky=E + W)
         self.BfileSaveButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(1))
 
         self.saveBFolderName_str = StringVar(self.root, value=self.saveBFolderName)
-        self.BfileSaveButton.grid(row=4, column=2, sticky=E)
+        self.BfileSaveButton.grid(row=5, column=2, sticky=E)
         self.BfileSaveBox = Entry(self.root, textvariable=self.saveBFolderName_str, width=60)
-        self.BfileSaveBox.grid(row=4, column=1, padx=5, pady=5)
+        self.BfileSaveBox.grid(row=5, column=1, padx=5, pady=5)
 
         # Image controls
         # Buttons below will only display if an image is displayed
@@ -141,8 +163,7 @@ class Gui:
                                                                        self.saveFolderName, False,
                                                                        int(self.sensory_align.get()),
                                                                        self.sensoryName,
-                                                                       os.path.join(self.model_top_dir,
-                                                                                    'unet_bundary.hdf5'),
+                                                                       os.path.join(self.model_top_dir, self.model),
                                                                        self.picLen,
                                                                        int(self.mat_save.get()), self.threshold, True,
                                                                        self.haveMasks,
@@ -153,7 +174,8 @@ class Gui:
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model,
                                                                              self.saveFolderName,
                                                                              int(self.mat_save.get()), self.threshold,
-                                                                             False, self.git_repo_base, self.region_labels.get()))
+                                                                             False, self.git_repo_base,
+                                                                             self.region_labels.get()))
         self.predictAllImButton.grid(row=11, column=4, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
@@ -178,14 +200,13 @@ class Gui:
                 self.folderName_str.set(newFolderName)
                 self.folderName = newFolderName
                 self.ImageDisplay(1, self.folderName, 1)
-                self.status = 'Please select a folder to save your images to at "Save Folder".'
-                self.status_str.set(self.status)
-                self.root.update()
+                self.statusHandler('Please select a folder to save your images to at "Save Folder".')
             except:
-                print("No image file selected!")
+                img_path_err = "No image file selected!"
+                self.statusHandler(img_path_err)
         elif openOrSave == 1:
             newSaveFolderName = filedialog.askdirectory(initialdir=self.cwd,
-                                                        title="Choose folder for saving files")
+                                                           title="Choose folder for saving files")
             # Using try in case user types in unknown file or closes without choosing a file.
             try:
                 self.saveFolderName_str.set(newSaveFolderName)
@@ -195,14 +216,11 @@ class Gui:
                 self.saveMatFileCheck.config(state='normal')
                 # self.regionLabelCheck.config(state='normal')
                 self.sensoryMapCheck.config(state='normal')
-                self.status = "Save folder selected! Choose an option on the right to begin your analysis."
-                self.status_str.set(self.status)
-                self.root.update()
+                self.statusHandler("Save folder selected! Choose an option on the right to begin your analysis.")
             except:
-                print("No save file selected!")
-                self.status = "No save file selected!"
-                self.status_str.set(self.status)
-                self.root.update()
+                save_path_err = "No save file selected!"
+                print(save_path_err)
+                self.statusHandler(save_path_err)
         elif openOrSave == 2:
             newSensoryName = filedialog.askdirectory(initialdir=self.cwd,
                                                     title="Choose folder containing the sensory images you want to use")
@@ -211,7 +229,19 @@ class Gui:
                 self.sensoryName = newSensoryName
                 self.root.update()
             except:
-                print("No sensory image file selected!")
+                sensory_path_err = "No sensory image file selected!"
+                print(sensory_path_err)
+                self.statusHandler(sensory_path_err)
+        elif openOrSave == 3:
+            newDLCName = filedialog.askopenfilename(initialdir=self.cwd,
+                                                    title="Choose folder containing the DLC config file")
+            try:
+                self.configDLCName_str.set(newDLCName)
+                self.config_path = newDLCName
+                self.root.update()
+            except:
+                dlc_path_err = "No DLC config file selected!"
+                self.statusHandler(dlc_path_err)
 
     def OpenBFile(self, openOrSave):
         if openOrSave == 0:
@@ -233,14 +263,11 @@ class Gui:
                 self.saveBFolderName_str.set(newSaveBFolderName)
                 self.saveBFolderName = newSaveBFolderName
                 self.predictBehaviourButton.config(state='normal')
-                self.status = 'Save folder selected! Click "Predict animal movements" to begin your analysis.'
-                self.status_str.set(self.status)
-                self.root.update()
+                self.statusHandler('Save folder selected! Click "Predict animal movements" to begin your analysis.')
             except:
-                print("No save file selected!")
-                self.status = "No save file selected!"
-                self.status_str.set(self.status)
-                self.root.update()
+                save_path_err = 'No save file selected!'
+                print(save_path_err)
+                self.statusHandler(save_path_err)
 
     def ImageDisplay(self, delta, folderName, reset):
         # Set up canvas on which images will be displayed
@@ -278,31 +305,17 @@ class Gui:
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root, value=imageNum)
         imageNameLabel = Label(self.root, textvariable=imageName)
-        imageNameLabel.grid(row=5, column=0, columnspan=1)
+        imageNameLabel.grid(row=6, column=0, columnspan=1)
         imageNumLabel = Label(self.root, textvariable=imageNumPrep)
-        imageNumLabel.grid(row=5, column=2, columnspan=1)
+        imageNumLabel.grid(row=6, column=2, columnspan=1)
 
-    def FindModelInFolder(self):
-        modelSelect = []
-        for file in os.listdir(self.model_top_dir):
-            if fnmatch.fnmatch(file, "*.hdf5"):
-                modelSelect.append(file)
-
-        modelLabel = Label(self.root, text="If using U-net, select a model\nto analyze the brain regions:")
-        modelListBox = Listbox(self.root)
-        modelLabel.grid(row=5, column=4, sticky=S)
-        modelListBox.grid(row=6, column=4, sticky=N)
-        for item in modelSelect:
-            modelListBox.insert(END, item)
-        if len(modelSelect) > 0:
-            def onselect(evt):
-                w = evt.widget
-                selected = int(w.curselection()[0])
-                self.model = modelListBox.get(selected)
-                self.model = os.path.join(self.git_repo_base, self.model_dir, self.model)
-                self.root.update()
-
-            modelListBox.bind('<<ListboxSelect>>', onselect)
+    def onSelect(self, event):
+        w = event.widget
+        selected = int(w.curselection()[0])
+        new_model = self.modelListBox.get(selected)
+        self.model = new_model
+        print(self.model)
+        self.root.update()
 
     def forward(self, event):
         self.ImageDisplay(1, self.folderName, 0)
@@ -310,11 +323,14 @@ class Gui:
     def backward(self, event):
         self.ImageDisplay(-1, self.folderName, 0)
 
-    def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                       region_labels):
-        self.status = "Processing..."
+    def statusHandler(self, status_str):
+        self.status = status_str
         self.status_str.set(self.status)
         self.root.update()
+
+    def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
+                       region_labels):
+        self.statusHandler('Processing...')
         predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                       region_labels)
         self.saveFolderName = output
@@ -323,16 +339,12 @@ class Gui:
             self.haveMasks = True
         else:
             self.folderName = self.saveFolderName
-        self.status = "Processing complete!"
-        self.status_str.set(self.status)
-        self.root.update()
+        self.statusHandler('Processing complete!')
         self.ImageDisplay(1, self.folderName, 1)
 
     def PredictDLC(self, config, input_file, output, atlas, sensory_match, sensory_path, model, num_images, mat_save, threshold,
                    mask_generate, haveMasks, git_repo_base, region_labels):
-        self.status = "Processing..."
-        self.status_str.set(self.status)
-        self.root.update()
+        self.statusHandler('Processing...')
         if mask_generate and not haveMasks:
             predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                           region_labels)
@@ -345,9 +357,7 @@ class Gui:
             self.folderName = os.path.join(saveFolderName, "dlc_output")
         config_project(input_file, saveFolderName, 'test', config=config, atlas=atlas, sensory_match=sensory_match,
                        mat_save=mat_save, threshold=threshold, model=model, region_labels=region_labels)
-        self.status = "Processing complete!"
-        self.status_str.set(self.status)
-        self.root.update()
+        self.statusHandler('Processing complete!')
         self.ImageDisplay(1, self.folderName, 1)
 
 
