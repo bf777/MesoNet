@@ -35,11 +35,15 @@ def trainModel(input_file, model_name, log_folder, git_repo_base, steps_per_epoc
     history_callback = model.fit_generator(myGene, steps_per_epoch=steps_per_epoch, epochs=epochs,
                                            callbacks=[model_checkpoint])
     loss_history = history_callback.history["loss"]
-    acc_history = history_callback.history["acc"]
+    print(history_callback.history)
+    try:
+        acc_history = history_callback.history["acc"]
+        np_acc_hist = np.array(acc_history)
+        np.savetxt(os.path.join(log_folder, "acc_history.csv"), np_acc_hist, delimiter=",")
+    except:
+        print("Cannot find acc history!")
     np_loss_hist = np.array(loss_history)
-    np_acc_hist = np.array(acc_history)
     np.savetxt(os.path.join(log_folder, "loss_history.csv"), np_loss_hist, delimiter=",")
-    np.savetxt(os.path.join(log_folder, "acc_history.csv"), np_acc_hist, delimiter=",")
     model.save(os.path.join(git_repo_base, 'models', model_name))
 
 

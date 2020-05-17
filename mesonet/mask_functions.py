@@ -99,6 +99,15 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
 
 
+def inpaintMask(mask):
+    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_NONE)
+    cnts = imutils.grab_contours(cnts)
+    for cnt in cnts:
+        cv2.fillPoly(mask, pts=[cnt], color=[255, 255, 255])
+    return mask
+
+
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
               region_labels=True):
     """
@@ -114,7 +123,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
     region_bgr_lower = (100, 100, 100)
     region_bgr_upper = (255, 255, 255)
-    cnt_array = []
     base_c_max = []
     count = 0
     regions = pd.read_csv(os.path.join(git_repo_base, "atlases/region_labels.csv"))
@@ -125,7 +133,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))
         mat = mat['vect']
         ret, thresh = cv2.threshold(mat, 5, 255, cv2.THRESH_BINARY)
-        # io.imsave('cnt_{}.png'.format(thresh))
         base_c = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         base_c = imutils.grab_contours(base_c)
         base_c_max.append(max(base_c, key=cv2.contourArea))
@@ -134,14 +141,52 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         new_data = []
         img = cv2.imread(item)
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
+        atlas_im = cv2.imread(os.path.join(mask_path, '{}_atlas_first_transform.png'.format(str(i))))
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
         # Get the region of the mask that is white
         mask_color = cv2.inRange(mask, region_bgr_lower, region_bgr_upper)
+        atlas_color = cv2.inRange(atlas_im, region_bgr_lower, region_bgr_upper)
         io.imsave(os.path.join(save_path, "{}_mask_binary.png".format(i)), mask_color)
+        io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_color)
         # Marker labelling
         # noise removal
         kernel = np.ones((3, 3), np.uint8)
         mask_color = np.uint8(mask_color)
+        atlas_color = np.uint8(atlas_color)
+        (thresh_atlas, atlas_bw) = cv2.threshold(atlas_color, 128, 255, 0)
+        # Find contours in original aligned atlas
+        cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_NONE)
+        cnts_orig = imutils.grab_contours(cnts_orig)
+        edge_coords_orig_x = []
+        edge_coords_orig_y = []
+        for num_label, cnt_orig in enumerate(cnts_orig):
+            # cnts_orig_max = max(cnts_orig, key=cv2.contourArea)
+            cnt_orig_moment = cv2.moments(cnt_orig)
+            if num_label not in [0, 1]:
+                try:
+                    orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
+                    orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
+                    for coord in cnt_orig:
+                        if coord[0][0] == orig_x:
+                            edge_coords_orig_y.append(coord[0].tolist())
+                        if coord[0][1] == orig_y:
+                            edge_coords_orig_x.append(coord[0].tolist())
+                    print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x, edge_coords_orig_y))
+                    adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
+                    adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
+                    adj_centre = [adj_centre_x, adj_centre_y]
+                    if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
+                        print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+                        orig_x, orig_y = (adj_centre[0], adj_centre[1])
+                    edge_coords_orig_x = []
+                    edge_coords_orig_y = []
+                    cv2.putText(img, str(num_label),
+                                (int(orig_x), int(orig_y)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+                except:
+                    print("cannot find moments!")
+
         opening = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel, iterations=1)  # 1
         # sure background area
         sure_bg = cv2.dilate(opening, kernel, iterations=7)  # 7
@@ -165,6 +210,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         areas = []
         labels_arr = []
         label_jitter = random.randrange(-2, 2)
+
         for n, label in enumerate(np.unique(labels)):
             label_num = 0
             # if the label is zero, we are examining the 'background'
@@ -175,18 +221,25 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # it on the mask
             mask = np.zeros(mask_color.shape, dtype="uint8")
             mask[labels == label] = 255
+            mask_dilate = np.zeros(mask_color.shape, dtype="uint8")
             # detect contours in the mask and grab the largest one
             cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                     cv2.CHAIN_APPROX_NONE)
             cnts = imutils.grab_contours(cnts)
-            cnt_array.append(cnts)
+            cv2.drawContours(mask_dilate, cnts, -1, (255, 255, 255), 3)
+            mask_dilate_2 = cv2.dilate(mask_dilate, kernel, iterations=7)
+            (thresh, mask_dilate_bw) = cv2.threshold(mask_dilate_2, 128, 255, 0)
+            inner_cnts = cv2.findContours(mask_dilate_bw.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            inner_cnts = imutils.grab_contours(inner_cnts)
             edge_coords_x = []
             edge_coords_y = []
-            for z, cnt in enumerate(cnts):
+            for (centre_cnt, (z, cnt)) in zip(inner_cnts, enumerate(cnts)):
                 # compute the center of the contour
                 if len(cnts) > 1:
                     z = 0
-                m = cv2.moments(cnt)
+                c_for_centre = min(inner_cnts, key=cv2.contourArea)
+                # m = cv2.moments(cnt)
+                m = cv2.moments(c_for_centre)
                 c_x = int(m["m10"] / m["m00"])
                 c_y = int(m["m01"] / m["m00"])
 
@@ -197,7 +250,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 # that intersect with the centroid could be a safer option. We try to find this average position and if
                 # there are more than two intersecting edges or if the average position is over 200 px from the
                 # centroid, we fall back to using the centroid as our measure of the centre of the contour.
-                for coord in cnt:
+                for coord in c_for_centre:
                     if coord[0][0] == c_x:
                         edge_coords_y.append(coord[0].tolist())
                     if coord[0][1] == c_y:

@@ -45,6 +45,7 @@ class Gui:
         self.status_str = StringVar(self.root, value=self.status)
         self.haveMasks = False
         self.imgDisplayed = 0
+        self.landmark_arr = []
 
         self.config_dir = 'dlc'
         self.model_dir = 'models'
@@ -67,8 +68,8 @@ class Gui:
 
         self.modelLabel = Label(self.root, text="If using U-net, select a model\nto analyze the brain regions:")
         self.modelListBox = Listbox(self.root)
-        self.modelLabel.grid(row=0, column=4, sticky=S)
-        self.modelListBox.grid(row=1, rowspan=4, column=4, sticky=N)
+        self.modelLabel.grid(row=0, column=4, columnspan=4, sticky=S)
+        self.modelListBox.grid(row=1, rowspan=4, column=4, columnspan=4, sticky=N)
         for item in self.modelSelect:
             self.modelListBox.insert(END, item)
 
@@ -151,15 +152,33 @@ class Gui:
         self.atlas = IntVar()
         self.sensory_align = IntVar()
         self.region_labels = IntVar()
+        self.landmark_left = IntVar(value=1)
+        self.landmark_right = IntVar(value=1)
+        self.landmark_bregma = IntVar(value=1)
+        self.landmark_lambda = IntVar(value=1)
         self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files",
                                             variable=self.mat_save)
-        self.saveMatFileCheck.grid(row=7, column=4, padx=2, sticky=N + S + W)
+        self.saveMatFileCheck.grid(row=7, column=4, columnspan=4, padx=2, sticky=N + S + W)
         # self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)",
         #                                     variable=self.region_labels)
         # self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
         self.sensoryMapCheck = Checkbutton(self.root, text="Align using sensory map",
                                            variable=self.sensory_align)
-        self.sensoryMapCheck.grid(row=9, column=4, padx=2, sticky=N + S + W)
+        self.sensoryMapCheck.grid(row=8, column=4, columnspan=4, padx=2, sticky=N + S + W)
+
+        # Enable selection of landmarks for alignment
+        self.landmarkLeftCheck = Checkbutton(self.root, text="Left",
+                                           variable=self.landmark_left)
+        self.landmarkLeftCheck.grid(row=9, column=4, padx=2, sticky=N + S + W)
+        self.landmarkRightCheck = Checkbutton(self.root, text="Right",
+                                             variable=self.landmark_right)
+        self.landmarkRightCheck.grid(row=9, column=5, padx=2, sticky=N + S + W)
+        self.landmarkBregmaCheck = Checkbutton(self.root, text="Bregma",
+                                             variable=self.landmark_bregma)
+        self.landmarkBregmaCheck.grid(row=9, column=6, padx=2, sticky=N + S + W)
+        self.landmarkLambdaCheck = Checkbutton(self.root, text="Lambda",
+                                             variable=self.landmark_lambda)
+        self.landmarkLambdaCheck.grid(row=9, column=7, padx=2, sticky=N + S + W)
 
         self.predictDLCButton = Button(self.root, text="Predict brain regions\nusing landmarks",
                                        command=lambda: self.PredictDLC(self.config_path, self.folderName,
@@ -172,19 +191,19 @@ class Gui:
                                                                        self.haveMasks,
                                                                        self.git_repo_base,
                                                                        self.region_labels.get()))
-        self.predictDLCButton.grid(row=10, column=4, padx=2, sticky=N + S + W + E)
+        self.predictDLCButton.grid(row=10, column=4, columnspan=4, padx=2, sticky=N + S + W + E)
         self.predictAllImButton = Button(self.root, text="Predict brain regions directly\nusing pretrained U-net model",
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model,
                                                                              self.saveFolderName,
                                                                              int(self.mat_save.get()), self.threshold,
                                                                              False, self.git_repo_base,
                                                                              self.region_labels.get()))
-        self.predictAllImButton.grid(row=11, column=4, padx=2, sticky=N + S + W + E)
+        self.predictAllImButton.grid(row=11, column=4, columnspan=4, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
                                                                                 self.BFolderName,
                                                                                 self.saveBFolderName))
-        self.predictBehaviourButton.grid(row=12, column=4, padx=2, sticky=N + S + W + E)
+        self.predictBehaviourButton.grid(row=12, column=4, columnspan=4, padx=2, sticky=N + S + W + E)
 
         if self.saveFolderName == '' or self.imgDisplayed == 0:
             self.predictAllImButton.config(state='disabled')
@@ -193,6 +212,10 @@ class Gui:
             # self.regionLabelCheck.config(state='disabled')
             self.sensoryMapCheck.config(state='disabled')
             self.predictBehaviourButton.config(state='disabled')
+            self.landmarkLeftCheck.config(state='disabled')
+            self.landmarkRightCheck.config(state='disabled')
+            self.landmarkBregmaCheck.config(state='disabled')
+            self.landmarkLambdaCheck.config(state='disabled')
 
     def OpenFile(self, openOrSave):
         if openOrSave == 0:
@@ -219,6 +242,10 @@ class Gui:
                 self.saveMatFileCheck.config(state='normal')
                 # self.regionLabelCheck.config(state='normal')
                 self.sensoryMapCheck.config(state='normal')
+                self.landmarkLeftCheck.config(state='normal')
+                self.landmarkRightCheck.config(state='normal')
+                self.landmarkBregmaCheck.config(state='normal')
+                self.landmarkLambdaCheck.config(state='normal')
                 self.statusHandler("Save folder selected! Choose an option on the right to begin your analysis.")
             except:
                 save_path_err = "No save file selected!"
@@ -331,6 +358,20 @@ class Gui:
         self.status_str.set(self.status)
         self.root.update()
 
+    def chooseLandmarks(self):
+        left = self.landmark_left.get()
+        right = self.landmark_right.get()
+        bregma = self.landmark_bregma.get()
+        lambd = self.landmark_lambda.get()
+        if left == 1:
+            self.landmark_arr.append(0)
+        if right == 1:
+            self.landmark_arr.append(1)
+        if bregma == 1:
+            self.landmark_arr.append(2)
+        if lambd == 1:
+            self.landmark_arr.append(3)
+
     def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                        region_labels):
         self.statusHandler('Processing...')
@@ -348,11 +389,12 @@ class Gui:
     def PredictDLC(self, config, input_file, output, atlas, sensory_match, sensory_path, model, num_images, mat_save, threshold,
                    mask_generate, haveMasks, git_repo_base, region_labels):
         self.statusHandler('Processing...')
+        self.chooseLandmarks()
         if mask_generate and not haveMasks:
             predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                           region_labels)
         DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
-                   mat_save, threshold, git_repo_base, region_labels)
+                   mat_save, threshold, git_repo_base, region_labels, self.landmark_arr)
         saveFolderName = output
         if not atlas:
             self.folderName = os.path.join(saveFolderName, "output_overlay")

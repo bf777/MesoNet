@@ -8,6 +8,8 @@ Licensed under the MIT License (see LICENSE for details)
 import fnmatch
 import glob
 import os
+import numpy as np
+import skimage.io as io
 from tkinter import *  # Python 3.x
 from tkinter import filedialog
 
@@ -15,7 +17,8 @@ from PIL import Image, ImageTk, ImageDraw
 
 from mesonet.train_model import trainModel
 from mesonet.utils import config_project, find_git_repo
-from mesonet.dlc_predict import DLCPrep, DLCLabel, DLCTrain
+from mesonet.dlc_predict import DLCPrep, DLCLabel, DLCTrain, DLC_edit_bodyparts
+from mesonet.mask_functions import inpaintMask
 
 
 class GuiTrain:
@@ -46,6 +49,7 @@ class GuiTrain:
         self.dlc_folder = self.cwd
         self.task = self.DEFAULT_TASK
         self.name = self.DEFAULT_NAME
+        self.bodyparts = ['A', 'B', 'C', 'D']
         self.config_path = ''
         self.steps_per_epoch = 300
         self.epochs = 60
@@ -112,8 +116,9 @@ class GuiTrain:
                                   command=lambda: self.trainModelGUI(self.saveFolderName,
                                                                      os.path.join(self.git_repo_base,
                                                                                   'models', self.modelNameBox.get()),
-                                                                     self.logName,
-                                                                     self.git_repo_base))
+                                                                     self.logName, self.git_repo_base,
+                                                                     int(self.stepEpochsBox.get()),
+                                                                     int(self.epochsBox.get())))
         self.trainButton.grid(row=10, column=4, columnspan=2, padx=2, sticky=N + S + W + E)
 
         # Setup DLC training options
@@ -128,6 +133,18 @@ class GuiTrain:
         self.nameLabel.grid(row=1, column=4, sticky=E + W)
         self.nameBox = Entry(self.root_train, textvariable=self.name_str, width=20)
         self.nameBox.grid(row=1, column=5)
+
+        self.epochs_str = StringVar(self.root_train, value=self.epochs)
+        self.epochsLabel = Label(self.root_train, text="U-Net epochs")
+        self.epochsLabel.grid(row=4, column=4, sticky=E + W)
+        self.epochsBox = Entry(self.root_train, textvariable=self.epochs_str, width=20)
+        self.epochsBox.grid(row=4, column=5)
+
+        self.step_epochs_str = StringVar(self.root_train, value=self.steps_per_epoch)
+        self.stepEpochsLabel = Label(self.root_train, text="Steps per epoch")
+        self.stepEpochsLabel.grid(row=5, column=4, sticky=E + W)
+        self.stepEpochsBox = Entry(self.root_train, textvariable=self.step_epochs_str, width=20)
+        self.stepEpochsBox.grid(row=5, column=5)
 
         self.displayiters = 100
         self.displayiters_str = StringVar(self.root_train, value=self.displayiters)
@@ -168,10 +185,9 @@ class GuiTrain:
 
         # Image controls
         # Buttons below will only display if an image is displayed
-        self.nextButton = Button(self.root_train, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
+        self.nextButton = Button(self.root_train, text="->", command=lambda: self.forward(None))
         self.nextButton.grid(row=14, column=2, columnspan=1)
-        self.previousButton = Button(self.root_train, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName,
-                                                                                                   0))
+        self.previousButton = Button(self.root_train, text="<-", command=lambda: self.backward(None))
         self.previousButton.grid(row=14, column=0, columnspan=1)
 
         # Bind right and left arrow keys to forward/backward controls
@@ -270,9 +286,13 @@ class GuiTrain:
 
     def forward(self, event):
         self.ImageDisplay(1, self.folderName, 0)
+        self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
+        self.draw = ImageDraw.Draw(self.mask)
 
     def backward(self, event):
         self.ImageDisplay(-1, self.folderName, 0)
+        self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
+        self.draw = ImageDraw.Draw(self.mask)
 
     def paint_setup(self):
         self.old_x, self.old_y = None, None
@@ -305,15 +325,20 @@ class GuiTrain:
             os.mkdir(os.path.join(mask_folder, 'label'))
 
         self.image_resize.save(os.path.join(mask_folder, "image", "{}.png".format(img_name)))
-        self.mask.save(os.path.join(mask_folder, "label", "{}.png".format(img_name)))
+        mask_cv2 = np.array(self.mask)
+        mask_cv2 = inpaintMask(mask_cv2)
+        io.imsave(os.path.join(mask_folder, "label", "{}.png".format(img_name)), mask_cv2)
+        # self.mask.save(os.path.join(mask_folder, "label", "{}.png".format(img_name)))
 
-    def trainModelGUI(self, mask_folder, model_name, log_folder, git_repo_base):
-        trainModel(mask_folder, model_name, log_folder, git_repo_base, self.steps_per_epoch, self.epochs)
+    def trainModelGUI(self, mask_folder, model_name, log_folder, git_repo_base, steps_per_epoch, epochs):
+        trainModel(mask_folder, model_name, log_folder, git_repo_base, steps_per_epoch, epochs)
         config_project(mask_folder, log_folder, 'train', model_name=model_name)
 
     def getDLCConfig(self, project_name, your_name, img_path, output_dir_base):
         config_path = DLCPrep(project_name, your_name, img_path, output_dir_base)
+        print(config_path)
         self.config_path = config_path
+        DLC_edit_bodyparts(self.config_path, self.bodyparts)
 
 
 def gui():

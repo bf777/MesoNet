@@ -80,7 +80,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             num_images=num_images,
             model=model,
             git_repo_base=git_repo_base,
-            region_labels=region_labels
+            region_labels=region_labels,
+            landmark_arr=[0, 1, 2, 3]
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"
@@ -111,7 +112,6 @@ def parse_yaml(config_file):
             return d
         except yaml.YAMLError as exc:
             print(exc)
-
 
 def natural_sort_key(s):
     """

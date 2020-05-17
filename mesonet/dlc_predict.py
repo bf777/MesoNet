@@ -7,13 +7,14 @@ Licensed under the MIT License (see LICENSE for details)
 import deeplabcut
 from mesonet.atlas_brain_matching import atlasBrainMatch
 from mesonet.utils import parse_yaml, natural_sort_key
+from deeplabcut.utils.auxiliaryfunctions import read_config, write_config
 import cv2
 import glob
 import os
 
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
-               mat_save, threshold, git_repo_base, region_labels):
+               mat_save, threshold, git_repo_base, region_labels, landmark_arr):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -105,7 +106,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         print("Landmark prediction complete!")
         if not atlas:
             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base,
-                            region_labels)
+                            region_labels, landmark_arr)
 
 
 def DLCPredictBehavior(config, input_file, output):
@@ -191,6 +192,12 @@ def DLCTrain(config_path, displayiters, saveiters, maxiters):
     deeplabcut.train_network(config_path, displayiters=displayiters, saveiters=saveiters, maxiters=maxiters)
 
 
+def DLC_edit_bodyparts(config_path, new_bodyparts):
+    dlc_cfg = read_config(config_path)
+    dlc_cfg['bodyparts'] = new_bodyparts
+    write_config(config_path, dlc_cfg)
+
+
 def predict_dlc(config_file):
     """
     Loads parameters into DLCPredict from config file.
@@ -207,5 +214,6 @@ def predict_dlc(config_file):
     threshold = cfg['threshold']
     git_repo_base = cfg['git_repo_base']
     region_labels = cfg['region_labels']
+    landmark_arr = cfg['landmarks']
     DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
-               region_labels)
+               region_labels, landmark_arr)

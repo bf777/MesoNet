@@ -40,20 +40,20 @@ def find_peaks(img):
     return maxLocArr
 
 
-def coords_to_mat(sub_pts, i, output_mask_path):
-    x_bregma, y_bregma = sub_pts[3]
-    landmark_names = ['left', 'lambda', 'right', 'bregma']
-    for pt, landmark in zip(sub_pts, landmark_names):
-        x_pt = pt[0]
-        y_pt = pt[1]
-        pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
-        pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
-        print("landmark position:{}".format(pt_adj))
-        if not os.path.isdir(os.path.join(output_mask_path, 'mat_coords')):
-            os.mkdir(os.path.join(output_mask_path, 'mat_coords'))
-        scipy.io.savemat(os.path.join(output_mask_path,
-                                 'mat_coords/landmarks_{}_{}.mat'.format(i, landmark)),
-                    {'landmark_coords_{}_{}'.format(i, landmark): pt_adj_to_mat}, appendmat=False)
+def coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr):
+    if bregma_present:
+        x_bregma, y_bregma = sub_pts[bregma_index]
+        for pt, landmark in zip(sub_pts, landmark_arr):
+            x_pt = pt[0]
+            y_pt = pt[1]
+            pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
+            pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
+            print("landmark position:{}".format(pt_adj))
+            if not os.path.isdir(os.path.join(output_mask_path, 'mat_coords')):
+                os.mkdir(os.path.join(output_mask_path, 'mat_coords'))
+            scipy.io.savemat(os.path.join(output_mask_path,
+                                     'mat_coords/landmarks_{}_{}.mat'.format(i, landmark)),
+                        {'landmark_coords_{}_{}'.format(i, landmark): pt_adj_to_mat}, appendmat=False)
 
 
 def sensory_to_mat(sub_pts, bregma_pt, i, output_mask_path):
@@ -84,7 +84,7 @@ def atlas_from_mat(input_file):
     return thresh
 
 
-def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n):
+def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_mask):
     """
     Gets the contour of the brain's boundaries and applies a piecewise affine transform to the brain atlas
     based on the cortical landmarks predicted in dlc_predict (and peaks of activity on the sensory map, if available).
@@ -113,12 +113,13 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n):
     tform = PiecewiseAffineTransform()
     tform.estimate(c_atlas_landmarks, c_landmarks)
     dst = warp(atlas_to_warp, tform, output_shape=(512, 512))
-    io.imsave(os.path.join(cwd, "mask_{}.png".format(n)), mask)
+    if main_mask:
+        io.imsave(os.path.join(cwd, "mask_{}.png".format(n)), mask)
     return dst
 
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
-                    mat_save, threshold, git_repo_base, region_labels):
+                    mat_save, threshold, git_repo_base, region_labels, landmark_arr):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.
@@ -188,22 +189,61 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     sub_pts4 = []
 
     bregma_list = []
+    bregma_present = True
 
     coords = pd.read_csv(coords_input)
     x_coord = coords.iloc[2:, 1::3]
     y_coord = coords.iloc[2:, 2::3]
-    for i in range(0, len(x_coord)):
+    landmark_indices = [0, 3, 2, 1]
+    atlas_indices = [0, 3, 2, 1]
+    landmark_indices_hemi = []
+    atlas_indices_hemi = []
+    one_hemi = False
+    for arr_index, i in enumerate(range(0, len(x_coord))):
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
+        # x_coord_flat = x_coord_flat[np.r_[0:2, 3:4]]
+        # y_coord_flat = y_coord_flat[np.r_[0:2, 3:4]]
+        print("landmark arr: {}".format(landmark_arr))
+        x_coord_flat = x_coord_flat[landmark_arr]
+        y_coord_flat = y_coord_flat[landmark_arr]
+        print(x_coord_flat)
+        print(y_coord_flat)
+        print(len(x_coord_flat))
+        print(len(y_coord_flat))
+        if (len(x_coord_flat) == 3) and (len(y_coord_flat) == 3):
+            one_hemi = True
+        bregma_index = int(max(landmark_arr))
+        if one_hemi:
+            if arr_index == 0:
+                if 0 in landmark_arr:
+                    landmark_indices_hemi.append(0)
+                    atlas_indices_hemi.append(0)
+                landmark_indices_sorted = sorted(landmark_arr, reverse=True)
+                atlas_indices_sorted = sorted(landmark_arr, reverse=True)
+                landmark_indices_hemi.extend(landmark_indices_sorted[0:2])
+                atlas_indices_hemi.extend(atlas_indices_sorted[0:2])
+                landmark_indices = landmark_indices_hemi
+                atlas_indices = atlas_indices_hemi
+            landmark_indices = [0, 2, 1]
+            atlas_indices = [0, 2, 1]
+            if 1 not in landmark_arr:
+                atlas_indices = [0, 1, 2]
+            bregma_index = int(max(landmark_indices))
+            print(bregma_index)
+        print(one_hemi)
+        print(landmark_indices)
         # 0 = left, 1 = bregma, 2 = right, 3 = lambda
-        for j in [0, 3, 2, 1]:
+        for j in landmark_indices:
             sub_pts.append([x_coord_flat[j], y_coord_flat[j]])
         # 1 = left, 2 = bregma, 3 = right, 0 = lambda
-        for j in [0, 3, 2, 1]:
+        for j in atlas_indices:
             sub_pts2.append([i_coord[j], j_coord[j]])
         pts.append(sub_pts)
         pts2.append(sub_pts2)
-        coords_to_mat(sub_pts, i, output_mask_path)
+        print(sub_pts)
+        print(sub_pts2)
+        coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr)
         sub_pts = []
         sub_pts2 = []
 
@@ -233,25 +273,30 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         print("Performing first transformation of atlas {}...".format(n))
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
         M = cv2.getAffineTransform(pts2[n][0:3], pts[n][0:3])
+        print("M: {}".format(M))
         atlas_warped = cv2.warpAffine(im, M, (512, 512))
+        atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
+        io.imsave(atlas_first_transform_path, atlas_warped)
         atlas_mask_warped = cv2.warpAffine(atlas_mask, M, (512, 512))
         # Second alignment of brain atlas using four cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
-        dst = getMaskContour(mask_dir, atlas_warped, pts[n], pts2[n], cwd, n)
+        dst = getMaskContour(mask_dir, atlas_warped, pts[n], pts2[n], cwd, n, True)
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
         # sensory activity
         if sensory_match:
-            dst = getMaskContour(mask_dir, atlas_warped, pts3[n], pts4[n], cwd, n)
+            dst = getMaskContour(mask_dir, atlas_warped, pts3[n], pts4[n], cwd, n, True)
         # Resize images back to 512x512
         dst = cv2.resize(dst, (im.shape[0], im.shape[1]))
+        atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts[n], pts2[n], cwd, n, False)
         atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
         atlas_path = os.path.join(output_mask_path, '{}_atlas.png'.format(str(n)))
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
         io.imsave(atlas_path, dst)
         io.imsave(mask_warped_path, atlas_mask_warped)
         atlas_to_mask(atlas_path, mask_dir, mask_warped_path, output_mask_path, n)
-        bregma_list.append(pts[n][3])
+        if bregma_present:
+            bregma_list.append(pts[n][bregma_index])
+            print("Bregma list: {}".format(bregma_list))
     # Converts the transformed brain atlas into a segmentation method for the original brain image
-    print("Bregma list: {}".format(bregma_list))
     applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold, git_repo_base,
               bregma_list, region_labels)
