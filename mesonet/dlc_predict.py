@@ -5,7 +5,7 @@ https://github.com/bf777/MesoNet
 Licensed under the MIT License (see LICENSE for details)
 """
 import deeplabcut
-from mesonet.atlas_brain_matching import atlasBrainMatch
+from mesonet.atlas_brain_matching_align import atlasBrainMatch
 from mesonet.utils import parse_yaml, natural_sort_key
 from deeplabcut.utils.auxiliaryfunctions import read_config, write_config
 import cv2

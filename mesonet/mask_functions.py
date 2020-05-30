@@ -20,6 +20,7 @@ import scipy
 from PIL import Image
 import pandas as pd
 from keras import backend as K
+from polylabel import polylabel
 
 # Set background colour as black to fix issue with more than one background region being identified.
 Background = [0, 0, 0]
@@ -160,32 +161,32 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         cnts_orig = imutils.grab_contours(cnts_orig)
         edge_coords_orig_x = []
         edge_coords_orig_y = []
-        for num_label, cnt_orig in enumerate(cnts_orig):
-            # cnts_orig_max = max(cnts_orig, key=cv2.contourArea)
-            cnt_orig_moment = cv2.moments(cnt_orig)
-            if num_label not in [0, 1]:
-                try:
-                    orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
-                    orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
-                    for coord in cnt_orig:
-                        if coord[0][0] == orig_x:
-                            edge_coords_orig_y.append(coord[0].tolist())
-                        if coord[0][1] == orig_y:
-                            edge_coords_orig_x.append(coord[0].tolist())
-                    print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x, edge_coords_orig_y))
-                    adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
-                    adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
-                    adj_centre = [adj_centre_x, adj_centre_y]
-                    if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
-                        print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
-                        orig_x, orig_y = (adj_centre[0], adj_centre[1])
-                    edge_coords_orig_x = []
-                    edge_coords_orig_y = []
-                    cv2.putText(img, str(num_label),
-                                (int(orig_x), int(orig_y)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
-                except:
-                    print("cannot find moments!")
+        # for num_label, cnt_orig in enumerate(cnts_orig):
+        #     # cnts_orig_max = max(cnts_orig, key=cv2.contourArea)
+        #     cnt_orig_moment = cv2.moments(cnt_orig)
+        #     if num_label not in [0, 1]:
+        #         try:
+        #             orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
+        #             orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
+        #             for coord in cnt_orig:
+        #                 if coord[0][0] == orig_x:
+        #                     edge_coords_orig_y.append(coord[0].tolist())
+        #                 if coord[0][1] == orig_y:
+        #                     edge_coords_orig_x.append(coord[0].tolist())
+        #             # print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x, edge_coords_orig_y))
+        #             adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
+        #             adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
+        #             adj_centre = [adj_centre_x, adj_centre_y]
+        #             if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
+        #                 # print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+        #                 orig_x, orig_y = (adj_centre[0], adj_centre[1])
+        #             edge_coords_orig_x = []
+        #             edge_coords_orig_y = []
+        #             cv2.putText(img, str(num_label),
+        #                         (int(orig_x), int(orig_y)),
+        #                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+        #         except:
+        #             print("cannot find moments!")
 
         opening = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel, iterations=1)  # 1
         # sure background area
@@ -240,30 +241,34 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 c_for_centre = min(inner_cnts, key=cv2.contourArea)
                 # m = cv2.moments(cnt)
                 m = cv2.moments(c_for_centre)
-                c_x = int(m["m10"] / m["m00"])
-                c_y = int(m["m01"] / m["m00"])
+                # c_x = int(m["m10"] / m["m00"])
+                # c_y = int(m["m01"] / m["m00"])
 
                 c = max(cnts, key=cv2.contourArea)
+                c_as_list = c.tolist()
+                c_as_list = [[c_val[0] for c_val in c_as_list]]
+                centre_polylabel = polylabel(c_as_list)
+                c_x, c_y = int(centre_polylabel[0]), int(centre_polylabel[1])
 
                 # The centroid of the contour works as the contour centre in most cases. However, sometimes the
                 # centroid is outside of the contour. As such, using the average x and y positions of the contour edges
                 # that intersect with the centroid could be a safer option. We try to find this average position and if
                 # there are more than two intersecting edges or if the average position is over 200 px from the
                 # centroid, we fall back to using the centroid as our measure of the centre of the contour.
-                for coord in c_for_centre:
-                    if coord[0][0] == c_x:
-                        edge_coords_y.append(coord[0].tolist())
-                    if coord[0][1] == c_y:
-                        edge_coords_x.append(coord[0].tolist())
-                print("{}: edge coords x: {}, edge coords y: {}".format(label, edge_coords_x, edge_coords_y))
-                adj_centre_x = int(np.mean([edge_coords_x[0][0], edge_coords_x[-1][0]]))
-                adj_centre_y = int(np.mean([edge_coords_y[0][1], edge_coords_y[-1][1]]))
-                adj_centre = [adj_centre_x, adj_centre_y]
-                if abs(adj_centre_x - c_x) <= 100 and abs(adj_centre_x - c_y) <= 100:
-                    print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
-                    c_x, c_y = (adj_centre[0], adj_centre[1])
-                edge_coords_x = []
-                edge_coords_y = []
+                # for coord in c_for_centre:
+                #     if coord[0][0] == c_x:
+                #         edge_coords_y.append(coord[0].tolist())
+                #     if coord[0][1] == c_y:
+                #         edge_coords_x.append(coord[0].tolist())
+                # print("{}: edge coords x: {}, edge coords y: {}".format(label, edge_coords_x, edge_coords_y))
+                # adj_centre_x = int(np.mean([edge_coords_x[0][0], edge_coords_x[-1][0]]))
+                # adj_centre_y = int(np.mean([edge_coords_y[0][1], edge_coords_y[-1][1]]))
+                # adj_centre = [adj_centre_x, adj_centre_y]
+                # if abs(adj_centre_x - c_x) <= 100 and abs(adj_centre_x - c_y) <= 100:
+                #     print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+                #     c_x, c_y = (adj_centre[0], adj_centre[1])
+                # edge_coords_x = []
+                # edge_coords_y = []
                 # compute center relative to bregma
                 # rel_x = contour centre x coordinate - bregma x coordinate
                 # rel_y = contour centre y coordinate - bregma y coordinate
@@ -320,14 +325,14 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
                             label_num += 1
                         if label_num == 0 and not region_labels:
-                            (text_width, text_height) = cv2.getTextSize(str(label), cv2.FONT_HERSHEY_SIMPLEX, 0.3,
+                            (text_width, text_height) = cv2.getTextSize(str(label), cv2.FONT_HERSHEY_SIMPLEX, 0.4,
                                                                         thickness=1)[0]
                             cv2.rectangle(img, (c_x + label_jitter, c_y + label_jitter),
                                           (c_x + label_jitter + text_width, c_y + label_jitter - text_height),
                                           (255, 255, 255), cv2.FILLED)
                             cv2.putText(img, str(label),
                                         (int(c_x + label_jitter), int(c_y + label_jitter)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, label_color, 1)
                             label_num += 1
                         if mat_save and n > 0:
                             # Create an empty array of the same size as the contour, with the centre of the contour

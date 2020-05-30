@@ -13,6 +13,7 @@ import skimage.io as io
 import skimage.transform as trans
 from skimage.transform import PiecewiseAffineTransform, warp
 import os
+import sys
 import fnmatch
 import glob
 
@@ -139,6 +140,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     """
     # load brain images folder
     brain_img_arr = []
+    dlc_img_arr = []
     peak_arr = []
 
     # Prepare output folder
@@ -153,11 +155,16 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
     # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet/'
     im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_512_512.mat'))
+    atlas_png = os.path.join(git_repo_base, 'atlases/landmarks_atlas_512_512.png')
 
+    for num, file in enumerate(os.listdir(cwd)):
+        if fnmatch.fnmatch(file, "*.png") and 'mask' not in file:
+            dlc_img_arr.append(os.path.join(cwd, file))
     for num, file in enumerate(os.listdir(brain_img_dir)):
         if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
     i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
+    atlas_arr = np.array([(100, 148), (256, 254), (413, 148), (256, 446)])
 
     peak_arr_flat = []
     peak_arr_total = []
@@ -194,11 +201,12 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     coords = pd.read_csv(coords_input)
     x_coord = coords.iloc[2:, 1::3]
     y_coord = coords.iloc[2:, 2::3]
-    landmark_indices = [0, 3, 2, 1]
-    atlas_indices = [0, 3, 2, 1]
+    landmark_indices = [0, 1, 2, 3] # [0, 3, 2, 1]
+    atlas_indices = [0, 1, 2, 3] # [0, 3, 2, 1]
     landmark_indices_hemi = []
     atlas_indices_hemi = []
     one_hemi = False
+    two_point = False
     for arr_index, i in enumerate(range(0, len(x_coord))):
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
@@ -207,12 +215,76 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         print("landmark arr: {}".format(landmark_arr))
         x_coord_flat = x_coord_flat[landmark_arr]
         y_coord_flat = y_coord_flat[landmark_arr]
-        print(x_coord_flat)
-        print(y_coord_flat)
-        print(len(x_coord_flat))
-        print(len(y_coord_flat))
+        # print(x_coord_flat)
+        # print(y_coord_flat)
+        # print(len(x_coord_flat))
+        # print(len(y_coord_flat))
+        dlc_list = []
+        atlas_list = []
+        mean_dlc = 0
+        mean_atlas = 0
+        print("Atlas arr: {}".format(atlas_arr))
+        for (coord_x, coord_y) in zip(x_coord_flat, y_coord_flat):
+            dlc_coord = (coord_x, coord_y)
+            # mean_dlc = np.median([coord_x, coord_y])
+            # mean_atlas = np.median([coord_i, coord_j])
+            dlc_list.append(dlc_coord)
+        for coord_atlas in atlas_arr:
+            atlas_coord = (coord_atlas[0], coord_atlas[1])
+            atlas_list.append(atlas_coord)
+            print("coord_atlas: {}".format(coord_atlas))
+        # mean_dlc_list.sort()
+        # mean_atlas_list.sort()
+        a = 0
+        b = 0
+        # Initialize result as max value
+        result = sys.maxsize
+        min_landmark_arr = []
+        result_atlas_idx = 0
+
+        #for val_dlc, coord_dlc_set in enumerate(mean_dlc_list):
+        #    for val_atlas, coord_atlas_set in enumerate(mean_atlas_list):
+        #        if abs(coord_dlc_set - coord_atlas_set) < result:
+        #            result = abs(coord_dlc_set - coord_atlas_set)
+        #            result_atlas_idx = val_atlas
+        #    min_landmark_arr.append(result_atlas_idx)
+        #landmark_indices = landmark_arr
+        #atlas_indices = min_landmark_arr
+
+        print(atlas_list)
+        print(dlc_list)
+        for val_dlc, coord_dlc_set in enumerate(dlc_list):
+            nodes = np.asarray(atlas_list)
+            pts_dist = np.sum(abs(nodes - coord_dlc_set), axis=1)
+            print("pts dist: {}".format(pts_dist))
+            min_dist = np.argmin(pts_dist)
+            min_landmark_arr.append(min_dist)
+        # landmark_indices = np.argsort(min_landmark_arr).tolist()
+        landmark_indices = landmark_indices[0:len(min_landmark_arr)]
+        atlas_indices = min_landmark_arr
+        print("atlas indices: {}".format(atlas_indices))
+
+        # Adapted from https://www.geeksforgeeks.org/smallest-difference-pair-values-two-unsorted-arrays/
+
+        # Scan Both Arrays up to
+        # sizeof of the Arrays
+        # while a < len_dlc and b < len_atlas:
+        #   if abs(mean_dlc_list[a] - mean_atlas_list[b]) < result:
+        #       result = abs(mean_dlc_list[a] - mean_atlas_list[b])
+        #        last_a = a
+        #        last_b = b
+        #        # Move Smaller Value
+        #    if (mean_dlc_list[a] < mean_atlas_list[b]):
+        #        a += 1
+        #    else:
+        #        b += 1
+
+
+
         if (len(x_coord_flat) == 3) and (len(y_coord_flat) == 3):
             one_hemi = True
+        elif (len(x_coord_flat) == 2) and (len(y_coord_flat) == 2):
+            two_point = True
         bregma_index = int(max(landmark_arr))
         if one_hemi:
             if arr_index == 0:
@@ -223,22 +295,28 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 atlas_indices_sorted = sorted(landmark_arr, reverse=True)
                 landmark_indices_hemi.extend(landmark_indices_sorted[0:2])
                 atlas_indices_hemi.extend(atlas_indices_sorted[0:2])
-                landmark_indices = landmark_indices_hemi
-                atlas_indices = atlas_indices_hemi
-            landmark_indices = [0, 2, 1]
-            atlas_indices = [0, 2, 1]
-            if 1 not in landmark_arr:
-                atlas_indices = [0, 1, 2]
+                # landmark_indices = landmark_indices_hemi
+                # atlas_indices = atlas_indices_hemi
+            # landmark_indices = [0, 2, 1]
+            # atlas_indices = [0, 2, 1]
+            # if 1 not in landmark_arr:
+            #    atlas_indices = [0, 1, 2]
+            bregma_index = int(max(landmark_indices))
+            print(bregma_index)
+        elif two_point:
+            # landmark_indices = [0, 1]
+            # atlas_indices = [2, 3]
             bregma_index = int(max(landmark_indices))
             print(bregma_index)
         print(one_hemi)
         print(landmark_indices)
+        print(atlas_indices)
         # 0 = left, 1 = bregma, 2 = right, 3 = lambda
         for j in landmark_indices:
             sub_pts.append([x_coord_flat[j], y_coord_flat[j]])
         # 1 = left, 2 = bregma, 3 = right, 0 = lambda
         for j in atlas_indices:
-            sub_pts2.append([i_coord[j], j_coord[j]])
+            sub_pts2.append([atlas_arr[j][0], atlas_arr[j][1]])
         pts.append(sub_pts)
         pts2.append(sub_pts2)
         print(sub_pts)
@@ -263,7 +341,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             sub_pts4 = []
         pts3, pts4 = np.asarray(pts3).astype('float32'), np.asarray(pts4).astype('float32')
 
-    for n, br in enumerate(brain_img_arr):
+    for (n, br), (n_dlc, br_dlc) in zip(enumerate(brain_img_arr), enumerate(dlc_img_arr)):
         io.imsave(os.path.join(cwd, "../output_mask/im.png".format(n)), im)
         cv2.imread(os.path.join(cwd, "../output_mask/im.png".format(n)), cv2.IMREAD_GRAYSCALE)
         atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_mask.png")
@@ -272,12 +350,36 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
         print("Performing first transformation of atlas {}...".format(n))
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
-        M = cv2.getAffineTransform(pts2[n][0:3], pts[n][0:3])
+        # M = cv2.getAffineTransform(pts2[n][0:3], pts[n][0:3])
+        print(pts2[n], pts[n])
+        print(len(pts2[n]))
+        # homography, mask = cv2.findHomography(pts2[n], pts[n], 0)
+        # atlas_warped = warp(im, homography, output_shape=(512, 512))
+        # atlas_mask_warped = warp(atlas_mask, homography, output_shape=(512, 512))
+        # pts2_for_input = np.delete(np.array(pts2[n]), 1, 0)
+        # pts_for_input = np.delete(np.array(pts[n]), 1, 0)
+        pts2_for_input = np.array(pts2[n])
+        pts_for_input = np.array(pts[n])
+        if len(pts2[n]) == 2:
+            pts2_for_input = np.append(pts2_for_input, [[0, 0]], axis=0)
+            pts_for_input = np.append(pts_for_input, [[0, 0]], axis=0)
+        print(pts2_for_input, pts_for_input)
+        M = cv2.estimateAffine2D(pts2_for_input, pts_for_input)[0]
         print("M: {}".format(M))
         atlas_warped = cv2.warpAffine(im, M, (512, 512))
+        atlas_mask_warped = cv2.warpAffine(atlas_mask, M, (512, 512))
+        # homography, mask = cv2.findHomography(pts2[n], pts[n], 0)
+        # atlas_align = registerAtlas(br_dlc, atlas_png, cwd, n)
+        # atlas_warped = cv2.warpPerspective(im, homography, (512, 512))
+        # atlas_warped = warp(im, homography, output_shape=(512, 512))
+        # print("M: {}".format(M))
+        # atlas_warped = cv2.warpAffine(im, M, (512, 512))
         atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
         io.imsave(atlas_first_transform_path, atlas_warped)
-        atlas_mask_warped = cv2.warpAffine(atlas_mask, M, (512, 512))
+        # atlas_mask_warped = cv2.warpAffine(atlas_mask, M, (512, 512))
+        # print("Homography: {}".format(homography))
+        # atlas_mask_warped = warp(atlas_mask, homography, output_shape=(512, 512))
+        # atlas_mask_warped = cv2.warpPerspective(atlas_mask, homography, (512, 512))
         # Second alignment of brain atlas using four cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
         dst = getMaskContour(mask_dir, atlas_warped, pts[n], pts2[n], cwd, n, True)

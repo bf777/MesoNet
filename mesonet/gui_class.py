@@ -365,9 +365,9 @@ class Gui:
         lambd = self.landmark_lambda.get()
         if left == 1:
             self.landmark_arr.append(0)
-        if right == 1:
-            self.landmark_arr.append(1)
         if bregma == 1:
+            self.landmark_arr.append(1)
+        if right == 1:
             self.landmark_arr.append(2)
         if lambd == 1:
             self.landmark_arr.append(3)
