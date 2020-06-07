@@ -94,10 +94,26 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
     # Adds the common white regions of the atlas and U-net mask together into a binary image.
     mask_input = cv2.bitwise_and(atlas, mask_input)
-    # Adds the common white regions of the mask created above and the corrective mask (correcting for gaps between U-net
-    # cortical boundaries and brain atlas) together into a binary image.
+    ## Adds the common white regions of the mask created above and the corrective mask (correcting for gaps between U-net
+    ## cortical boundaries and brain atlas) together into a binary image.
     mask_input = cv2.bitwise_and(mask_input, mask_warped)
+    # mask_input = cv2.bitwise_and(atlas, mask_warped)
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
+
+
+def greater(a, b):
+    momA = cv2.moments(a)
+    (xa,ya) = int(momA['m10']/momA['m00']), int(momA['m01']/momA['m00'])
+
+    momB = cv2.moments(b)
+    (xb,yb) = int(momB['m10']/momB['m00']), int(momB['m01']/momB['m00'])
+    if xa > xb:
+        return 1
+
+    if xa == xb:
+        return 0
+    else:
+        return -1
 
 
 def inpaintMask(mask):
@@ -130,6 +146,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     # Find the contours of an existing set of brain regions (to be used to identify each new brain region by shape)
     mat_files = glob.glob(os.path.join(git_repo_base, 'atlases/mat_contour_base/*.mat'))
     mat_files.sort(key=natural_sort_key)
+    vertical_aligns = []
     for file in mat_files:
         mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))
         mat = mat['vect']
@@ -143,50 +160,105 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         img = cv2.imread(item)
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
         atlas_im = cv2.imread(os.path.join(mask_path, '{}_atlas_first_transform.png'.format(str(i))))
+        # atlas_unskewed_im = cv2.imread(os.path.join(mask_path, 'atlas_unskewed.png'))
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
         # Get the region of the mask that is white
         mask_color = cv2.inRange(mask, region_bgr_lower, region_bgr_upper)
-        atlas_color = cv2.inRange(atlas_im, region_bgr_lower, region_bgr_upper)
+        atlas_color = cv2.inRange(atlas_im, region_bgr_lower, region_bgr_upper) # atlas_im
         io.imsave(os.path.join(save_path, "{}_mask_binary.png".format(i)), mask_color)
-        io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_color)
         # Marker labelling
         # noise removal
         kernel = np.ones((3, 3), np.uint8)
         mask_color = np.uint8(mask_color)
         atlas_color = np.uint8(atlas_color)
-        (thresh_atlas, atlas_bw) = cv2.threshold(atlas_color, 128, 255, 0)
+        thresh_atlas, atlas_bw = cv2.threshold(mask_color, 128, 255, 0)
+        io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
         # Find contours in original aligned atlas
-        cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_NONE)
+        cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         cnts_orig = imutils.grab_contours(cnts_orig)
         edge_coords_orig_x = []
         edge_coords_orig_y = []
-        # for num_label, cnt_orig in enumerate(cnts_orig):
-        #     # cnts_orig_max = max(cnts_orig, key=cv2.contourArea)
-        #     cnt_orig_moment = cv2.moments(cnt_orig)
-        #     if num_label not in [0, 1]:
-        #         try:
-        #             orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
-        #             orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
-        #             for coord in cnt_orig:
-        #                 if coord[0][0] == orig_x:
-        #                     edge_coords_orig_y.append(coord[0].tolist())
-        #                 if coord[0][1] == orig_y:
-        #                     edge_coords_orig_x.append(coord[0].tolist())
-        #             # print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x, edge_coords_orig_y))
-        #             adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
-        #             adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
-        #             adj_centre = [adj_centre_x, adj_centre_y]
-        #             if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
-        #                 # print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
-        #                 orig_x, orig_y = (adj_centre[0], adj_centre[1])
-        #             edge_coords_orig_x = []
-        #             edge_coords_orig_y = []
-        #             cv2.putText(img, str(num_label),
-        #                         (int(orig_x), int(orig_y)),
-        #                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
-        #         except:
-        #             print("cannot find moments!")
+        print(len(cnts_orig))
+        orig_list = []
+        orig_list_labels = []
+        orig_list_labels_left = []
+        orig_list_labels_right = []
+
+        for num_label, cnt_orig in enumerate(cnts_orig):
+            # cnts_orig_max = max(cnts_orig, key=cv2.contourArea)
+            cnt_orig_moment = cv2.moments(cnt_orig)
+            # print(num_label)
+            if num_label not in [0, 1]:
+                try:
+                    c_orig = max(cnts_orig, key=cv2.contourArea)
+                    c_orig_as_list = cnt_orig.tolist()
+                    c_orig_as_list = [[c_val[0] for c_val in c_orig_as_list]]
+                    orig_polylabel = polylabel(c_orig_as_list)
+                    # print(orig_polylabel)
+                    orig_x, orig_y = int(orig_polylabel[0]), int(orig_polylabel[1])
+                    orig_list.append((orig_x, orig_y))
+                    orig_list_labels.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                    if (orig_x - bregma_x) < 0:
+                        orig_list_labels_left.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                    elif(orig_x - bregma_x) > 0:
+                        orig_list_labels_right.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                    # orig_list_labels.append((orig_x - (np.shape(atlas_bw)[0])/2, orig_y - (np.shape(atlas_bw)[1])/2,
+                    #                          orig_x, orig_y, num_label))
+                    # orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
+                    # orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
+                    # for coord in cnt_orig:
+                    #     if coord[0][0] == orig_x:
+                    #         edge_coords_orig_y.append(coord[0].tolist())
+                    #     if coord[0][1] == orig_y:
+                    #         edge_coords_orig_x.append(coord[0].tolist())
+                    # # print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x, edge_coords_orig_y))
+                    # adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
+                    # adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
+                    # adj_centre = [adj_centre_x, adj_centre_y]
+                    # if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
+                    #     # print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+                    #     orig_x, orig_y = (adj_centre[0], adj_centre[1])
+                    # edge_coords_orig_x = []
+                    # edge_coords_orig_y = []
+                    # cv2.putText(img, str(num_label),
+                    #             (int(orig_x), int(orig_y)),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+                except:
+                    print("cannot find moments!")
+
+        orig_list.sort()
+        # orig_list_labels_sorted = sorted(orig_list_labels, key=lambda t: t[0])
+        orig_list_labels_sorted_left = sorted(orig_list_labels_left, key=lambda t: t[0], reverse=True)
+        orig_list_labels_sorted_right = sorted(orig_list_labels_right, key=lambda t: t[0])
+        flatten = lambda l: [obj for sublist in l for obj in sublist]
+        orig_list_labels_sorted = flatten([orig_list_labels_sorted_left, orig_list_labels_sorted_right])
+        # print(orig_list_labels_sorted)
+        vertical_check = np.asarray([val[0] for val in orig_list_labels_sorted])
+        # if len(vertical_aligns) > 0:
+        #     # print(vertical_aligns)
+        #     orig_list_labels_sorted_np = np.asarray(orig_list_labels_sorted)
+        #     # print(orig_list_labels_sorted_np[vertical_close_slice])
+        #     for v_align_slice in vertical_aligns:
+        #         prev_vertical_matches = np.asarray(orig_list_labels_sorted)[v_align_slice]
+        #         orig_list_labels_sorted_np[v_align_slice] = prev_vertical_matches
+        #         orig_list_labels_sorted = orig_list_labels_sorted_np.tolist()
+        for (orig_coord_val, orig_coord) in enumerate(orig_list_labels_sorted):
+            vertical_close = np.where((abs(vertical_check - orig_coord[0]) <= 5))
+            # print(vertical_close)
+            vertical_close_slice = vertical_close[0]
+            vertical_matches = np.asarray(orig_list_labels_sorted)[vertical_close_slice]
+            # print(vertical_matches)
+            if len(vertical_close_slice) > 1:
+                # vertical_aligns.append(vertical_close_slice)
+                # print(vertical_aligns)
+                vertical_match_sorted = sorted(vertical_matches, key=lambda t: t[1])
+                orig_list_labels_sorted_np = np.asarray(orig_list_labels_sorted)
+                # print(orig_list_labels_sorted_np[vertical_close_slice])
+                orig_list_labels_sorted_np[vertical_close_slice] = vertical_match_sorted
+                # print(orig_list_labels_sorted_np[vertical_close_slice])
+                orig_list_labels_sorted = orig_list_labels_sorted_np.tolist()
+                # print(orig_list_labels_sorted)
+        # print(orig_list_labels_sorted[0:20])
 
         opening = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel, iterations=1)  # 1
         # sure background area
@@ -212,7 +284,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         labels_arr = []
         label_jitter = random.randrange(-2, 2)
 
-        for n, label in enumerate(np.unique(labels)):
+        for (n, label), (coord_label_num, coord) in zip(enumerate(np.unique(labels)),
+                                                        enumerate(orig_list_labels_sorted)):
             label_num = 0
             # if the label is zero, we are examining the 'background'
             # so simply ignore it
@@ -227,6 +300,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                     cv2.CHAIN_APPROX_NONE)
             cnts = imutils.grab_contours(cnts)
+            # cnts.sort(greater)
             cv2.drawContours(mask_dilate, cnts, -1, (255, 255, 255), 3)
             mask_dilate_2 = cv2.dilate(mask_dilate, kernel, iterations=7)
             (thresh, mask_dilate_bw) = cv2.threshold(mask_dilate_2, 128, 255, 0)
@@ -234,21 +308,37 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             inner_cnts = imutils.grab_contours(inner_cnts)
             edge_coords_x = []
             edge_coords_y = []
-            for (centre_cnt, (z, cnt)) in zip(inner_cnts, enumerate(cnts)):
+            # for coord_label_num, coord in enumerate(orig_list_labels_sorted):
+            #     label = str(coord_label_num)
+            #     # print(label)
+            #     print(coord)
+            count_label = 0
+            for (z, cnt) in enumerate(cnts):
+                # label = str(coord_label_num)
                 # compute the center of the contour
                 if len(cnts) > 1:
                     z = 0
-                c_for_centre = min(inner_cnts, key=cv2.contourArea)
+                count_label += 1
+                c_x, c_y = int(coord[2]), int(coord[3])
+                # c_for_centre = min(inner_cnts, key=cv2.contourArea)
                 # m = cv2.moments(cnt)
-                m = cv2.moments(c_for_centre)
+                # m = cv2.moments(c_for_centre)
                 # c_x = int(m["m10"] / m["m00"])
                 # c_y = int(m["m01"] / m["m00"])
 
                 c = max(cnts, key=cv2.contourArea)
-                c_as_list = c.tolist()
-                c_as_list = [[c_val[0] for c_val in c_as_list]]
-                centre_polylabel = polylabel(c_as_list)
-                c_x, c_y = int(centre_polylabel[0]), int(centre_polylabel[1])
+                # c_as_list = c.tolist()
+                # c_as_list = [[c_val[0] for c_val in c_as_list]]
+                # centre_polylabel = polylabel(c_as_list)
+                # c_x, c_y = int(centre_polylabel[0]), int(centre_polylabel[1])
+                rel_x = c_x - bregma_x
+                rel_y = c_y - bregma_y
+                # rel_x = coord[0]
+                # rel_y = coord[1]
+                # print([item for item in orig_list_labels_sorted if rel_x in item])
+                # label = [orig_list_labels_sorted.index(item) for item in orig_list_labels_sorted if rel_x in item][0]
+                label = coord_label_num
+                # print(label)
 
                 # The centroid of the contour works as the contour centre in most cases. However, sometimes the
                 # centroid is outside of the contour. As such, using the average x and y positions of the contour edges
@@ -272,8 +362,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 # compute center relative to bregma
                 # rel_x = contour centre x coordinate - bregma x coordinate
                 # rel_y = contour centre y coordinate - bregma y coordinate
-                rel_x = c_x - bregma_x
-                rel_y = c_y - bregma_y
+
                 # print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
                 c_rel_centre = [rel_x, rel_y]
                 if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):

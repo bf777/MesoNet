@@ -279,13 +279,17 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         #    else:
         #        b += 1
 
-
+        pts_dist = np.absolute(np.asarray(atlas_list) - np.asarray((im.shape[0]/2, im.shape[1]/2)))
+        pts_avg_dist = [np.mean(v) for v in pts_dist]
+        print("bregma dist: {}".format(pts_avg_dist))
+        bregma_index = np.argmin(np.asarray(pts_avg_dist))
+        # bregma_index = np.where(np.asarray(landmark_indices) == np.argmin(pts_dist))[0][0]
+        print("bregma index: {}".format(bregma_index))
 
         if (len(x_coord_flat) == 3) and (len(y_coord_flat) == 3):
             one_hemi = True
         elif (len(x_coord_flat) == 2) and (len(y_coord_flat) == 2):
             two_point = True
-        bregma_index = int(max(landmark_arr))
         if one_hemi:
             if arr_index == 0:
                 if 0 in landmark_arr:
@@ -308,6 +312,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             # atlas_indices = [2, 3]
             bregma_index = int(max(landmark_indices))
             print(bregma_index)
+
         print(one_hemi)
         print(landmark_indices)
         print(atlas_indices)
@@ -342,8 +347,9 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         pts3, pts4 = np.asarray(pts3).astype('float32'), np.asarray(pts4).astype('float32')
 
     for (n, br), (n_dlc, br_dlc) in zip(enumerate(brain_img_arr), enumerate(dlc_img_arr)):
-        io.imsave(os.path.join(cwd, "../output_mask/im.png".format(n)), im)
-        cv2.imread(os.path.join(cwd, "../output_mask/im.png".format(n)), cv2.IMREAD_GRAYSCALE)
+        im = np.uint8(im)
+        io.imsave(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), im)
+        # cv2.imread(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), cv2.IMREAD_GRAYSCALE)
         atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_mask.png")
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
@@ -382,14 +388,15 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # atlas_mask_warped = cv2.warpPerspective(atlas_mask, homography, (512, 512))
         # Second alignment of brain atlas using four cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
-        dst = getMaskContour(mask_dir, atlas_warped, pts[n], pts2[n], cwd, n, True)
+        # dst = getMaskContour(mask_dir, atlas_warped, pts[n], pts2[n], cwd, n, True)
+        dst = atlas_warped
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
         # sensory activity
         if sensory_match:
             dst = getMaskContour(mask_dir, atlas_warped, pts3[n], pts4[n], cwd, n, True)
         # Resize images back to 512x512
         dst = cv2.resize(dst, (im.shape[0], im.shape[1]))
-        atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts[n], pts2[n], cwd, n, False)
+        # atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts[n], pts2[n], cwd, n, False)
         atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
         atlas_path = os.path.join(output_mask_path, '{}_atlas.png'.format(str(n)))
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
