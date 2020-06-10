@@ -45,7 +45,8 @@ def testGenerator(test_path, num_image=60, target_size=(512, 512), flag_multi_cl
         img = img_as_ubyte(img)
         io.imsave(os.path.join(test_path, "{}.png".format(i)), img)
         img = io.imread(os.path.join(test_path, "%d.png" % i), as_gray=as_gray)
-        img = img / 255
+        if img.dtype == 'uint8':
+            img = img / 255
         img = np.reshape(img, img.shape + (1,)) if (not flag_multi_class) else img
         img = np.reshape(img, (1,) + img.shape)
         yield img

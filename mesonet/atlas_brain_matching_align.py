@@ -120,7 +120,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
 
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
-                    mat_save, threshold, git_repo_base, region_labels, landmark_arr):
+                    mat_save, threshold, git_repo_base, region_labels, landmark_arr_orig):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.
@@ -164,7 +164,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
     i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
-    atlas_arr = np.array([(100, 148), (256, 254), (413, 148), (256, 446)])
+    atlas_arr = np.array([(100.00000, 148.00000), (256.00000, 254.00000), (413.00000, 148.00000),
+                          (256.00000, 446.00000)])
 
     peak_arr_flat = []
     peak_arr_total = []
@@ -201,6 +202,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     coords = pd.read_csv(coords_input)
     x_coord = coords.iloc[2:, 1::3]
     y_coord = coords.iloc[2:, 2::3]
+    accuracy = coords.iloc[2:, 3::3]
     landmark_indices = [0, 1, 2, 3] # [0, 3, 2, 1]
     atlas_indices = [0, 1, 2, 3] # [0, 3, 2, 1]
     landmark_indices_hemi = []
@@ -208,12 +210,24 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     one_hemi = False
     two_point = False
     for arr_index, i in enumerate(range(0, len(x_coord))):
+        landmark_arr = landmark_arr_orig
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
+        accuracy_flat = accuracy.iloc[i].values.astype('float32')
+        accuracy_where = np.where(accuracy_flat <= 0.20)
+        print("accuracy arr: {}".format(accuracy_where[0]))
+        if 0 < (accuracy_where[0]).size < 3:
+            landmark_arr_adjusted = np.setdiff1d(np.asarray(landmark_arr), accuracy_where[0]).astype(int)
+            landmark_arr = landmark_arr_adjusted
+        else:
+            print("WARNING: landmarks at positions {} are LOW ACCURACY".format(accuracy_where))
+            landmark_arr = landmark_arr_orig
         # x_coord_flat = x_coord_flat[np.r_[0:2, 3:4]]
         # y_coord_flat = y_coord_flat[np.r_[0:2, 3:4]]
         print("landmark arr: {}".format(landmark_arr))
+        # print("x_coord_flat BEFORE: {}".format(x_coord_flat))
         x_coord_flat = x_coord_flat[landmark_arr]
+        # print("x_coord_flat AFTER: {}".format(x_coord_flat))
         y_coord_flat = y_coord_flat[landmark_arr]
         # print(x_coord_flat)
         # print(y_coord_flat)
@@ -232,7 +246,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         for coord_atlas in atlas_arr:
             atlas_coord = (coord_atlas[0], coord_atlas[1])
             atlas_list.append(atlas_coord)
-            print("coord_atlas: {}".format(coord_atlas))
+            # print("coord_atlas: {}".format(coord_atlas))
         # mean_dlc_list.sort()
         # mean_atlas_list.sort()
         a = 0
@@ -251,16 +265,16 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         #landmark_indices = landmark_arr
         #atlas_indices = min_landmark_arr
 
-        print(atlas_list)
-        print(dlc_list)
+        # print(atlas_list)
+        # print(dlc_list)
         for val_dlc, coord_dlc_set in enumerate(dlc_list):
             nodes = np.asarray(atlas_list)
             pts_dist = np.sum(abs(nodes - coord_dlc_set), axis=1)
-            print("pts dist: {}".format(pts_dist))
+            # print("pts dist: {}".format(pts_dist))
             min_dist = np.argmin(pts_dist)
             min_landmark_arr.append(min_dist)
         # landmark_indices = np.argsort(min_landmark_arr).tolist()
-        landmark_indices = landmark_indices[0:len(min_landmark_arr)]
+        landmark_indices = landmark_indices[0:len(landmark_arr)]
         atlas_indices = min_landmark_arr
         print("atlas indices: {}".format(atlas_indices))
 
@@ -281,56 +295,60 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
         pts_dist = np.absolute(np.asarray(atlas_list) - np.asarray((im.shape[0]/2, im.shape[1]/2)))
         pts_avg_dist = [np.mean(v) for v in pts_dist]
-        print("bregma dist: {}".format(pts_avg_dist))
+        # print("bregma dist: {}".format(pts_avg_dist))
         bregma_index = np.argmin(np.asarray(pts_avg_dist))
         # bregma_index = np.where(np.asarray(landmark_indices) == np.argmin(pts_dist))[0][0]
-        print("bregma index: {}".format(bregma_index))
+        # print("bregma index: {}".format(bregma_index))
 
         if (len(x_coord_flat) == 3) and (len(y_coord_flat) == 3):
             one_hemi = True
         elif (len(x_coord_flat) == 2) and (len(y_coord_flat) == 2):
             two_point = True
-        if one_hemi:
-            if arr_index == 0:
-                if 0 in landmark_arr:
-                    landmark_indices_hemi.append(0)
-                    atlas_indices_hemi.append(0)
-                landmark_indices_sorted = sorted(landmark_arr, reverse=True)
-                atlas_indices_sorted = sorted(landmark_arr, reverse=True)
-                landmark_indices_hemi.extend(landmark_indices_sorted[0:2])
-                atlas_indices_hemi.extend(atlas_indices_sorted[0:2])
-                # landmark_indices = landmark_indices_hemi
-                # atlas_indices = atlas_indices_hemi
-            # landmark_indices = [0, 2, 1]
-            # atlas_indices = [0, 2, 1]
-            # if 1 not in landmark_arr:
-            #    atlas_indices = [0, 1, 2]
-            bregma_index = int(max(landmark_indices))
-            print(bregma_index)
-        elif two_point:
-            # landmark_indices = [0, 1]
-            # atlas_indices = [2, 3]
-            bregma_index = int(max(landmark_indices))
-            print(bregma_index)
+        # if one_hemi:
+        #     if arr_index == 0:
+        #         if 0 in landmark_arr:
+        #             landmark_indices_hemi.append(0)
+        #             atlas_indices_hemi.append(0)
+        #         landmark_indices_sorted = sorted(landmark_arr, reverse=True)
+        #         atlas_indices_sorted = sorted(landmark_arr, reverse=True)
+        #         landmark_indices_hemi.extend(landmark_indices_sorted[0:2])
+        #         atlas_indices_hemi.extend(atlas_indices_sorted[0:2])
+        #         # landmark_indices = landmark_indices_hemi
+        #         # atlas_indices = atlas_indices_hemi
+        #     # landmark_indices = [0, 2, 1]
+        #     # atlas_indices = [0, 2, 1]
+        #     # if 1 not in landmark_arr:
+        #     #    atlas_indices = [0, 1, 2]
+        #     bregma_index = int(max(landmark_indices))
+        #     print(bregma_index)
+        # elif two_point:
+        #     # landmark_indices = [0, 1]
+        #     # atlas_indices = [2, 3]
+        #     bregma_index = int(max(landmark_indices))
+        #     print(bregma_index)
 
-        print(one_hemi)
-        print(landmark_indices)
-        print(atlas_indices)
+        # print(one_hemi)
+        # print(landmark_indices)
+        # print(atlas_indices)
         # 0 = left, 1 = bregma, 2 = right, 3 = lambda
         for j in landmark_indices:
             sub_pts.append([x_coord_flat[j], y_coord_flat[j]])
+            print("sub_pts: {}".format(sub_pts))
         # 1 = left, 2 = bregma, 3 = right, 0 = lambda
         for j in atlas_indices:
             sub_pts2.append([atlas_arr[j][0], atlas_arr[j][1]])
-        pts.append(sub_pts)
-        pts2.append(sub_pts2)
+            print("sub_pts2: {}".format(sub_pts2))
         print(sub_pts)
         print(sub_pts2)
+        pts.append(sub_pts)
+        pts2.append(sub_pts2)
         coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr)
         sub_pts = []
         sub_pts2 = []
-
-    pts, pts2 = np.asarray(pts).astype('float32'), np.asarray(pts2).astype('float32')
+    # pts = np.array(pts).astype('float32')
+    print("pts: {}".format(pts))
+    # pts2 = np.array(pts2).astype('float32')
+    print("pts2: {}".format(pts2))
     if sensory_match:
         k_coord, m_coord = np.array([(189, 323, 435, 348), (315, 315, 350, 460)])
         coords_peak = peak_arr_total
@@ -364,9 +382,11 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # atlas_mask_warped = warp(atlas_mask, homography, output_shape=(512, 512))
         # pts2_for_input = np.delete(np.array(pts2[n]), 1, 0)
         # pts_for_input = np.delete(np.array(pts[n]), 1, 0)
-        pts2_for_input = np.array(pts2[n])
-        pts_for_input = np.array(pts[n])
-        if len(pts2[n]) == 2:
+        pts2_for_input = np.array(pts2[n][0:len(pts[n])]).astype('float32')
+        pts_for_input = np.array(pts[n]).astype('float32')
+        print(pts2_for_input)
+        print(pts_for_input)
+        if len(pts2_for_input) == 2:
             pts2_for_input = np.append(pts2_for_input, [[0, 0]], axis=0)
             pts_for_input = np.append(pts_for_input, [[0, 0]], axis=0)
         print(pts2_for_input, pts_for_input)
