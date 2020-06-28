@@ -13,9 +13,9 @@ from sys import platform
 
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
-                   atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True,
-                   threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=False, steps_per_epoch=300,
-                   epochs=60):
+                   atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True, use_unet=1,
+                   atlas_to_brain_align=True, threshold=0.0001, model='models/unet_bundary.hdf5', region_labels=False,
+                   steps_per_epoch=300, epochs=60):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
     applying an existing model or training a new one).
@@ -42,6 +42,7 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     it if your brain images are not being segmented properly! In general, increasing this number causes each brain
     region contour to be smaller (less like the brain atlas); decreasing this number causes each brain region contour to
     be larger (more like the brain atlas).
+    :param use_unet: Select whether or not to use a U-net model when aligning the atlas to the brain image.
     :param model: The location (within the MesoNet repository) of a U-net model to be used for finding the boundaries
     of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
     segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have
@@ -81,7 +82,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             model=model,
             git_repo_base=git_repo_base,
             region_labels=region_labels,
-            landmark_arr=[0, 1, 2, 3]
+            landmark_arr=[0, 1, 2, 3],
+            use_unet=use_unet,
+            atlas_to_brain_align=atlas_to_brain_align
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"
@@ -91,7 +94,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             log_folder=output_dir,
             git_repo_base=git_repo_base,
             steps_per_epoch=steps_per_epoch,
-            epochs=epochs
+            epochs=epochs,
+            bodyparts=['A', 'B', 'C', 'D']
         )
 
     with open(os.path.join(output_dir, filename), 'w') as outfile:
@@ -112,6 +116,7 @@ def parse_yaml(config_file):
             return d
         except yaml.YAMLError as exc:
             print(exc)
+
 
 def natural_sort_key(s):
     """

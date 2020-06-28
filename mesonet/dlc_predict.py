@@ -5,16 +5,17 @@ https://github.com/bf777/MesoNet
 Licensed under the MIT License (see LICENSE for details)
 """
 import deeplabcut
-from mesonet.atlas_brain_matching_align import atlasBrainMatch
+from mesonet.atlas_brain_matching import atlasBrainMatch
 from mesonet.utils import parse_yaml, natural_sort_key
 from deeplabcut.utils.auxiliaryfunctions import read_config, write_config
 import cv2
 import glob
+import imageio
 import os
 
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
-               mat_save, threshold, git_repo_base, region_labels, landmark_arr):
+               mat_save, threshold, git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -43,6 +44,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     atlases, DeepLabCut config files, etc.)
     :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
     Mouse Brain Atlas.
+    :param landmark_arr: A list of numbers indicating which landmarks should be used by the model.
     """
     img_array = []
     if sensory_match == 1:
@@ -53,60 +55,82 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         sensory_img_dir = sensory_path
     else:
         sensory_img_dir = ''
-    filenames = glob.glob(os.path.join(input_file, '*.png'))
-    filenames.sort(key=natural_sort_key)
-    size = (512, 512)
-    for filename in filenames:
-        img = cv2.imread(filename)
-        height, width, layers = img.shape
-        size = (width, height)
-        img_array.append(img)
+    tif_list = glob.glob(os.path.join(input_file, "*tif"))
+    if tif_list:
+        print(tif_list)
+        img_ext = '.tif'
+        # tif_stack = imageio.mimread(os.path.join(input_file, tif_list[0]))
+        # num_image = len(tif_stack)
+        # filenames = tif_stack
+    else:
+        img_ext = '.png'
+        filenames = glob.glob(os.path.join(input_file, '*.png'))
+        filenames.sort(key=natural_sort_key)
 
-    if len(img_array) > 0:
-        video_output_path = os.path.join(output, 'dlc_output')
-        video_name = os.path.join(video_output_path, 'tmp_video.mp4')
-
-        if not os.path.isdir(video_output_path):
-            os.mkdir(video_output_path)
-        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
-        for i in range(len(img_array)):
-            out.write(img_array[i])
-        out.release()
-
-        deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True)
-        deeplabcut.create_labeled_video(config, [video_name], filtered=True)
-        if '2.0' in deeplabcut.__version__:
-            scorer_name = 'DeepCut'
-        else:
-            scorer_name = 'DLC'
-        output_video_name = ''
-        coords_input = ''
-        for filename in glob.glob(os.path.join(video_output_path, 'tmp_video' + scorer_name + '*.*')):
-            try:
-                if '.mp4' in filename:
-                    output_video_name = filename
-                elif '.csv' in filename:
-                    coords_input = filename
-            except FileNotFoundError:
-                print(
-                    "Please ensure that an output video and corresponding datafile from DeepLabCut are in the folder!")
-
-        cap = cv2.VideoCapture(output_video_name)
-        i = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            cv2.imwrite(os.path.join(video_output_path, '{}.png'.format(str(i))), frame)
-            i += 1
-
-        cap.release()
-        cv2.destroyAllWindows()
-
+    if img_ext == '.tif':
+        deeplabcut.analyze_time_lapse_frames(config, input_file, frametype=img_ext, save_as_csv=True)
+        coords_input = glob.glob(os.path.join(input_file, "*.csv"))[0]
         print("Landmark prediction complete!")
         if not atlas:
-            atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base,
-                            region_labels, landmark_arr)
+            atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
+                            git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align)
+    else:
+        size = (512, 512)
+        for filename in filenames:
+            if tif_list:
+                img = filename
+                height, width = img.shape
+            else:
+                img = cv2.imread(filename)
+                height, width, layers = img.shape
+            size = (width, height)
+            img_array.append(img)
+
+        if len(img_array) > 0:
+            video_output_path = os.path.join(output, 'dlc_output')
+            video_name = os.path.join(video_output_path, 'tmp_video.mp4')
+
+            if not os.path.isdir(video_output_path):
+                os.mkdir(video_output_path)
+            out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
+            for i in range(len(img_array)):
+                out.write(img_array[i])
+            out.release()
+
+            deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True)
+            deeplabcut.create_labeled_video(config, [video_name], filtered=True)
+            if '2.0' in deeplabcut.__version__:
+                scorer_name = 'DeepCut'
+            else:
+                scorer_name = 'DLC'
+            output_video_name = ''
+            coords_input = ''
+            for filename in glob.glob(os.path.join(video_output_path, 'tmp_video' + scorer_name + '*.*')):
+                try:
+                    if '.mp4' in filename:
+                        output_video_name = filename
+                    elif '.csv' in filename:
+                        coords_input = filename
+                except FileNotFoundError:
+                    print(
+                        "Please ensure that an output video and corresponding datafile from DeepLabCut are in the folder!")
+
+            cap = cv2.VideoCapture(output_video_name)
+            i = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                cv2.imwrite(os.path.join(video_output_path, '{}.png'.format(str(i))), frame)
+                i += 1
+
+            cap.release()
+            cv2.destroyAllWindows()
+
+            print("Landmark prediction complete!")
+            if not atlas:
+                atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
+                                git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align)
 
 
 def DLCPredictBehavior(config, input_file, output):
@@ -122,7 +146,7 @@ def DLCPredictBehavior(config, input_file, output):
     for filename in glob.glob(os.path.join(input_file, '*.mp4')):
         video_array.append(os.path.join(input_file, filename))
 
-    for filename in glob.glob(os.path.join(input_file, '*.png')):
+    for f in glob.glob(os.path.join(input_file, '*.png')):
         _nsre = re.compile('([0-9]+)')
         return [int(text) if text.isdigit() else text.lower()
                 for text in re.split(_nsre, s)]
@@ -214,6 +238,8 @@ def predict_dlc(config_file):
     threshold = cfg['threshold']
     git_repo_base = cfg['git_repo_base']
     region_labels = cfg['region_labels']
-    landmark_arr = cfg['landmarks']
+    landmark_arr = cfg['landmark_arr']
+    use_unet = cfg['use_unet']
+    atlas_to_brain_align = cfg['atlas_to_brain_align']
     DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
-               region_labels, landmark_arr)
+               region_labels, landmark_arr, use_unet, atlas_to_brain_align)

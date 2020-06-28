@@ -11,7 +11,7 @@ from mesonet.utils import parse_yaml
 
 
 def predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                  region_labels):
+                  atlas_to_brain_align, region_labels):
     """
     Segment brain images to predict the location of brain regions.
     :param input_file: Input folder containing brain images.
@@ -47,7 +47,7 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     if not mask_generate:
         # Predicts and identifies brain regions based on output mask
         applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base,
-                  region_labels)
+                  atlas_to_brain_align, region_labels)
 
 
 def predict_regions(config_file):
@@ -66,5 +66,6 @@ def predict_regions(config_file):
     mask_generate = True
     git_repo_base = cfg['git_repo_base']
     region_labels = cfg['region_labels']
+    atlas_to_brain_align = cfg['atlas_to_brain_align']
     predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                  region_labels)
+                  atlas_to_brain_align, region_labels)

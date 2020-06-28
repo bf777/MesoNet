@@ -10,6 +10,7 @@ from mesonet.data import *
 import numpy as np
 from keras.callbacks import ModelCheckpoint
 from mesonet.utils import parse_yaml
+from mesonet.dlc_predict import DLC_edit_bodyparts
 
 
 def trainModel(input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs):
@@ -60,4 +61,6 @@ def train_model(config_file):
     git_repo_base = cfg['git_repo_base']
     steps_per_epoch = cfg['steps_per_epoch']
     epochs = cfg['epochs']
+    bodyparts = cfg['bodyparts']
+    DLC_edit_bodyparts(config_file, bodyparts)
     trainModel(input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs)

@@ -104,7 +104,6 @@ def atlas_to_mask(atlas_path, im_binary, mask_input_path, mask_warped_path, mask
     """
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
-    print(mask_warped_path)
     if use_unet == 1:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
         io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
@@ -112,13 +111,12 @@ def atlas_to_mask(atlas_path, im_binary, mask_input_path, mask_warped_path, mask
         if atlas_to_brain_align:
             # FOR ALIGNING ATLAS TO BRAIN
             mask_input = cv2.bitwise_and(atlas, mask_input)
-        # else:
-        #     # FOR ALIGNING BRAIN TO ATLAS
-        #     mask_input = cv2.bitwise_and(mask_input, im_binary)
+        else:
+            # FOR ALIGNING BRAIN TO ATLAS
+            mask_input = cv2.bitwise_and(mask_input, im_binary)
         # Adds the common white regions of the mask created above and the corrective mask (correcting for gaps between
         # U-net cortical boundaries and brain atlas) together into a binary image.
-        mask_input = cv2.bitwise_and(atlas, mask_warped)
-        # mask_input = cv2.bitwise_and(mask_input, mask_warped)
+        mask_input = cv2.bitwise_and(mask_input, mask_warped)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
@@ -164,8 +162,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
     else:
         # FOR ALIGNING BRAIN TO ATLAS
-        # image_name_arr = glob.glob(os.path.join(mask_path, "*_atlas.png"))
-        image_name_arr = glob.glob(os.path.join(mask_path, "*_brain_warp.png"))
+        image_name_arr = glob.glob(os.path.join(mask_path, "*_atlas.png"))
     region_bgr_lower = (100, 100, 100)
     region_bgr_upper = (255, 255, 255)
     base_c_max = []
@@ -304,20 +301,10 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         markers[unknown == 255] = 0
         img = np.uint8(img)
         labels = cv2.watershed(img, markers)
-        # print(labels)
-        if not atlas_to_brain_align:
-            # FOR ALIGNING ATLAS TO BRAIN
-            cortex_mask = cv2.imread(os.path.join(mask_path, "{}_mask.png".format(i)))
-            cortex_mask = cv2.cvtColor(cortex_mask, cv2.COLOR_RGB2GRAY)
-            # cortex_mask = np.uint8(cortex_mask)
-            thresh, cortex_mask_thresh = cv2.threshold(cortex_mask, 128, 255, 0)
-            cortex_cnt = cv2.findContours(cortex_mask_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-            cortex_cnt = imutils.grab_contours(cortex_cnt)
-            cv2.drawContours(img, cortex_cnt, -1, (0, 0, 255), 3)
         img[labels == -1] = [255, 0, 0]
         sorted_nums = np.argsort(orig_list_labels_sorted)
-        # print("sorted nums: {}".format(sorted_nums))
-        # print("labels: {}".format(labels))
+        print("sorted nums: {}".format(sorted_nums))
+        print("labels: {}".format(labels))
         # labels = [x for _, x in sorted(zip(sorted_nums[0], labels))]
         labels_x = []
         labels_y = []
@@ -336,13 +323,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # it on the mask
             mask = np.zeros(mask_color.shape, dtype="uint8")
             mask[labels == label] = 255
-            # mask_dilate = np.zeros(mask_color.shape, dtype="uint8")
+            mask_dilate = np.zeros(mask_color.shape, dtype="uint8")
             # detect contours in the mask and grab the largest one
             cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                     cv2.CHAIN_APPROX_NONE)
             cnts = imutils.grab_contours(cnts)
             # cnts.sort(greater)
-            # cv2.drawContours(mask_dilate, cnts, -1, (255, 255, 255), 3)
+            cv2.drawContours(mask_dilate, cnts, -1, (255, 255, 255), 3)
             # mask_dilate_2 = cv2.dilate(mask_dilate, kernel, iterations=7)
             # (thresh, mask_dilate_bw) = cv2.threshold(mask_dilate_2, 128, 255, 0)
             # inner_cnts = cv2.findContours(mask_dilate_bw.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
@@ -366,21 +353,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 # m = cv2.moments(c_for_centre)
                 # c_x = int(m["m10"] / m["m00"])
                 # c_y = int(m["m01"] / m["m00"])
+
                 c = max(cnts, key=cv2.contourArea)
-                if not atlas_to_brain_align:
-                    # print([(c_coord.tolist()[0][0], c_coord.tolist()[0][1]) for c_coord in c])
-                    print([list(set([cv2.pointPolygonTest(cortex_sub_cnt, (c_coord.tolist()[0][0], c_coord.tolist()[0][1]),
-                                                     False) for c_coord in c])) for cortex_sub_cnt in
-                           cortex_cnt])
-                    # print([cv2.pointPolygonTest(cortex_cnt, (c_coord[0][0], c_coord[0][1]), False) for c_coord in c])
-                    cnt_loc_label = "inside" if [1.0] in [list(set([cv2.pointPolygonTest(cortex_sub_cnt,
-                                                                                         (c_coord.tolist()[0][0],
-                                                                                          c_coord.tolist()[0][1]),
-                                                                                         False)
-                                                                    for c_coord in c])) for cortex_sub_cnt in
-                                                          cortex_cnt] else "outside"
-                else:
-                    cnt_loc_label = ""
                 # c_as_list = c.tolist()
                 # c_as_list = [[c_val[0] for c_val in c_as_list]]
                 # centre_polylabel = polylabel(c_as_list)
@@ -402,9 +376,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 except:
                     label_for_mat = coord_label_num
                     print("WARNING: label was not found in region. Order of labels may be incorrect!")
-
-                # if cnt_loc_label != '':
-                #     coord_label_num = "{} {}".format(coord_label_num, cnt_loc_label)
 
                 # The centroid of the contour works as the contour centre in most cases. However, sometimes the
                 # centroid is outside of the contour. As such, using the average x and y positions of the contour edges
@@ -497,11 +468,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             # Follow the path of the contour, setting every pixel along the path to 255
                             # Fill in the contour area with 1s
                             cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
-                            # if atlas_to_brain_align:
-                            #     cortex_cnt_mask = np.zeros_like(mask)
-                            #     cv2.fillPoly(cortex_cnt_mask, pts=[cortex_cnt], color=(255, 255, 255))
-                            #     roi_intersect = cv2.bitwise_and(cortex_cnt_mask, c_total)
-                            #     c_total = roi_intersect
                             # Set the contour's centroid to 255
                             if c_x < mask.shape[0] and c_y < mask.shape[0]:
                                 c_centre[c_x, c_y] = 255
@@ -510,21 +476,17 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
                                 os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
                             sio.savemat(os.path.join(segmented_save_path,
-                                                     'mat_contour/roi_{}_{}_{}_{}.mat'.format(cnt_loc_label,
-                                                                                              i, label_for_mat, z)),
-                                        {'roi_{}_{}_{}_{}'.format(cnt_loc_label,
-                                                                  i, label_for_mat, z): c_total}, appendmat=False)
+                                                     'mat_contour/roi_{}_{}_{}.mat'.format(i, label_for_mat, z)),
+                                        {'roi_{}_{}_{}'.format(i, label_for_mat, z): c_total}, appendmat=False)
                             sio.savemat(os.path.join(segmented_save_path,
-                                                     'mat_contour_centre/roi_centre_{}_{}_{}_{}.mat'.format(
-                                                         cnt_loc_label, i, coord_label_num, z)),
-                                        {'roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i, coord_label_num,
-                                                                         z): c_centre},
+                                                     'mat_contour_centre/roi_centre_{}_{}_{}.mat'.format(
+                                                         i, coord_label_num, z)),
+                                        {'roi_centre_{}_{}_{}'.format(i, coord_label_num, z): c_centre},
                                         appendmat=False)
                             sio.savemat(os.path.join(segmented_save_path,
-                                                     'mat_contour_centre/rel_roi_centre_{}_{}_{}_{}.mat'.format(
-                                                         cnt_loc_label, i, coord_label_num, z)),
-                                        {'rel_roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i,
-                                                                             coord_label_num, z): c_rel_centre},
+                                                     'mat_contour_centre/rel_roi_centre_{}_{}_{}.mat'.format(
+                                                         i, coord_label_num, z)),
+                                        {'rel_roi_centre_{}_{}_{}'.format(i, coord_label_num, z): c_rel_centre},
                                         appendmat=False)
             count += 1
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
