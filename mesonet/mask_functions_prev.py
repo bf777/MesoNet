@@ -374,212 +374,218 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         areas = []
         labels_arr = []
         sorted_labels_arr = []
-        labels_cnts = []
         # label_jitter = random.randrange(-2, 2)
         label_jitter = 0
         count_label = 0
         print("LABELS ORIG: {}".format(len(np.unique(labels))))
-        for (n, label) in enumerate(np.unique(labels)):
+        cnts = mat_cnt_list[0:len(orig_list_labels_sorted)]
+        for (n, label), (coord_label_num, coord) in zip(enumerate(np.unique(labels)),
+                                                        enumerate(orig_list_labels_sorted)):
             # label_num = 0
             # if the label is zero, we are examining the 'background'
             # so simply ignore it
-            # if label <= 0:
-            #   continue
+            if label < 1:
+                continue
             # otherwise, allocate memory for the label region and draw
             # it on the mask
             mask = np.zeros(mask_color.shape, dtype="uint8")
-            if atlas_to_brain_align:
-                mask[labels == label] = 255
+            mask[labels == label] = 255
             # mask_dilate = np.zeros(mask_color.shape, dtype="uint8")
             # detect contours in the mask and grab the largest one
             if atlas_to_brain_align:
                 cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                                         cv2.CHAIN_APPROX_NONE)
                 cnts = imutils.grab_contours(cnts)
-                if len(cnts) > 0:
-                    c = max(cnts, key=cv2.contourArea)
-                    labels_cnts.append(c)
-            # print("OUTER LOOP")
-        if not atlas_to_brain_align:
-            cnts = mat_cnt_list
-        else:
-            cnts = labels_cnts
-        print("LEN CNTS: {}".format(len(cnts)))
-        for (z, cnt), (coord_label_num, coord) in zip(enumerate(cnts),
-                                                      enumerate(orig_list_labels_sorted)):
-            # label = str(coord_label_num)
-            # compute the center of the contour
-            if len(cnts) > 1:
-                z = 0
-            c_x, c_y = int(coord[2]), int(coord[3])
-            # c_for_centre = min(inner_cnts, key=cv2.contourArea)
-            # m = cv2.moments(cnt)
-            # m = cv2.moments(c_for_centre)
-            # c_x = int(m["m10"] / m["m00"])
-            # c_y = int(m["m01"] / m["m00"])
-            c = cnt
-            # c = max(cnts, key=cv2.contourArea)
-            if not atlas_to_brain_align:
-                cv2.drawContours(img, c, -1, (255, 0, 0), 1)
-                # print([(c_coord.tolist()[0][0], c_coord.tolist()[0][1]) for c_coord in c])
-                # print([list(set([cv2.pointPolygonTest(cortex_sub_cnt, (c_coord.tolist()[0][0],
-                #                                                        c_coord.tolist()[0][1]), False)
-                #                 for c_coord in c])) for cortex_sub_cnt in cortex_cnt])
-                # print([cv2.pointPolygonTest(cortex_cnt, (c_coord[0][0], c_coord[0][1]), False) for c_coord in c])
-                cnt_loc_label = "inside" if [1.0] in [list(set([cv2.pointPolygonTest(cortex_sub_cnt,
-                                                                                     (c_coord.tolist()[0][0],
-                                                                                      c_coord.tolist()[0][1]),
-                                                                                     False)
-                                                                for c_coord in c])) for cortex_sub_cnt in
-                                                      cortex_cnt] else "outside"
-            else:
-                cnt_loc_label = ""
-            # c_as_list = c.tolist()
-            # c_as_list = [[c_val[0] for c_val in c_as_list]]
-            # centre_polylabel = polylabel(c_as_list)
-            # c_x, c_y = int(centre_polylabel[0]), int(centre_polylabel[1])
-            rel_x = c_x - bregma_x
-            rel_y = c_y - bregma_y
-            # rel_x = coord[0]
-            # rel_y = coord[1]
-            # print([item for item in orig_list_labels_sorted if rel_x in item])
-            # label = [orig_list_labels_sorted.index(item) for item in orig_list_labels_sorted if rel_x in item][0]
-            # print('label: {}'.format(label))
-            # print('coord_label_num: {}'.format(coord_label_num))
-            pt_inside_cnt = [coord_check for coord_check in orig_list_labels_sorted if
-                             cv2.pointPolygonTest(c, (int(coord_check[2]), int(coord_check[3])), False) == 1]
-            # print(pt_inside_cnt)
-            try:
-                pt_inside_cnt_idx = orig_list_labels_sorted.index(pt_inside_cnt[0])
-                # print(pt_inside_cnt_idx)
-                label_for_mat = pt_inside_cnt_idx
-            except:
-                label_for_mat = coord_label_num
-                print("WARNING: label was not found in region. Order of labels may be incorrect!")
+            print(cnts)
+            print("OUTER LOOP")
+            # print(len(orig_list_labels_sorted))
 
-            # if cnt_loc_label != '':
-            #     coord_label_num = "{} {}".format(coord_label_num, cnt_loc_label)
-
-            # The centroid of the contour works as the contour centre in most cases. However, sometimes the
-            # centroid is outside of the contour. As such, using the average x and y positions of the contour edges
-            # that intersect with the centroid could be a safer option. We try to find this average position and if
-            # there are more than two intersecting edges or if the average position is over 200 px from the
-            # centroid, we fall back to using the centroid as our measure of the centre of the contour.
-            # for coord in c_for_centre:
-            #     if coord[0][0] == c_x:
-            #         edge_coords_y.append(coord[0].tolist())
-            #     if coord[0][1] == c_y:
-            #         edge_coords_x.append(coord[0].tolist())
-            # print("{}: edge coords x: {}, edge coords y: {}".format(label, edge_coords_x, edge_coords_y))
-            # adj_centre_x = int(np.mean([edge_coords_x[0][0], edge_coords_x[-1][0]]))
-            # adj_centre_y = int(np.mean([edge_coords_y[0][1], edge_coords_y[-1][1]]))
-            # adj_centre = [adj_centre_x, adj_centre_y]
-            # if abs(adj_centre_x - c_x) <= 100 and abs(adj_centre_x - c_y) <= 100:
-            #     print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
-            #     c_x, c_y = (adj_centre[0], adj_centre[1])
+            # cnts.sort(greater)
+            # cv2.drawContours(mask_dilate, cnts, -1, (255, 255, 255), 3)
+            # mask_dilate_2 = cv2.dilate(mask_dilate, kernel, iterations=7)
+            # (thresh, mask_dilate_bw) = cv2.threshold(mask_dilate_2, 128, 255, 0)
+            # inner_cnts = cv2.findContours(mask_dilate_bw.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            # inner_cnts = imutils.grab_contours(inner_cnts)
             # edge_coords_x = []
             # edge_coords_y = []
-            # compute center relative to bregma
-            # rel_x = contour centre x coordinate - bregma x coordinate
-            # rel_y = contour centre y coordinate - bregma y coordinate
+            # for coord_label_num, coord in enumerate(orig_list_labels_sorted):
+            #     label = str(coord_label_num)
+            #     # print(label)
+            #     print(coord)
+            for (z, cnt) in enumerate(cnts):
+                print("LEN CNTS: {}".format(len(cnts)))
+                # label = str(coord_label_num)
+                # compute the center of the contour
+                if len(cnts) > 1:
+                    z = 0
+                c_x, c_y = int(coord[2]), int(coord[3])
+                # c_for_centre = min(inner_cnts, key=cv2.contourArea)
+                # m = cv2.moments(cnt)
+                # m = cv2.moments(c_for_centre)
+                # c_x = int(m["m10"] / m["m00"])
+                # c_y = int(m["m01"] / m["m00"])
+                c = cnt
+                # c = max(cnts, key=cv2.contourArea)
+                if not atlas_to_brain_align:
+                    # print([(c_coord.tolist()[0][0], c_coord.tolist()[0][1]) for c_coord in c])
+                    # print([list(set([cv2.pointPolygonTest(cortex_sub_cnt, (c_coord.tolist()[0][0],
+                    #                                                        c_coord.tolist()[0][1]), False)
+                    #                 for c_coord in c])) for cortex_sub_cnt in cortex_cnt])
+                    # print([cv2.pointPolygonTest(cortex_cnt, (c_coord[0][0], c_coord[0][1]), False) for c_coord in c])
+                    cnt_loc_label = "inside" if [1.0] in [list(set([cv2.pointPolygonTest(cortex_sub_cnt,
+                                                                                         (c_coord.tolist()[0][0],
+                                                                                          c_coord.tolist()[0][1]),
+                                                                                         False)
+                                                                    for c_coord in c])) for cortex_sub_cnt in
+                                                          cortex_cnt] else "outside"
+                else:
+                    cnt_loc_label = ""
+                # c_as_list = c.tolist()
+                # c_as_list = [[c_val[0] for c_val in c_as_list]]
+                # centre_polylabel = polylabel(c_as_list)
+                # c_x, c_y = int(centre_polylabel[0]), int(centre_polylabel[1])
+                rel_x = c_x - bregma_x
+                rel_y = c_y - bregma_y
+                # rel_x = coord[0]
+                # rel_y = coord[1]
+                # print([item for item in orig_list_labels_sorted if rel_x in item])
+                # label = [orig_list_labels_sorted.index(item) for item in orig_list_labels_sorted if rel_x in item][0]
+                # print('label: {}'.format(label))
+                # print('coord_label_num: {}'.format(coord_label_num))
+                pt_inside_cnt = [coord_check for coord_check in orig_list_labels_sorted if
+                                 cv2.pointPolygonTest(c, (int(coord_check[2]), int(coord_check[3])), False) == 1]
+                # print(pt_inside_cnt)
+                try:
+                    pt_inside_cnt_idx = orig_list_labels_sorted.index(pt_inside_cnt[0])
+                    # print(pt_inside_cnt_idx)
+                    label_for_mat = pt_inside_cnt_idx
+                except:
+                    label_for_mat = coord_label_num
+                    print("WARNING: label was not found in region. Order of labels may be incorrect!")
 
-            # print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
-            c_rel_centre = [rel_x, rel_y]
-            if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
-                os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
+                # if cnt_loc_label != '':
+                #     coord_label_num = "{} {}".format(coord_label_num, cnt_loc_label)
 
-            # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
-            if mat_save == 1:
-                mat_save = True
-            else:
-                mat_save = False
-            # Prepares lists of the contours identified in the brain image, in the order that they are found by
-            # OpenCV
-            # labels_arr.append(label)
-            sorted_labels_arr.append(coord_label_num)
-            labels_x.append(int(c_x))
-            labels_y.append(int(c_y))
-            areas.append(cv2.contourArea(c))
-            # The first contour just outlines the entire image (which does not provide a useful label or .mat
-            # contour) so we'll ignore it
-            # if coord_label_num != 0:
-            # Cross-references each contour with a set of contours from a base brain atlas that was manually
-            # labelled with brain regions (as defined in 'region_labels.csv' in the 'atlases' folder). If the
-            # area of the contour is within 5000 square px of the original region and the centre of the contour
-            # is at most 100 px away from the centre of the original contour, label the contour with its
-            # corresponding brain region. Until we figure out how to consistently and accurately label small
-            # brain regions, we only label brain regions with an area greater than 1000 square px.
-            shape_list = []
-            label_color = (0, 0, 255)
-            for n_bc, bc in enumerate(base_c_max):
-                shape_compare = cv2.matchShapes(c, bc, 1, 0.0)
-                shape_list.append(shape_compare)
-            # for (n_r, r), (n_bc, bc) in zip(enumerate(regions.itertuples()), enumerate(base_c_max)):
-            #     min_bc = list(bc[0][0])
-            #     min_c = list(c[0][0])
-            #     max_bc = list(bc[0][-1])
-            #     max_c = list(c[0][-1])
-            #
-            #     # 0.3, 75
-            #     if label_num == 0 and region_labels and \
-            #             (min(shape_list) - 0.3 <= cv2.matchShapes(c, bc, 1, 0.0) <= min(shape_list) + 0.3) and \
-            #             min_bc[0] - 75 <= min_c[0] <= min_bc[0] + 75 and \
-            #             min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
-            #             max_bc[0] - 75 <= max_c[0] <= max_bc[0] + 75 and \
-            #             max_bc[1] - 75 <= max_c[1] <= max_bc[1] + 75:
-            #         # print("Current contour top left corner: {},{}".format(min_c[0], min_c[1]))
-            #         # print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
-            #         closest_label = r.name
-            #         cv2.putText(img, "{} ({})".format(closest_label, r.Index),
-            #                     (int(c_x + label_jitter), int(c_y + label_jitter)),
-            #                     cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
-            #         label_num += 1
-            # if label_num == 0 and not region_labels:
-            if not region_labels:
-                (text_width, text_height) = cv2.getTextSize(str(coord_label_num), cv2.FONT_HERSHEY_SIMPLEX,
-                                                            0.4, thickness=1)[0]
-                cv2.rectangle(img, (c_x + label_jitter, c_y + label_jitter),
-                              (c_x + label_jitter + text_width, c_y + label_jitter - text_height),
-                              (255, 255, 255), cv2.FILLED)
-                cv2.putText(img, str(coord_label_num),
-                            (int(c_x + label_jitter), int(c_y + label_jitter)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, label_color, 1)
-                label_num += 1
-                # print(label_num)
-                # print(count_label)
-                # n > 0
-                if mat_save:
-                    # Create an empty array of the same size as the contour, with the centre of the contour
-                    # marked as "255"
-                    c_total = np.zeros_like(mask)
-                    c_centre = np.zeros_like(mask)
-                    # Follow the path of the contour, setting every pixel along the path to 255
-                    # Fill in the contour area with 1s
-                    cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
-                    # Set the contour's centroid to 255
-                    if c_x < mask.shape[0] and c_y < mask.shape[0]:
-                        c_centre[c_x, c_y] = 255
-                    if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
-                        os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
-                    if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
-                        os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
-                    sio.savemat(os.path.join(segmented_save_path,
-                                             'mat_contour/roi_{}_{}_{}_{}.mat'.format(cnt_loc_label,
-                                                                                      i, label_for_mat, z)),
-                                {'roi_{}_{}_{}_{}'.format(cnt_loc_label,
-                                                          i, label_for_mat, z): c_total}, appendmat=False)
-                    sio.savemat(os.path.join(segmented_save_path,
-                                             'mat_contour_centre/roi_centre_{}_{}_{}_{}.mat'.format(
-                                                 cnt_loc_label, i, label_for_mat, z)),
-                                {'roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i, label_for_mat,
-                                                                 z): c_centre},
-                                appendmat=False)
-                    sio.savemat(os.path.join(segmented_save_path,
-                                             'mat_contour_centre/rel_roi_centre_{}_{}_{}_{}.mat'.format(
-                                                 cnt_loc_label, i, label_for_mat, z)),
-                                {'rel_roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i,
-                                                                     label_for_mat, z): c_rel_centre},
-                                appendmat=False)
+                # The centroid of the contour works as the contour centre in most cases. However, sometimes the
+                # centroid is outside of the contour. As such, using the average x and y positions of the contour edges
+                # that intersect with the centroid could be a safer option. We try to find this average position and if
+                # there are more than two intersecting edges or if the average position is over 200 px from the
+                # centroid, we fall back to using the centroid as our measure of the centre of the contour.
+                # for coord in c_for_centre:
+                #     if coord[0][0] == c_x:
+                #         edge_coords_y.append(coord[0].tolist())
+                #     if coord[0][1] == c_y:
+                #         edge_coords_x.append(coord[0].tolist())
+                # print("{}: edge coords x: {}, edge coords y: {}".format(label, edge_coords_x, edge_coords_y))
+                # adj_centre_x = int(np.mean([edge_coords_x[0][0], edge_coords_x[-1][0]]))
+                # adj_centre_y = int(np.mean([edge_coords_y[0][1], edge_coords_y[-1][1]]))
+                # adj_centre = [adj_centre_x, adj_centre_y]
+                # if abs(adj_centre_x - c_x) <= 100 and abs(adj_centre_x - c_y) <= 100:
+                #     print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+                #     c_x, c_y = (adj_centre[0], adj_centre[1])
+                # edge_coords_x = []
+                # edge_coords_y = []
+                # compute center relative to bregma
+                # rel_x = contour centre x coordinate - bregma x coordinate
+                # rel_y = contour centre y coordinate - bregma y coordinate
+
+                # print("Contour {}: centre ({}, {}), bregma ({}, {})".format(label, rel_x, rel_y, bregma_x, bregma_y))
+                c_rel_centre = [rel_x, rel_y]
+                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
+                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
+
+                # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
+                if mat_save == 1:
+                    mat_save = True
+                else:
+                    mat_save = False
+                # Prepares lists of the contours identified in the brain image, in the order that they are found by
+                # OpenCV
+                labels_arr.append(label)
+                sorted_labels_arr.append(coord_label_num)
+                labels_x.append(int(c_x))
+                labels_y.append(int(c_y))
+                areas.append(cv2.contourArea(c))
+                # The first contour just outlines the entire image (which does not provide a useful label or .mat
+                # contour) so we'll ignore it
+                if label != -1:
+                    # Cross-references each contour with a set of contours from a base brain atlas that was manually
+                    # labelled with brain regions (as defined in 'region_labels.csv' in the 'atlases' folder). If the
+                    # area of the contour is within 5000 square px of the original region and the centre of the contour
+                    # is at most 100 px away from the centre of the original contour, label the contour with its
+                    # corresponding brain region. Until we figure out how to consistently and accurately label small
+                    # brain regions, we only label brain regions with an area greater than 1000 square px.
+                    shape_list = []
+                    label_color = (0, 0, 255)
+                    for n_bc, bc in enumerate(base_c_max):
+                        shape_compare = cv2.matchShapes(c, bc, 1, 0.0)
+                        shape_list.append(shape_compare)
+                    # for (n_r, r), (n_bc, bc) in zip(enumerate(regions.itertuples()), enumerate(base_c_max)):
+                    #     min_bc = list(bc[0][0])
+                    #     min_c = list(c[0][0])
+                    #     max_bc = list(bc[0][-1])
+                    #     max_c = list(c[0][-1])
+                    #
+                    #     # 0.3, 75
+                    #     if label_num == 0 and region_labels and \
+                    #             (min(shape_list) - 0.3 <= cv2.matchShapes(c, bc, 1, 0.0) <= min(shape_list) + 0.3) and \
+                    #             min_bc[0] - 75 <= min_c[0] <= min_bc[0] + 75 and \
+                    #             min_bc[1] - 75 <= min_c[1] <= min_bc[1] + 75 and \
+                    #             max_bc[0] - 75 <= max_c[0] <= max_bc[0] + 75 and \
+                    #             max_bc[1] - 75 <= max_c[1] <= max_bc[1] + 75:
+                    #         # print("Current contour top left corner: {},{}".format(min_c[0], min_c[1]))
+                    #         # print("Baseline contour top left corner: {},{}".format(min_bc[0], min_bc[1]))
+                    #         closest_label = r.name
+                    #         cv2.putText(img, "{} ({})".format(closest_label, r.Index),
+                    #                     (int(c_x + label_jitter), int(c_y + label_jitter)),
+                    #                     cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
+                    #         label_num += 1
+                    # if label_num == 0 and not region_labels:
+                    if not region_labels:
+                        (text_width, text_height) = cv2.getTextSize(str(coord_label_num), cv2.FONT_HERSHEY_SIMPLEX,
+                                                                    0.4, thickness=1)[0]
+                        cv2.rectangle(img, (c_x + label_jitter, c_y + label_jitter),
+                                      (c_x + label_jitter + text_width, c_y + label_jitter - text_height),
+                                      (255, 255, 255), cv2.FILLED)
+                        cv2.putText(img, str(coord_label_num),
+                                    (int(c_x + label_jitter), int(c_y + label_jitter)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, label_color, 1)
+                        label_num += 1
+                        # print(label_num)
+                    # print(count_label)
+                    # n > 0
+                    if mat_save:
+                        # Create an empty array of the same size as the contour, with the centre of the contour
+                        # marked as "255"
+                        c_total = np.zeros_like(mask)
+                        c_centre = np.zeros_like(mask)
+                        # Follow the path of the contour, setting every pixel along the path to 255
+                        # Fill in the contour area with 1s
+                        cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
+                        # Set the contour's centroid to 255
+                        if c_x < mask.shape[0] and c_y < mask.shape[0]:
+                            c_centre[c_x, c_y] = 255
+                        if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
+                            os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
+                        if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
+                            os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
+                        sio.savemat(os.path.join(segmented_save_path,
+                                                 'mat_contour/roi_{}_{}_{}_{}.mat'.format(cnt_loc_label,
+                                                                                          i, label_for_mat, z)),
+                                    {'roi_{}_{}_{}_{}'.format(cnt_loc_label,
+                                                              i, label_for_mat, z): c_total}, appendmat=False)
+                        sio.savemat(os.path.join(segmented_save_path,
+                                                 'mat_contour_centre/roi_centre_{}_{}_{}_{}.mat'.format(
+                                                     cnt_loc_label, i, label_for_mat, z)),
+                                    {'roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i, label_for_mat,
+                                                                     z): c_centre},
+                                    appendmat=False)
+                        sio.savemat(os.path.join(segmented_save_path,
+                                                 'mat_contour_centre/rel_roi_centre_{}_{}_{}_{}.mat'.format(
+                                                     cnt_loc_label, i, label_for_mat, z)),
+                                    {'rel_roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i,
+                                                                         label_for_mat, z): c_rel_centre},
+                                    appendmat=False)
             count += 1
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
@@ -601,7 +607,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))
-        d = {'sorted_label': sorted_labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
+        d = {'original_label': labels_arr, 'sorted_label': sorted_labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
         df = pd.DataFrame(data=d)
         if not os.path.isdir(os.path.join(segmented_save_path, 'region_labels')):
             os.mkdir(os.path.join(segmented_save_path, 'region_labels'))

@@ -8,10 +8,12 @@ from mesonet.mask_functions import atlas_to_mask, applyMask
 import numpy as np
 import pandas as pd
 import cv2
+import imutils
 import scipy.io
 import skimage.io as io
 import skimage.transform as trans
 from skimage.transform import PiecewiseAffineTransform, warp
+import imageio
 import os
 import fnmatch
 import glob
@@ -71,7 +73,7 @@ def sensory_to_mat(sub_pts, bregma_pt, i, output_mask_path):
                     {'sensory_peaks_{}_{}'.format(i, landmark): pt_adj_to_mat}, appendmat=False)
 
 
-def atlas_from_mat(input_file):
+def atlas_from_mat(input_file, mat_cnt_list):
     """
     Generates a binary brain atlas from a .mat file.
     :param input_file: The input .mat file representing a brain atlas (with white = 255 and black = 0)
@@ -79,8 +81,25 @@ def atlas_from_mat(input_file):
     """
     file = input_file
     mat = scipy.io.loadmat(file)
-    mat = mat['cdata']
-    ret, thresh = cv2.threshold(mat, 5, 255, cv2.THRESH_BINARY_INV)
+    mat_shape = mat[list(mat.keys())[3]]
+    if len(mat_shape.shape) > 2:
+        atlas_base = np.zeros((512, 512), dtype="uint8")
+        for val in range(0, mat_shape.shape[2]):
+            mat_roi = mat_shape[:, :, val]
+            mat_resize = cv2.resize(mat_roi, (512, 512))
+            mat_resize = np.uint8(mat_resize)
+            # ret, thresh = cv2.threshold(mat_resize, 5, 255, cv2.THRESH_BINARY_INV)
+            mat_roi_cnt = cv2.findContours(mat_resize, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            mat_roi_cnt = imutils.grab_contours(mat_roi_cnt)
+            c_to_save = max(mat_roi_cnt, key=cv2.contourArea)
+            mat_cnt_list.append(c_to_save)
+            cv2.drawContours(atlas_base, mat_roi_cnt, -1, (255, 255, 255), 1)
+        ret, thresh = cv2.threshold(atlas_base, 5, 255, cv2.THRESH_BINARY_INV)
+        io.imsave('atlas_unresized_test.png', thresh)
+    else:
+        mat = mat['atlas']
+        mat_resize = cv2.resize(mat, (512, 512))
+        ret, thresh = cv2.threshold(mat_resize, 5, 255, cv2.THRESH_BINARY_INV)
     return thresh
 
 
@@ -120,7 +139,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                     mat_save, threshold, git_repo_base, region_labels, landmark_arr_orig, use_unet,
-                    atlas_to_brain_align):
+                    atlas_to_brain_align, model):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.
@@ -142,6 +161,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     brain_img_arr = []
     dlc_img_arr = []
     peak_arr = []
+    mat_cnt_list = []
 
     # Prepare output folder
     cwd = os.getcwd()
@@ -154,7 +174,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         os.mkdir(output_overlay_path)
 
     # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet/'
-    im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_512_512.mat'))
+    # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_512_512.mat'))
+    # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas.mat'))
+    im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/ROIs_new.mat'), mat_cnt_list)
+    # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_ROIs.mat'))
     atlas = im
     # FOR ALIGNING BRAIN TO ATLAS
     im_binary = np.uint8(im)
@@ -165,6 +188,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     for num, file in enumerate(os.listdir(brain_img_dir)):
         if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
+        elif fnmatch.fnmatch(file, "*.tif"):
+            tif_stack = imageio.mimread(os.path.join(brain_img_dir, file))
+            for tif_im in tif_stack:
+                brain_img_arr.append(tif_im)
     # i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
     atlas_arr = np.array([(100.00000, 148.00000), (256.00000, 254.00000), (413.00000, 148.00000),
                           (256.00000, 446.00000)])
@@ -303,12 +330,16 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             im = np.uint8(im)
         else:
             # FOR ALIGNING BRAIN TO ATLAS
-            im = cv2.imread(br)
+            if '.png' in br:
+                im = cv2.imread(br)
+            else:
+                im = br
             im = np.uint8(im)
+            im = cv2.resize(im, (512, 512))
 
         io.imsave(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), im)
         # cv2.imread(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), cv2.IMREAD_GRAYSCALE)
-        atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_mask.png")
+        atlas_mask_dir = os.path.join(git_repo_base, "atlases/smooth_mask2.png")
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         atlas_mask = np.uint8(atlas_mask)
@@ -332,8 +363,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             pts_for_input = np.append(pts_for_input, [[0, 0]], axis=0)
         # print(pts2_for_input, pts_for_input)
         print("WARP COORDS: {}, {}".format(pts2_for_input, pts_for_input))
-        warp_coords = cv2.estimateAffine2D(pts2_for_input, pts_for_input)[0]
-        # print("warp_coords: {}".format(warp_coords))
+        warp_coords = cv2.estimateAffinePartial2D(pts2_for_input, pts_for_input)[0]
+        print("warp_coords: {}".format(warp_coords))
         atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
 
         # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
@@ -383,15 +414,19 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             io.imsave(atlas_path, dst)
         else:
             brain_warped_path = os.path.join(output_mask_path, '{}_brain_warp.png'.format(str(n)))
+            # for pt in pts[n]:
+            #     print((pt[0], pt[1]))
+            #     cv2.circle(dst, (int(pt[0]), int(pt[1])), 10, (255, 255, 255), -1)
             io.imsave(brain_warped_path, dst)
             io.imsave(atlas_path, atlas)
-
-        atlas_to_mask(atlas_path, im_binary, mask_dir, mask_warped_path, output_mask_path, n, use_unet,
-                      atlas_to_brain_align)
+        if atlas_to_brain_align:
+            atlas_to_mask(atlas_path, mask_dir, mask_warped_path, output_mask_path, n, use_unet,
+                          atlas_to_brain_align)
         if bregma_present:
             bregma_val = int(bregma_index_list[n])
             bregma_list.append(pts[n][bregma_val])
             print("Bregma list: {}".format(bregma_list))
     # Converts the transformed brain atlas into a segmentation method for the original brain image
+    print(bregma_list)
     applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold,
-              git_repo_base, bregma_list, atlas_to_brain_align, region_labels)
+              git_repo_base, bregma_list, atlas_to_brain_align, model, mat_cnt_list, region_labels)

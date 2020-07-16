@@ -347,6 +347,7 @@ class Gui:
                     if is_tif:
                         image_orig = Image.fromarray(file)
                         self.imageFileName = tif_list[0]
+                        self.imageFileName = os.path.basename(self.imageFileName)
                     else:
                         self.imageFileName = os.path.basename(file)
                         image = os.path.join(folderName, file)
@@ -401,8 +402,9 @@ class Gui:
     def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                        region_labels):
         self.statusHandler('Processing...')
+        atlas_to_brain_align = True
         predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                      region_labels)
+                      atlas_to_brain_align, region_labels)
         self.saveFolderName = output
         if mask_generate:
             self.folderName = os.path.join(self.saveFolderName, "output_mask")
@@ -416,15 +418,16 @@ class Gui:
                    threshold, mask_generate, haveMasks, git_repo_base, region_labels, use_unet, atlas_to_brain_align):
         self.statusHandler('Processing...')
         self.chooseLandmarks()
-        if mask_generate and not haveMasks and use_unet == 1:
-            predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                          atlas_to_brain_align, region_labels)
         if atlas_to_brain_align == 1:
             atlas_to_brain_align = True
         else:
             atlas_to_brain_align = False
+        if mask_generate and not haveMasks and atlas_to_brain_align and use_unet == 1:
+            predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
+                          atlas_to_brain_align, region_labels)
         DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
-                   mat_save, threshold, git_repo_base, region_labels, self.landmark_arr, use_unet, atlas_to_brain_align)
+                   mat_save, threshold, git_repo_base, region_labels, self.landmark_arr, use_unet, atlas_to_brain_align,
+                   model)
         saveFolderName = output
         if not atlas:
             self.folderName = os.path.join(saveFolderName, "output_overlay")

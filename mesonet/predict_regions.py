@@ -37,17 +37,18 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
         os.mkdir(output_overlay_path)
     # Loads in existing model
     print(model)
-    model = load_model(model)
+    model_to_use = load_model(model)
     # Resizes and prepares images for prediction
-    test_gen = testGenerator(input_file, num_images)
+    print(input_file)
+    test_gen = testGenerator(input_file, output_mask_path, num_images, atlas_to_brain_align=atlas_to_brain_align)
     # Makes predictions on each image
-    results = model.predict_generator(test_gen, num_images, verbose=1)
+    results = model_to_use.predict_generator(test_gen, num_images, verbose=1)
     # Saves output mask
     saveResult(output_mask_path, results)
     if not mask_generate:
         # Predicts and identifies brain regions based on output mask
         applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base,
-                  atlas_to_brain_align, region_labels)
+                  atlas_to_brain_align, model, region_labels)
 
 
 def predict_regions(config_file):
