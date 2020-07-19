@@ -33,7 +33,7 @@ class Gui:
         self.BFolderName = self.cwd
         self.saveFolderName = self.cwd
         self.saveBFolderName = self.cwd
-        self.threshold = 0.001
+        self.threshold = 0.01  # 0.001
         self.haveMasks = False
 
         self.j = -1
