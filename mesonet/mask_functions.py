@@ -112,7 +112,7 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
     if atlas_to_brain_align:
-        cv2.rectangle(mask_warped, (0, 0), (512, 75), (255, 255, 255), -1)
+        cv2.rectangle(mask_warped, (0, 0), (512, 90), (255, 255, 255), -1)
     print(mask_warped_path)
     if use_unet == 1:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
