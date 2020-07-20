@@ -9,7 +9,6 @@ from mesonet.utils import natural_sort_key
 import numpy as np
 import scipy.io as sio
 import os
-import random
 import glob
 import skimage.io as io
 import skimage.transform as trans
@@ -112,7 +111,7 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
     if atlas_to_brain_align:
-        cv2.rectangle(mask_warped, (0, 0), (512, 90), (255, 255, 255), -1)
+        cv2.rectangle(mask_warped, (0, 0), (512, 70), (255, 255, 255), -1)
     print(mask_warped_path)
     if use_unet == 1:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
@@ -125,30 +124,9 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
-            # mask_input = cv2.bitwise_and(mask_input, im_binary)
-        # Adds the common white regions of the mask created above and the corrective mask (correcting for gaps between
-        # U-net cortical boundaries and brain atlas) together into a binary image.
-        # mask_input = cv2.bitwise_and(atlas, mask_warped)
-        # mask_input = atlas
-        # mask_input = cv2.bitwise_and(mask_input, mask_warped)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
-
-
-# def greater(a, b):
-#     momA = cv2.moments(a)
-#     (xa,ya) = int(momA['m10']/momA['m00']), int(momA['m01']/momA['m00'])
-#
-#     momB = cv2.moments(b)
-#     (xb,yb) = int(momB['m10']/momB['m00']), int(momB['m01']/momB['m00'])
-#     if xa > xb:
-#         return 1
-#
-#     if xa == xb:
-#         return 0
-#     else:
-#         return -1
 
 
 def inpaintMask(mask):
@@ -183,10 +161,11 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     region_bgr_upper = (255, 255, 255)
     base_c_max = []
     count = 0
-    regions = pd.read_csv(os.path.join(git_repo_base, "atlases/region_labels.csv"))
+    # regions = pd.read_csv(os.path.join(git_repo_base, "atlases/region_labels.csv"))
     # Find the contours of an existing set of brain regions (to be used to identify each new brain region by shape)
     mat_files = glob.glob(os.path.join(git_repo_base, 'atlases/mat_contour_base/*.mat'))
     mat_files.sort(key=natural_sort_key)
+    colors = [(0, 0, 255), (0, 165, 255), (0, 255, 255), (0, 255, 0)]
     # vertical_aligns = []
     for file in mat_files:
         mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))
@@ -199,7 +178,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         # FOR ALIGNING ATLAS TO BRAIN
         num_images = len(glob.glob(os.path.join(mask_path, '*_brain_warp*')))
         output = os.path.join(mask_path, '..')
-        print(output)
+        # print(output)
         from mesonet.predict_regions import predictRegion
         mask_generate = True
         tif_list = glob.glob(os.path.join(image_path, "*tif"))
@@ -222,19 +201,14 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         new_data = []
         img = cv2.imread(item)
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
-        # atlas_im = cv2.imread(os.path.join(mask_path, '{}_atlas_first_transform.png'.format(str(i))))
-        # atlas_unskewed_im = cv2.imread(os.path.join(mask_path, 'atlas_unskewed.png'))
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
         # Get the region of the mask that is white
         mask_color = cv2.inRange(mask, region_bgr_lower, region_bgr_upper)
-        # atlas_color = cv2.inRange(atlas_im, region_bgr_lower, region_bgr_upper) # atlas_im
-        # thresh_atlas, mask_color = cv2.threshold(mask, 128, 255, 0)
         io.imsave(os.path.join(save_path, "{}_mask_binary.png".format(i)), mask_color)
         # Marker labelling
         # noise removal
         kernel = np.ones((3, 3), np.uint8)  # 3, 3
         mask_color = np.uint8(mask_color)
-        # atlas_color = np.uint8(atlas_color)
         thresh_atlas, atlas_bw = cv2.threshold(mask_color, 128, 255, 0)
         atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=1)  # 1
         io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
@@ -245,15 +219,10 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             watershed_run_rule = True
 
         if watershed_run_rule:
-            # edge_coords_orig_x = []
-            # edge_coords_orig_y = []
             orig_list = []
             orig_list_labels = []
             orig_list_labels_left = []
             orig_list_labels_right = []
-            # if not atlas_to_brain_align:
-            #     cnts_orig = mat_cnt_list
-            # else:
             # Find contours in original aligned atlas
             cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             cnts_orig = imutils.grab_contours(cnts_orig)
@@ -266,7 +235,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                     cv2.drawContours(img, cnt_orig, -1, (255, 0, 0), 1)
                 except:
                     print("Could not draw contour!")
-                print(num_label)
+                # print(num_label)
                 if num_label not in [0, 1]:
                     try:
                         c_orig_as_list = cnt_orig.tolist()
@@ -596,9 +565,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                                                      label_for_mat, z): c_rel_centre},
                                 appendmat=False)
             count += 1
-        for pt in pts[i]:
-            print((pt[0], pt[1]))
-            cv2.circle(img, (int(pt[0]), int(pt[1])), 10, (255, 255, 255), -1)
+        for pt, color in zip(pts[i], colors):
+            # print((pt[0], pt[1]))
+            cv2.circle(img, (int(pt[0]), int(pt[1])), 10, color, -1)
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
         # Generates a transparent version of the brain atlas.
@@ -617,6 +586,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             sio.savemat(os.path.join(segmented_save_path, 'mat_contour/transparent_{}'.format(i)),
                         {'transparent_{}'.format(i): img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
+        for pt, color in zip(pts[i], colors):
+            # print((pt[0], pt[1]))
+            cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))
         d = {'sorted_label': sorted_labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
