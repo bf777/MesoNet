@@ -199,6 +199,13 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         im = cv2.imread(os.path.join(git_repo_base, 'atlases/Atlas_workflow2_binary.png'))
     else:
         im = cv2.imread(os.path.join(git_repo_base, 'atlases/Atlas_workflow1_binary.png'))
+        im_left = cv2.imread(os.path.join(git_repo_base, 'atlases/left_hemi.png'))
+        ret, im_left = cv2.threshold(im_left, 5, 255, cv2.THRESH_BINARY_INV)
+        im_right = cv2.imread(os.path.join(git_repo_base, 'atlases/right_hemi.png'))
+        ret, im_right = cv2.threshold(im_right, 5, 255, cv2.THRESH_BINARY_INV)
+        im_left = np.uint8(im_left)
+
+        im_right = np.uint8(im_right)
         im = np.uint8(im)
     # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_ROIs.mat'))
     atlas = im
@@ -364,15 +371,23 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # cv2.imread(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), cv2.IMREAD_GRAYSCALE)
         if atlas_to_brain_align:
             atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow1_smooth_binary.png")
+            atlas_mask_dir_left = os.path.join(git_repo_base, "atlases/left_hemisphere_smooth.png")
+            atlas_mask_dir_right = os.path.join(git_repo_base, "atlases/right_hemisphere_smooth.png")
         else:
             atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         atlas_mask = np.uint8(atlas_mask)
+        atlas_mask_left = cv2.imread(atlas_mask_dir_left, cv2.IMREAD_UNCHANGED)
+        atlas_mask_left = cv2.resize(atlas_mask_left, (im.shape[0], im.shape[1]))
+        atlas_mask_left = np.uint8(atlas_mask_left)
+        atlas_mask_right = cv2.imread(atlas_mask_dir_right, cv2.IMREAD_UNCHANGED)
+        atlas_mask_right = cv2.resize(atlas_mask_right, (im.shape[0], im.shape[1]))
+        atlas_mask_right = np.uint8(atlas_mask_right)
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
         print("Performing first transformation of atlas {}...".format(n))
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
-        # warp_coords. = cv2.getAffineTransform(pts2[n][0:3], pts[n][0:3])
+        # warp_coords = cv2.getAffineTransform(pts2[n][0:3], pts[n][0:3])
         # print(pts2[n], pts[n])
         # print(len(pts2[n]))
         # homography, mask = cv2.findHomography(pts2[n], pts[n], 0)
@@ -394,17 +409,47 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             warp_coords = cv2.getAffineTransform(pts2_for_input, pts_for_input)
             atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
         elif len(pts2_for_input) == 4:
-            warp_coords = cv2.getAffineTransform(pts2_for_input[0:3], pts_for_input[0:3])
-            atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-            # warp_coords = cv2.getPerspectiveTransform(pts2_for_input, pts_for_input)
-            # atlas_warped = cv2.warpPerspective(im, warp_coords, (512, 512))
-        print("warp_coords: {}".format(warp_coords))
-        print("WARP COORDS: {}, {}".format(pts2_for_input, pts_for_input))
+            if atlas_to_brain_align:
+                # pts2_left = np.reshape(np.take(pts2[n], [0, 2, 3], axis=0), (3, 2))
+                # pts2_right = np.reshape(np.take(pts2[n], [1, 2, 3], axis=0), (3, 2))
+                # pts1_left = np.reshape(np.take(pts[n], [0, 2, 3], axis=0), (3, 2))
+                # pts1_right = np.reshape(np.take(pts[n], [1, 2, 3], axis=0), (3, 2))
+                print(np.array(pts2[n], dtype=np.float32))
+                pts2_left = np.array([pts2[n][0], pts2[n][2], pts2[n][3]], dtype=np.float32)
+                pts2_right = np.array([pts2[n][1], pts2[n][2], pts2[n][3]], dtype=np.float32)
+                pts1_left = np.array([pts[n][0], pts[n][2], pts[n][3]], dtype=np.float32)
+                pts1_right = np.array([pts[n][1], pts[n][2], pts[n][3]], dtype=np.float32)
+                print(pts2_left.flags)
+                print(pts1_left.flags)
+                print("WARP COORDS: {}, {}".format(pts2_left, pts1_left))
+                warp_coords_left = cv2.getAffineTransform(pts2_left, pts1_left)
+                warp_coords_right = cv2.getAffineTransform(pts2_right, pts1_right)
+                atlas_warped_left = cv2.warpAffine(im_left, warp_coords_left, (512, 512))
+                atlas_warped_right = cv2.warpAffine(im_right, warp_coords_right, (512, 512))
+                atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
+                ret, atlas_warped = cv2.threshold(atlas_warped, 5, 255, cv2.THRESH_BINARY_INV)
+                atlas_left_transform_path = os.path.join(output_mask_path,
+                                                          '{}_atlas_left_transform.png'.format(str(n)))
+                atlas_right_transform_path = os.path.join(output_mask_path,
+                                                          '{}_atlas_right_transform.png'.format(str(n)))
+                io.imsave(atlas_left_transform_path, atlas_warped_left)
+                io.imsave(atlas_right_transform_path, atlas_warped_right)
+                # warp_coords = cv2.getAffineTransform(pts2_for_input, pts_for_input)
+                # warp_coords = cv2.getPerspectiveTransform(pts2_for_input, pts_for_input)
+                # atlas_warped = cv2.warpPerspective(im, warp_coords, (512, 512))
+            else:
+                warp_coords = cv2.getAffineTransform(pts2_for_input, pts_for_input)
+                atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+        # print("warp_coords: {}".format(warp_coords))
 
         # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
         if atlas_to_brain_align:
             if len(pts2_for_input) <= 4:
-                atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+                # atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+                atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords_left, (512, 512))
+                atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords_right, (512, 512))
+                atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
+                # atlas_mask_warped = atlas_mask
             # elif len(pts2_for_input) == 4:
             #    atlas_mask_warped = cv2.warpPerspective(atlas_mask, warp_coords, (512, 512))
 
