@@ -110,17 +110,23 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     """
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
-    if atlas_to_brain_align:
-        cv2.rectangle(mask_warped, (0, 0), (512, 70), (255, 255, 255), -1)
+    # if atlas_to_brain_align:
+    #    cv2.rectangle(mask_warped, (0, 0), (512, 70), (255, 255, 255), -1)
     print(mask_warped_path)
     if use_unet == 1:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
+        cnts_for_olfactory = cv2.findContours(mask_input.copy(), cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_NONE)
+        cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
         io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:
             # FOR ALIGNING ATLAS TO BRAIN
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
+            olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
+            for bulb in olfactory_bulbs:
+                cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)

@@ -270,14 +270,14 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
         accuracy_flat = accuracy.iloc[i].values.astype('float32')
-        accuracy_where = np.where(accuracy_flat <= 0.20)
-        # print("accuracy arr: {}".format(accuracy_where[0]))
-        if 0 < (accuracy_where[0]).size < 3:
-            landmark_arr_adjusted = np.setdiff1d(np.asarray(landmark_arr), accuracy_where[0]).astype(int)
-            landmark_arr = landmark_arr_adjusted
-        else:
-            print("WARNING: landmarks at positions {} are LOW ACCURACY".format(accuracy_where))
-            landmark_arr = landmark_arr_orig
+        # accuracy_where = np.where(accuracy_flat <= 0.20)
+        # # print("accuracy arr: {}".format(accuracy_where[0]))
+        # if 0 < (accuracy_where[0]).size < 3:
+        #     landmark_arr_adjusted = np.setdiff1d(np.asarray(landmark_arr), accuracy_where[0]).astype(int)
+        #     landmark_arr = landmark_arr_adjusted
+        # else:
+        #     print("WARNING: landmarks at positions {} are LOW ACCURACY".format(accuracy_where))
+        #     landmark_arr = landmark_arr_orig
         # print("landmark arr: {}".format(landmark_arr))
         # print("x_coord_flat BEFORE: {}".format(x_coord_flat))
         x_coord_flat = x_coord_flat[landmark_arr]
@@ -395,25 +395,23 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # atlas_mask_warped = warp(atlas_mask, homography, output_shape=(512, 512))
         # pts2_for_input = np.delete(np.array(pts2[n]), 1, 0)
         # pts_for_input = np.delete(np.array(pts[n]), 1, 0)
-        pts2_for_input = np.array(pts2[n][0:len(pts[n])]).astype('float32')
-        pts_for_input = np.array(pts[n]).astype('float32')
+        pts2_for_input = np.array([pts2[n][0:len(pts[n])]]).astype('float32')
+        pts_for_input = np.array([pts[n]]).astype('float32')
         # print(pts2_for_input)
         # print(pts_for_input)
-        if len(pts2_for_input) == 2:
+        print(len(pts2_for_input[0]))
+        if len(pts2_for_input[0]) == 2:
             pts2_for_input = np.append(pts2_for_input, [[0, 0]], axis=0)
             pts_for_input = np.append(pts_for_input, [[0, 0]], axis=0)
-        if len(pts2_for_input) <= 2:
+        if len(pts2_for_input[0]) <= 2:
             warp_coords = cv2.estimateAffinePartial2D(pts2_for_input, pts_for_input)[0]
             atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(pts2_for_input) == 3:
+        elif len(pts2_for_input[0]) == 3:
             warp_coords = cv2.getAffineTransform(pts2_for_input, pts_for_input)
             atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(pts2_for_input) == 4:
+        elif len(pts2_for_input[0]) == 4:
+            print("FOUR POINTS")
             if atlas_to_brain_align:
-                # pts2_left = np.reshape(np.take(pts2[n], [0, 2, 3], axis=0), (3, 2))
-                # pts2_right = np.reshape(np.take(pts2[n], [1, 2, 3], axis=0), (3, 2))
-                # pts1_left = np.reshape(np.take(pts[n], [0, 2, 3], axis=0), (3, 2))
-                # pts1_right = np.reshape(np.take(pts[n], [1, 2, 3], axis=0), (3, 2))
                 print(np.array(pts2[n], dtype=np.float32))
                 pts2_left = np.array([pts2[n][0], pts2[n][2], pts2[n][3]], dtype=np.float32)
                 pts2_right = np.array([pts2[n][1], pts2[n][2], pts2[n][3]], dtype=np.float32)
@@ -429,7 +427,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
                 ret, atlas_warped = cv2.threshold(atlas_warped, 5, 255, cv2.THRESH_BINARY_INV)
                 atlas_left_transform_path = os.path.join(output_mask_path,
-                                                          '{}_atlas_left_transform.png'.format(str(n)))
+                                                         '{}_atlas_left_transform.png'.format(str(n)))
                 atlas_right_transform_path = os.path.join(output_mask_path,
                                                           '{}_atlas_right_transform.png'.format(str(n)))
                 io.imsave(atlas_left_transform_path, atlas_warped_left)
@@ -444,14 +442,12 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
         # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
         if atlas_to_brain_align:
-            if len(pts2_for_input) <= 4:
-                # atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+            if len(pts2_for_input[0]) <= 3:
+                atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+            if len(pts2_for_input[0]) == 4:
                 atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords_left, (512, 512))
                 atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords_right, (512, 512))
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
-                # atlas_mask_warped = atlas_mask
-            # elif len(pts2_for_input) == 4:
-            #    atlas_mask_warped = cv2.warpPerspective(atlas_mask, warp_coords, (512, 512))
 
         atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
         io.imsave(atlas_first_transform_path, atlas_warped)
