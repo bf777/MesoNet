@@ -83,9 +83,9 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
             img = np.uint8(img)
             img = cv2.resize(img, size)
             height, width = img.shape
-
         else:
             img = cv2.imread(filename)
+            img = cv2.resize(img, size)
             height, width, layers = img.shape
         size = (width, height)
         img_array.append(img)

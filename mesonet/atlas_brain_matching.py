@@ -506,7 +506,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             io.imsave(atlas_path, atlas)
         if atlas_to_brain_align:
             atlas_to_mask(atlas_path, mask_dir, mask_warped_path, output_mask_path, n, use_unet,
-                          atlas_to_brain_align)
+                          atlas_to_brain_align, git_repo_base)
         if bregma_present:
             bregma_val = int(bregma_index_list[n])
             bregma_list.append(pts[n][bregma_val])
