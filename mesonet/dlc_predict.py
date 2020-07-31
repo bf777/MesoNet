@@ -17,7 +17,7 @@ import numpy as np
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
                mat_save, threshold, git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align,
-               model):
+               model, olfactory_check):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -135,7 +135,8 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         print("Landmark prediction complete!")
         if not atlas:
             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
-                            git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model)
+                            git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model,
+                            olfactory_check)
 
 
 def DLCPredictBehavior(config, input_file, output):

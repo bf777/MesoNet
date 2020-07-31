@@ -98,7 +98,7 @@ def saveResult(save_path, npyfile, flag_multi_class=False, num_class=2):
 
 
 def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_path, n, use_unet,
-                  atlas_to_brain_align, git_repo_base):
+                  atlas_to_brain_align, git_repo_base, olfactory_check):
     """
     Overlays the U-net mask and a smoothing mask for the cortical boundaries on the transformed brain atlas.
     :param atlas_path: The path to the atlas to be transformed
@@ -113,24 +113,26 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     print(mask_warped_path)
     if use_unet == 1:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
-        cnts_for_olfactory = cv2.findContours(mask_input.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_NONE)
-        cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
+        if olfactory_check == 1:
+            cnts_for_olfactory = cv2.findContours(mask_input.copy(), cv2.RETR_EXTERNAL,
+                                    cv2.CHAIN_APPROX_NONE)
+            cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
         io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:
             # FOR ALIGNING ATLAS TO BRAIN
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
-            olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
-            for bulb in olfactory_bulbs:
-                cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
+            if olfactory_check == 1:
+                olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
+                for bulb in olfactory_bulbs:
+                    cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
-        if atlas_to_brain_align:
+        if atlas_to_brain_align and (olfactory_check == 1):
             olfactory_path = os.path.join(git_repo_base, 'atlases')
             olfactory_left = cv2.imread(os.path.join(olfactory_path, '02.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_right = cv2.imread(os.path.join(olfactory_path, '01.png'), cv2.IMREAD_GRAYSCALE)
@@ -156,7 +158,7 @@ def inpaintMask(mask):
 
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
-              atlas_to_brain_align, model, mat_cnt_list, pts, region_labels=True):
+              atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check, region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
     :param image_path: path to folder where brain images are saved
@@ -214,7 +216,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             mask_input_path = os.path.join(mask_path, '{}.png'.format(i))
             mask_warped_path = os.path.join(mask_path, '{}_mask_warped.png'.format(str(i)))
             atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_path, i, 1,
-                          atlas_to_brain_align)
+                          atlas_to_brain_align, git_repo_base, olfactory_check)
         bregma_x, bregma_y = bregma_list[i]
         new_data = []
         img = cv2.imread(item)
