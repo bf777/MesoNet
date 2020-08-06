@@ -236,7 +236,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:
-            watershed_run_rule = i == 0
+            # watershed_run_rule = i == 0
+            watershed_run_rule = True
         else:
             watershed_run_rule = True
 
@@ -426,7 +427,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             c = cnt
             # c = max(cnts, key=cv2.contourArea)
             if not atlas_to_brain_align:
-                cv2.drawContours(img, c, -1, (255, 0, 0), 1)
+                # if i != 0:
+                #    cv2.drawContours(img, c, -1, (255, 0, 0), 1)
                 # print([(c_coord.tolist()[0][0], c_coord.tolist()[0][1]) for c_coord in c])
                 # print([list(set([cv2.pointPolygonTest(cortex_sub_cnt, (c_coord.tolist()[0][0],
                 #                                                        c_coord.tolist()[0][1]), False)

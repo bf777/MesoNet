@@ -135,6 +135,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     """
     c_landmarks = np.empty([0, 2])
     c_atlas_landmarks = np.empty([0, 2])
+    print(mask_dir)
     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
     atlas_to_warp = atlas_img
     mask = np.uint8(mask)
@@ -480,16 +481,19 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
         # sensory activity
         if sensory_match:
-            if use_unet == 1:
-                dst = getMaskContour(mask_dir, atlas_warped, pts3[n], pts4[n], cwd, n, True)
+            pts3_np = np.array([pts3[n][0], pts3[n][1], pts3[n][2]], dtype=np.float32)
+            pts4_np = np.array([pts4[n][0], pts4[n][1], pts4[n][2]], dtype=np.float32)
+            # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
+            if atlas_to_brain_align:
+                dst = getMaskContour(mask_dir, atlas_warped, pts3[n], pts4[n], cwd, n, False)
+                # atlas_mask_warped = cv2.warpAffine(atlas_mask_warped, warp_sensory_coords, (512, 512))
+                atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts3[n], pts4[n], cwd, n, False)
+                atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
             else:
-                warp_sensory_coords = cv2.estimateAffine2D(pts4[n], pts3[n])[0]
-                dst = cv2.warpAffine(atlas_warped, warp_sensory_coords, (512, 512))
-                # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
-                if atlas_to_brain_align:
-                    atlas_mask_warped = cv2.warpAffine(atlas_mask_warped, warp_sensory_coords, (512, 512))
-                    atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts[n], pts2[n], cwd, n, False)
-                    atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
+                dst = getMaskContour(mask_dir, dst, pts3[n], pts4[n], cwd, n, False)
+                # warp_sensory_coords = cv2.getAffineTransform(pts4_np, pts3_np)
+                # dst = cv2.warpAffine(atlas_warped, warp_sensory_coords, (512, 512))
+
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
         else:
