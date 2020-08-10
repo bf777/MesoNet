@@ -224,8 +224,33 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             for tif_im in tif_stack:
                 brain_img_arr.append(tif_im)
     # i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
-    atlas_arr = np.array([(100.00000, 148.00000), (256.00000, 254.00000), (413.00000, 148.00000),
-                          (256.00000, 446.00000)])
+    # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
+    # landmarks_new_binary
+    # average
+    coord_circles_img = cv2.imread(os.path.join(git_repo_base, 'atlases', 'multi_landmark', 'landmarks_new_binary.png'),
+                                   cv2.IMREAD_GRAYSCALE)
+    coord_circles_img = np.uint8(coord_circles_img)
+    # coord_circles_img = coord_circles_img.copy()
+    # gray = cv2.cvtColor(coord_circles_img, cv2.COLOR_BGR2GRAY)
+
+    # detect circles in the image
+    circles_mask, circles, hierarchy = cv2.findContours(coord_circles_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    # circles = imutils.grab_contours(circles)
+    # ensure at least some circles were found
+    if circles is not None:
+        # convert the (x, y) coordinates and radius of the circles to integers
+        # m = cv2.moments(cnt)
+        # m = cv2.moments(c_for_centre)
+        # c_x = int(m["m10"] / m["m00"])
+        # c_y = int(m["m01"] / m["m00"])
+        atlas_arr = np.array([(int(cv2.moments(circle)["m10"] / cv2.moments(circle)["m00"]),
+                               int(cv2.moments(circle)["m01"] / cv2.moments(circle)["m00"])) for circle in
+                              circles])
+        print(atlas_arr)
+        print(len(atlas_arr))
+
+    # atlas_arr = np.array([(100.00000, 148.00000), (256.00000, 254.00000), (413.00000, 148.00000),
+    #                       (256.00000, 446.00000)])
 
     peak_arr_flat = []
     peak_arr_total = []
@@ -264,10 +289,11 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     x_coord = coords.iloc[2:, 1::3]
     y_coord = coords.iloc[2:, 2::3]
     accuracy = coords.iloc[2:, 3::3]
-    landmark_indices = [0, 1, 2, 3]  # [0, 3, 2, 1]
+    landmark_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8]  # [0, 3, 2, 1]
     # atlas_indices = [0, 1, 2, 3]  # [0, 3, 2, 1]
     for arr_index, i in enumerate(range(0, len(x_coord))):
         landmark_arr = landmark_arr_orig
+        print('x_coords: {}'.format(x_coord))
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
         accuracy_flat = accuracy.iloc[i].values.astype('float32')
@@ -285,6 +311,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # print("x_coord_flat AFTER: {}".format(x_coord_flat))
         y_coord_flat = y_coord_flat[landmark_arr]
         # print(x_coord_flat)
+        # print(y_coord_flat)
         # print(y_coord_flat)
         # print(len(x_coord_flat))
         # print(len(y_coord_flat))
@@ -328,8 +355,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         for j in atlas_indices:
             sub_pts2.append([atlas_arr[j][0], atlas_arr[j][1]])
             # print("sub_pts2: {}".format(sub_pts2))
-        # print(sub_pts)
-        # print(sub_pts2)
+        print(sub_pts)
+        print(sub_pts2)
         pts.append(sub_pts)
         pts2.append(sub_pts2)
         coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr)
@@ -422,7 +449,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         elif len(pts2_for_input[0]) == 3:
             warp_coords = cv2.getAffineTransform(pts2_for_input, pts_for_input)
             atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(pts2_for_input[0]) == 4:
+        elif len(pts2_for_input[0]) >= 4:
             print("FOUR POINTS")
             print(pts2_for_input[0][0][0:2])
             print(np.array(pts2[n], dtype=np.float32))
@@ -463,7 +490,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
             if len(pts2_for_input[0]) == 3:
                 atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
-            if len(pts2_for_input[0]) == 4:
+            if len(pts2_for_input[0]) >= 4:
                 atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords_left, (512, 512))
                 atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords_right, (512, 512))
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)

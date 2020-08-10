@@ -82,7 +82,7 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             model=model,
             git_repo_base=git_repo_base,
             region_labels=region_labels,
-            landmark_arr=[0, 1, 2, 3],
+            landmark_arr=[0, 1, 2, 3, 4, 5, 6, 7, 8],
             use_unet=use_unet,
             atlas_to_brain_align=atlas_to_brain_align,
             olfactory_check=olfactory_check
@@ -96,7 +96,7 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             git_repo_base=git_repo_base,
             steps_per_epoch=steps_per_epoch,
             epochs=epochs,
-            bodyparts=['A', 'B', 'C', 'D']
+            bodyparts=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
         )
 
     with open(os.path.join(output_dir, filename), 'w') as outfile:

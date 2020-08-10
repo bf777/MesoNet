@@ -59,7 +59,7 @@ class Gui:
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=7, column=0, columnspan=4, rowspan=9, sticky=N + S + W)
+        self.canvas.grid(row=7, column=0, columnspan=4, rowspan=10, sticky=N + S + W)
 
         # Render model selector listbox
         self.modelSelect = []
@@ -69,8 +69,8 @@ class Gui:
 
         self.modelLabel = Label(self.root, text="If using U-net, select a model\nto analyze the brain regions:")
         self.modelListBox = Listbox(self.root)
-        self.modelLabel.grid(row=0, column=4, columnspan=4, sticky=S)
-        self.modelListBox.grid(row=1, rowspan=4, column=4, columnspan=4, sticky=N)
+        self.modelLabel.grid(row=0, column=4, columnspan=5, sticky=S)
+        self.modelListBox.grid(row=1, rowspan=4, column=4, columnspan=5, sticky=N)
         for item in self.modelSelect:
             self.modelListBox.insert(END, item)
 
@@ -136,12 +136,12 @@ class Gui:
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(self.root, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
-        self.nextButton.grid(row=16, column=2, columnspan=1)
+        self.nextButton.grid(row=17, column=2, columnspan=1)
         self.previousButton = Button(self.root, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName, 0))
-        self.previousButton.grid(row=16, column=0, columnspan=1)
+        self.previousButton.grid(row=17, column=0, columnspan=1)
 
         self.statusBar = Label(self.root, textvariable=self.status_str, bd=1, relief=SUNKEN, anchor=W)
-        self.statusBar.grid(row=17, column=0, columnspan=9, sticky='we')
+        self.statusBar.grid(row=18, column=0, columnspan=9, sticky='we')
 
         # Bind right and left arrow keys to forward/backward controls
         self.root.bind('<Right>', self.forward)
@@ -160,38 +160,61 @@ class Gui:
         self.landmark_right = IntVar(value=1)
         self.landmark_bregma = IntVar(value=1)
         self.landmark_lambda = IntVar(value=1)
+
+        self.landmark_top_left = IntVar(value=1)
+        self.landmark_top_centre = IntVar(value=1)
+        self.landmark_top_right = IntVar(value=1)
+        self.landmark_bottom_left = IntVar(value=1)
+        self.landmark_bottom_right = IntVar(value=1)
+
         self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files",
                                             variable=self.mat_save)
-        self.saveMatFileCheck.grid(row=7, column=4, columnspan=4, padx=2, sticky=N + S + W)
+        self.saveMatFileCheck.grid(row=7, column=4, columnspan=5, padx=2, sticky=N + S + W)
         # self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)",
         #                                     variable=self.region_labels)
         # self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
         self.uNetCheck = Checkbutton(self.root, text="Use U-net for alignment", variable=self.unet_select)
-        self.uNetCheck.grid(row=8, column=4, columnspan=4, padx=2, sticky=N + S + W)
+        self.uNetCheck.grid(row=8, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         self.olfactoryCheck = Checkbutton(self.root, text="Draw olfactory bulbs (uncheck if no\nolfactory bulb visible "
                                                           "in all images)", variable=self.olfactory_check)
-        self.olfactoryCheck.grid(row=9, column=4, columnspan=4, padx=2, sticky=N + S + W)
+        self.olfactoryCheck.grid(row=9, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         self.atlasToBrainCheck = Checkbutton(self.root, text="Align atlas to brain", variable=self.atlas_to_brain_align)
-        self.atlasToBrainCheck.grid(row=10, column=4, columnspan=4, padx=2, sticky=N + S + W)
+        self.atlasToBrainCheck.grid(row=10, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         self.sensoryMapCheck = Checkbutton(self.root, text="Align using sensory map", variable=self.sensory_align)
-        self.sensoryMapCheck.grid(row=11, column=4, columnspan=4, padx=2, sticky=N + S + W)
+        self.sensoryMapCheck.grid(row=11, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         # Enable selection of landmarks for alignment
         self.landmarkLeftCheck = Checkbutton(self.root, text="Left",
-                                           variable=self.landmark_left)
+                                             variable=self.landmark_left)
         self.landmarkLeftCheck.grid(row=12, column=4, padx=2, sticky=N + S + W)
         self.landmarkRightCheck = Checkbutton(self.root, text="Right",
-                                             variable=self.landmark_right)
+                                              variable=self.landmark_right)
         self.landmarkRightCheck.grid(row=12, column=5, padx=2, sticky=N + S + W)
         self.landmarkBregmaCheck = Checkbutton(self.root, text="Bregma",
-                                             variable=self.landmark_bregma)
+                                               variable=self.landmark_bregma)
         self.landmarkBregmaCheck.grid(row=12, column=6, padx=2, sticky=N + S + W)
         self.landmarkLambdaCheck = Checkbutton(self.root, text="Lambda",
-                                             variable=self.landmark_lambda)
+                                               variable=self.landmark_lambda)
         self.landmarkLambdaCheck.grid(row=12, column=7, padx=2, sticky=N + S + W)
+
+        self.landmarkTopLeftCheck = Checkbutton(self.root, text="Top left",
+                                                variable=self.landmark_top_left)
+        self.landmarkTopLeftCheck.grid(row=13, column=4, padx=2, sticky=N + S + W)
+        self.landmarkTopCentreCheck = Checkbutton(self.root, text="Top centre",
+                                                  variable=self.landmark_top_centre)
+        self.landmarkTopCentreCheck.grid(row=13, column=5, padx=2, sticky=N + S + W)
+        self.landmarkTopRightCheck = Checkbutton(self.root, text="Top right",
+                                                 variable=self.landmark_top_right)
+        self.landmarkTopRightCheck.grid(row=13, column=6, padx=2, sticky=N + S + W)
+        self.landmarkBottomLeftCheck = Checkbutton(self.root, text="Bottom left",
+                                                   variable=self.landmark_bottom_left)
+        self.landmarkBottomLeftCheck.grid(row=13, column=7, padx=2, sticky=N + S + W)
+        self.landmarkBottomRightCheck = Checkbutton(self.root, text="Bottom right",
+                                                    variable=self.landmark_bottom_right)
+        self.landmarkBottomRightCheck.grid(row=13, column=8, padx=2, sticky=N + S + W)
 
         self.predictDLCButton = Button(self.root, text="Predict brain regions\nusing landmarks",
                                        command=lambda: self.PredictDLC(self.config_path, self.folderName,
@@ -207,19 +230,19 @@ class Gui:
                                                                        self.unet_select.get(),
                                                                        self.atlas_to_brain_align.get(),
                                                                        self.olfactory_check.get()))
-        self.predictDLCButton.grid(row=13, column=4, columnspan=4, padx=2, sticky=N + S + W + E)
+        self.predictDLCButton.grid(row=14, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictAllImButton = Button(self.root, text="Predict brain regions directly\nusing pretrained U-net model",
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model,
                                                                              self.saveFolderName,
                                                                              int(self.mat_save.get()), self.threshold,
                                                                              False, self.git_repo_base,
                                                                              self.region_labels.get()))
-        self.predictAllImButton.grid(row=14, column=4, columnspan=4, padx=2, sticky=N + S + W + E)
+        self.predictAllImButton.grid(row=15, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
                                                                                 self.BFolderName,
                                                                                 self.saveBFolderName))
-        self.predictBehaviourButton.grid(row=15, column=4, columnspan=4, padx=2, sticky=N + S + W + E)
+        self.predictBehaviourButton.grid(row=16, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
 
         if self.saveFolderName == '' or self.imgDisplayed == 0:
             self.predictAllImButton.config(state='disabled')
@@ -235,6 +258,12 @@ class Gui:
             self.landmarkRightCheck.config(state='disabled')
             self.landmarkBregmaCheck.config(state='disabled')
             self.landmarkLambdaCheck.config(state='disabled')
+
+            self.landmarkTopLeftCheck.config(state='disabled')
+            self.landmarkTopCentreCheck.config(state='disabled')
+            self.landmarkTopRightCheck.config(state='disabled')
+            self.landmarkBottomLeftCheck.config(state='disabled')
+            self.landmarkBottomRightCheck.config(state='disabled')
 
     def OpenFile(self, openOrSave):
         if openOrSave == 0:
@@ -265,10 +294,18 @@ class Gui:
                 self.olfactoryCheck.config(state='normal')
                 self.atlasToBrainCheck.config(state='normal')
                 self.sensoryMapCheck.config(state='normal')
+
                 self.landmarkLeftCheck.config(state='normal')
                 self.landmarkRightCheck.config(state='normal')
                 self.landmarkBregmaCheck.config(state='normal')
                 self.landmarkLambdaCheck.config(state='normal')
+
+                self.landmarkTopLeftCheck.config(state='normal')
+                self.landmarkTopCentreCheck.config(state='normal')
+                self.landmarkTopRightCheck.config(state='normal')
+                self.landmarkBottomLeftCheck.config(state='normal')
+                self.landmarkBottomRightCheck.config(state='normal')
+
                 self.statusHandler("Save folder selected! Choose an option on the right to begin your analysis.")
             except:
                 save_path_err = "No save file selected!"
@@ -398,6 +435,12 @@ class Gui:
         right = self.landmark_right.get()
         bregma = self.landmark_bregma.get()
         lambd = self.landmark_lambda.get()
+        top_left = self.landmark_top_left.get()
+        top_centre = self.landmark_top_centre.get()
+        top_right = self.landmark_top_right.get()
+        bottom_left = self.landmark_bottom_left.get()
+        bottom_right = self.landmark_bottom_right.get()
+
         if left == 1:
             self.landmark_arr.append(0)
         if bregma == 1:
@@ -406,6 +449,16 @@ class Gui:
             self.landmark_arr.append(2)
         if lambd == 1:
             self.landmark_arr.append(3)
+        if top_left == 1:
+            self.landmark_arr.append(4)
+        if top_centre == 1:
+            self.landmark_arr.append(5)
+        if top_right == 1:
+            self.landmark_arr.append(6)
+        if bottom_left == 1:
+            self.landmark_arr.append(7)
+        if bottom_right == 1:
+            self.landmark_arr.append(8)
 
     def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                        region_labels):

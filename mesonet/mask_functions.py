@@ -17,6 +17,7 @@ import cv2
 import imageio
 import imutils
 import scipy
+import pylab
 from PIL import Image
 import pandas as pd
 from keras import backend as K
@@ -28,6 +29,7 @@ Background = [0, 0, 0]
 Region = [255, 255, 255]
 
 COLOR_DICT = np.array([Background, Region])
+NUM_COLORS = 9
 
 
 def testGenerator(test_path, output_mask_path, num_image=60, target_size=(512, 512), flag_multi_class=False, as_gray=True,
@@ -185,7 +187,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     # Find the contours of an existing set of brain regions (to be used to identify each new brain region by shape)
     mat_files = glob.glob(os.path.join(git_repo_base, 'atlases/mat_contour_base/*.mat'))
     mat_files.sort(key=natural_sort_key)
-    colors = [(0, 0, 255), (0, 165, 255), (0, 255, 255), (0, 255, 0)]
+    # colors = [(0, 0, 255), (0, 165, 255), (0, 255, 255), (0, 255, 0)]
+
+    # adapted from https://stackoverflow.com/questions/3016283/create-a-color-generator-from-given-colormap-in-matplotlib
+    cm = pylab.get_cmap('viridis')
+    colors = [cm(1. * i / NUM_COLORS)[0:3] for i in range(NUM_COLORS)]
+    colors = [tuple(color_idx * 255 for color_idx in color_t) for color_t in colors]
+    print(colors)
     # vertical_aligns = []
     for file in mat_files:
         mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))

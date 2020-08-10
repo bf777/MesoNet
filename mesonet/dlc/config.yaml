@@ -1,28 +1,51 @@
 # Project definitions (do not edit)
-Task: strobing_atlas_new_dimension
-scorer: Rene
-date: Jul22
+Task: atlas
+scorer: DongshengXiao
+date: Aug3
 
 # Project path (change when moving around)
-project_path: C:\Users\mind reader\Desktop\BrainNet\strobing_atlas_new_dimension-Rene-2019-07-22
+project_path: C:\Users\mind reader\Desktop\atlas-DongshengXiao-2020-08-03
 
 # Annotation data set configuration (and individual video cropping parameters)
 video_sets:
-  C:\Users\mind reader\Desktop\BrainNet\strobing_atlas_new_dimension-Rene-2019-07-22\videos\label_images_1.avi:
+  C:\Users\mind reader\Desktop\atlas-DongshengXiao-2020-08-03\videos\DLC_atlas.avi:
     crop: 0, 512, 0, 512
 bodyparts:
-- Left
-- Bregma
-- Right
-- Lambda
+- l1
+- l2
+- l3
+- m4
+- m5
+- m6
+- r7
+- r8
+- r9
 start: 0
 stop: 1
-numframes2pick: 220
+numframes2pick: 491
 
 # Plotting configuration
+skeleton:
+- - l1
+  - l2
+- - l2
+  - m4
+- - m4
+  - m5
+- - m5
+  - m6
+- - m6
+  - l3
+- - m6
+  - r9
+- - m4
+  - r8
+- - r8
+  - r7
+skeleton_color: white
 pcutoff: 0.1
 dotsize: 12
-alphavalue: 0.7
+alphavalue: 0.5
 colormap: jet
 
 # Training,Evaluation and Analysis configuration
@@ -31,7 +54,7 @@ TrainingFraction:
 iteration: 0
 resnet: 50
 snapshotindex: -1
-batch_size: 4
+batch_size: 1
 
 # Cropping Parameters (for analysis and outlier frame detection)
 cropping: false
@@ -46,3 +69,5 @@ corner2move2:
 - 50
 - 50
 move2corner: true
+default_net_type: resnet_50
+default_augmenter: default
