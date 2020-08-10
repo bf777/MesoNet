@@ -1,0 +1,52 @@
+# Project definitions (do not edit)
+Task: reaching_behaviour
+scorer: Rene
+date: Jul24
+
+# Project path (change when moving around)
+project_path: C:\Users\mind reader\Desktop\DLC_behavior_model\reaching_behaviour-Rene-2019-07-24
+
+# Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  C:\Users\mind reader\Desktop\DLC_behavior_model\reaching_behaviour-Rene-2019-07-24\videos\out.mp4:
+    crop: 0, 320, 0, 320
+bodyparts:
+- Left1
+- Left2
+- Left3
+- Left4
+- Right1
+- Right2
+- Right3
+- Right4
+start: 0
+stop: 1
+numframes2pick: 500
+
+# Plotting configuration
+pcutoff: 0.1
+dotsize: 12
+alphavalue: 0.7
+colormap: jet
+
+# Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.95
+iteration: 0
+resnet: 50
+snapshotindex: -1
+batch_size: 4
+
+# Cropping Parameters (for analysis and outlier frame detection)
+cropping: false
+#if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 640
+y1: 277
+y2: 624
+
+# Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true

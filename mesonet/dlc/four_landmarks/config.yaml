@@ -1,0 +1,48 @@
+# Project definitions (do not edit)
+Task: strobing_atlas_new_dimension
+scorer: Rene
+date: Jul22
+
+# Project path (change when moving around)
+project_path: C:\Users\mind reader\Desktop\BrainNet\strobing_atlas_new_dimension-Rene-2019-07-22
+
+# Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  C:\Users\mind reader\Desktop\BrainNet\strobing_atlas_new_dimension-Rene-2019-07-22\videos\label_images_1.avi:
+    crop: 0, 512, 0, 512
+bodyparts:
+- Left
+- Bregma
+- Right
+- Lambda
+start: 0
+stop: 1
+numframes2pick: 220
+
+# Plotting configuration
+pcutoff: 0.1
+dotsize: 12
+alphavalue: 0.7
+colormap: jet
+
+# Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.95
+iteration: 0
+resnet: 50
+snapshotindex: -1
+batch_size: 4
+
+# Cropping Parameters (for analysis and outlier frame detection)
+cropping: false
+#if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 640
+y1: 277
+y2: 624
+
+# Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true
