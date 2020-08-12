@@ -160,7 +160,7 @@ def inpaintMask(mask):
 
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
-              atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check, region_labels=True):
+              atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check, use_unet, region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
     :param image_path: path to folder where brain images are saved
@@ -369,7 +369,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # labels = cv2.watershed(img, markers)
             # io.imsave(os.path.join(mask_path, 'labels_{}.png'.format(i)), labels)
             # print(labels)
-        if not atlas_to_brain_align:
+        if not atlas_to_brain_align and use_unet:
             cortex_mask = cv2.imread(os.path.join(mask_path, "{}_mask.png".format(i)))
             cortex_mask = cv2.cvtColor(cortex_mask, cv2.COLOR_RGB2GRAY)
             # cortex_mask = np.uint8(cortex_mask)
@@ -434,7 +434,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # c_y = int(m["m01"] / m["m00"])
             c = cnt
             # c = max(cnts, key=cv2.contourArea)
-            if not atlas_to_brain_align:
+            if not atlas_to_brain_align and use_unet:
                 # if i != 0:
                 #    cv2.drawContours(img, c, -1, (255, 0, 0), 1)
                 # print([(c_coord.tolist()[0][0], c_coord.tolist()[0][1]) for c_coord in c])

@@ -4,6 +4,7 @@ Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
 Licensed under the MIT License (see LICENSE for details)
 """
+from mesonet.utils import natural_sort_key
 from mesonet.mask_functions import atlas_to_mask, applyMask
 import numpy as np
 import pandas as pd
@@ -223,6 +224,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             tif_stack = imageio.mimread(os.path.join(brain_img_dir, file))
             for tif_im in tif_stack:
                 brain_img_arr.append(tif_im)
+    brain_img_arr.sort(key=natural_sort_key)
     # i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
     # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
     # landmarks_new_binary
@@ -548,4 +550,4 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     print(bregma_list)
     applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold,
               git_repo_base, bregma_list, atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check,
-              region_labels)
+              use_unet, region_labels)

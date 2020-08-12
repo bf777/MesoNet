@@ -77,6 +77,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     #         atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
     #                         git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model)
     size = (512, 512)
+    print(len(filenames))
     for filename in filenames:
         if tif_list:
             img = filename
