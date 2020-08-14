@@ -86,6 +86,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
             height, width = img.shape
         else:
             img = cv2.imread(filename)
+            img = np.uint8(img)
             img = cv2.resize(img, size)
             height, width, layers = img.shape
         size = (width, height)
@@ -97,8 +98,8 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
 
         if not os.path.isdir(video_output_path):
             os.mkdir(video_output_path)
-        # out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
-        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MJPG'), 30, size)
+        fourcc = cv2.VideoWriter_fourcc(*'DIB ')
+        out = cv2.VideoWriter(video_name, fourcc, 30, size)
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()

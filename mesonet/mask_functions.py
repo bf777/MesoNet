@@ -179,6 +179,15 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         # image_name_arr = glob.glob(os.path.join(mask_path, "*_atlas.png"))
         image_name_arr = glob.glob(os.path.join(mask_path, "*_brain_warp.png"))
     image_name_arr.sort(key=natural_sort_key)
+
+    tif_list = glob.glob(os.path.join(image_path, "*tif"))
+    if tif_list:
+        print(tif_list)
+        tif_stack = imageio.mimread(os.path.join(image_path, tif_list[0]))
+        num_images = len(tif_stack)
+        print(num_images)
+        image_name_arr = tif_stack
+
     region_bgr_lower = (220, 220, 220)
     region_bgr_upper = (255, 255, 255)
     base_c_max = []
@@ -227,7 +236,11 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                           atlas_to_brain_align, git_repo_base, olfactory_check)
         bregma_x, bregma_y = bregma_list[i]
         new_data = []
-        img = cv2.imread(item)
+        if len(tif_list) == 0:
+            img = cv2.imread(item)
+        else:
+            img = item
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         if atlas_to_brain_align:
             img = cv2.resize(img, (512, 512))
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))

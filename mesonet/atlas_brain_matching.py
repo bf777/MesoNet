@@ -220,11 +220,11 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     for num, file in enumerate(os.listdir(brain_img_dir)):
         if fnmatch.fnmatch(file, "*.png"):
             brain_img_arr.append(os.path.join(brain_img_dir, file))
+            brain_img_arr.sort(key=natural_sort_key)
         elif fnmatch.fnmatch(file, "*.tif"):
             tif_stack = imageio.mimread(os.path.join(brain_img_dir, file))
             for tif_im in tif_stack:
                 brain_img_arr.append(tif_im)
-    brain_img_arr.sort(key=natural_sort_key)
     # i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
     # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
     # landmarks_new_binary
@@ -547,7 +547,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             bregma_list.append(pts[n][bregma_val])
             print("Bregma list: {}".format(bregma_list))
     # Converts the transformed brain atlas into a segmentation method for the original brain image
-    print(bregma_list)
     applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold,
               git_repo_base, bregma_list, atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check,
               use_unet, region_labels)
