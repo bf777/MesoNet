@@ -160,7 +160,8 @@ def inpaintMask(mask):
 
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
-              atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check, use_unet, region_labels=True):
+              atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check, use_unet, plot_landmarks, align_once,
+              region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
     :param image_path: path to folder where brain images are saved
@@ -241,6 +242,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         else:
             img = item
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            img = cv2.resize(img, (512, 512))
         if atlas_to_brain_align:
             img = cv2.resize(img, (512, 512))
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
@@ -257,10 +259,15 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:
-            # watershed_run_rule = i == 0
-            watershed_run_rule = True
+            watershed_run_rule = i == 0
+            # watershed_run_rule = True
         else:
-            watershed_run_rule = True
+            if len(tif_list) == 0:
+                watershed_run_rule = True
+            else:
+                watershed_run_rule = i == 0
+        if align_once:
+            watershed_run_rule = i == 0
 
         if watershed_run_rule:
             orig_list = []
@@ -319,8 +326,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                         #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
                     except:
                         print("cannot find moments!")
-
-            orig_list.sort()
+                orig_list.sort()
             # orig_list_labels_sorted = sorted(orig_list_labels, key=lambda t: t[0])
             orig_list_labels_sorted_left = sorted(orig_list_labels_left, key=lambda t: t[0], reverse=True)
             orig_list_labels_sorted_right = sorted(orig_list_labels_right, key=lambda t: t[0])
@@ -382,6 +388,12 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # labels = cv2.watershed(img, markers)
             # io.imsave(os.path.join(mask_path, 'labels_{}.png'.format(i)), labels)
             # print(labels)
+        else:
+            for num_label, cnt_orig in enumerate(cnts_orig):  # cnts_orig
+                try:
+                    cv2.drawContours(img, cnt_orig, -1, (255, 0, 0), 1)
+                except:
+                    print("Could not draw contour!")
         if not atlas_to_brain_align and use_unet:
             cortex_mask = cv2.imread(os.path.join(mask_path, "{}_mask.png".format(i)))
             cortex_mask = cv2.cvtColor(cortex_mask, cv2.COLOR_RGB2GRAY)
@@ -610,9 +622,10 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                                                      label_for_mat, z): c_rel_centre},
                                 appendmat=False)
             count += 1
-        for pt, color in zip(pts[i], colors):
-            # print((pt[0], pt[1]))
-            cv2.circle(img, (int(pt[0]), int(pt[1])), 10, color, -1)
+        print(plot_landmarks)
+        if plot_landmarks:
+            for pt, color in zip(pts[i], colors):
+                cv2.circle(img, (int(pt[0]), int(pt[1])), 10, color, -1)
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
         # Generates a transparent version of the brain atlas.
@@ -631,9 +644,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             sio.savemat(os.path.join(segmented_save_path, 'mat_contour/transparent_{}'.format(i)),
                         {'transparent_{}'.format(i): img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
-        for pt, color in zip(pts[i], colors):
-            # print((pt[0], pt[1]))
-            cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
+        if plot_landmarks:
+            for pt, color in zip(pts[i], colors):
+                cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))
         d = {'sorted_label': sorted_labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
