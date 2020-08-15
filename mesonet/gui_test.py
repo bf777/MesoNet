@@ -143,7 +143,7 @@ class Gui:
         self.olfactory_check = IntVar(value=1)
         self.atlas_to_brain_align = IntVar(value=1)
         self.plot_landmarks = IntVar(value=1)
-        self.align_once = IntVar(value=1)
+        self.align_once = IntVar(value=0)
 
         self.landmark_left = IntVar(value=1)
         self.landmark_right = IntVar(value=1)
