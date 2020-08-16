@@ -14,7 +14,7 @@ from sys import platform
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
                    atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True, use_unet=1,
-                   atlas_to_brain_align=True, olfactory_check=1, plot_landmarks=1,
+                   atlas_to_brain_align=True, olfactory_check=1, plot_landmarks=1, align_once=1,
                    threshold=0.0001, model='models/unet_bundary.hdf5',
                    region_labels=False, steps_per_epoch=300, epochs=60):
     """
@@ -87,7 +87,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             use_unet=use_unet,
             atlas_to_brain_align=atlas_to_brain_align,
             olfactory_check=olfactory_check,
-            plot_landmarks=plot_landmarks
+            plot_landmarks=plot_landmarks,
+            align_once=align_once
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"

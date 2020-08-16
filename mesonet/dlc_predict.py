@@ -94,17 +94,17 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
 
     if len(img_array) > 0:
         video_output_path = os.path.join(output, 'dlc_output')
-        video_name = os.path.join(video_output_path, 'tmp_video.avi')
+        video_name = os.path.join(video_output_path, 'tmp_video.mp4')
 
         if not os.path.isdir(video_output_path):
             os.mkdir(video_output_path)
-        fourcc = cv2.VideoWriter_fourcc(*'DIB ')
-        out = cv2.VideoWriter(video_name, fourcc, 30, size)
+        # fourcc = cv2.VideoWriter_fourcc(*'DIB ')
+        out = cv2.VideoWriter(video_name, -1, 30, size)
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()
 
-        deeplabcut.analyze_videos(config, [video_output_path], videotype='.avi', save_as_csv=True)
+        deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True)
         deeplabcut.create_labeled_video(config, [video_name], filtered=True)
         if '2.0' in deeplabcut.__version__:
             scorer_name = 'DeepCut'

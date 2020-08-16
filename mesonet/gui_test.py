@@ -520,7 +520,7 @@ class Gui:
         config_project(input_file, saveFolderName, 'test', config=config, atlas=atlas, sensory_match=sensory_match,
                        mat_save=mat_save, threshold=threshold, model=model, region_labels=region_labels,
                        use_unet=use_unet, atlas_to_brain_align=atlas_to_brain_align, olfactory_check=olfactory_check,
-                       plot_landmarks=plot_landmarks)
+                       plot_landmarks=plot_landmarks, align_once=align_once)
         self.statusHandler('Processing complete!')
         self.ImageDisplay(1, self.folderName, 1)
 
