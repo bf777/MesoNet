@@ -134,6 +134,8 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         cap.release()
         cv2.destroyAllWindows()
 
+        os.chdir(video_output_path)
+
         print("Landmark prediction complete!")
         if not atlas:
             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
