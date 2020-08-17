@@ -67,10 +67,10 @@ class Gui:
             if fnmatch.fnmatch(file, "*.hdf5"):
                 self.modelSelect.append(file)
 
-        self.modelLabel = Label(self.root, text="If using U-net, select a model\nto analyze the brain regions:")
+        self.modelLabel = Label(self.root, text="If using U-net, select a model to analyze the brain regions:")
         self.modelListBox = Listbox(self.root)
-        self.modelLabel.grid(row=0, column=4, columnspan=5, sticky=S)
-        self.modelListBox.grid(row=1, rowspan=4, column=4, columnspan=5, sticky=N)
+        self.modelLabel.grid(row=0, column=4, columnspan=5, sticky=W + E + S)
+        self.modelListBox.grid(row=1, rowspan=4, column=4, columnspan=5, sticky=W + E + N)
         for item in self.modelSelect:
             self.modelListBox.insert(END, item)
 
@@ -84,7 +84,7 @@ class Gui:
 
         self.folderName_str = StringVar(self.root, value=self.folderName)
         self.fileEntryButton.grid(row=0, column=2, sticky=E)
-        self.fileEntryBox = Entry(self.root, textvariable=self.folderName_str, width=60)
+        self.fileEntryBox = Entry(self.root, textvariable=self.folderName_str, width=50)
         self.fileEntryBox.grid(row=0, column=1, padx=5, pady=5)
 
         self.fileSaveLabel = Label(self.root, text="Save folder")
@@ -93,7 +93,7 @@ class Gui:
 
         self.saveFolderName_str = StringVar(self.root, value=self.saveFolderName)
         self.fileSaveButton.grid(row=1, column=2, sticky=E)
-        self.fileSaveBox = Entry(self.root, textvariable=self.saveFolderName_str, width=60)
+        self.fileSaveBox = Entry(self.root, textvariable=self.saveFolderName_str, width=50)
         self.fileSaveBox.grid(row=1, column=1, padx=5, pady=5)
 
         self.sensoryEntryLabel = Label(self.root, text="Sensory map folder")
@@ -102,7 +102,7 @@ class Gui:
 
         self.sensoryName_str = StringVar(self.root, value=self.sensoryName)
         self.sensoryEntryButton.grid(row=2, column=2, sticky=E)
-        self.sensoryEntryBox = Entry(self.root, textvariable=self.sensoryName_str, width=60)
+        self.sensoryEntryBox = Entry(self.root, textvariable=self.sensoryName_str, width=50)
         self.sensoryEntryBox.grid(row=2, column=1, padx=5, pady=5)
 
         self.configDLCLabel = Label(self.root, text="DLC config folder")
@@ -111,7 +111,7 @@ class Gui:
 
         self.configDLCName_str = StringVar(self.root, value=self.config_path)
         self.configDLCButton.grid(row=3, column=2, sticky=E)
-        self.configDLCEntryBox = Entry(self.root, textvariable=self.configDLCName_str, width=60)
+        self.configDLCEntryBox = Entry(self.root, textvariable=self.configDLCName_str, width=50)
         self.configDLCEntryBox.grid(row=3, column=1, padx=5, pady=5)
 
         # Set behavioural data files
@@ -121,7 +121,7 @@ class Gui:
 
         self.BfolderName_str = StringVar(self.root, value=self.folderName)
         self.BfileEntryButton.grid(row=4, column=2, sticky=E)
-        self.BfileEntryBox = Entry(self.root, textvariable=self.BfolderName_str, width=60)
+        self.BfileEntryBox = Entry(self.root, textvariable=self.BfolderName_str, width=50)
         self.BfileEntryBox.grid(row=4, column=1, padx=5, pady=5)
 
         self.BfileSaveLabel = Label(self.root, text="Behavior Save folder")
@@ -130,7 +130,7 @@ class Gui:
 
         self.saveBFolderName_str = StringVar(self.root, value=self.saveBFolderName)
         self.BfileSaveButton.grid(row=5, column=2, sticky=E)
-        self.BfileSaveBox = Entry(self.root, textvariable=self.saveBFolderName_str, width=60)
+        self.BfileSaveBox = Entry(self.root, textvariable=self.saveBFolderName_str, width=50)
         self.BfileSaveBox.grid(row=5, column=1, padx=5, pady=5)
 
         # Buttons for making predictions
@@ -156,16 +156,16 @@ class Gui:
         self.landmark_bottom_left = IntVar(value=1)
         self.landmark_bottom_right = IntVar(value=1)
 
-        self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions\nas .mat files",
+        self.saveMatFileCheck = Checkbutton(self.root, text="Save predicted regions as .mat files",
                                             variable=self.mat_save)
         self.saveMatFileCheck.grid(row=7, column=4, columnspan=5, padx=2, sticky=N + S + W)
-        # self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions\n(experimental)",
+        # self.regionLabelCheck = Checkbutton(self.root, text="Identify brain regions (experimental)",
         #                                     variable=self.region_labels)
         # self.regionLabelCheck.grid(row=8, column=4, padx=2, sticky=N + S + W)
         self.uNetCheck = Checkbutton(self.root, text="Use U-net for alignment", variable=self.unet_select)
         self.uNetCheck.grid(row=8, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
-        self.olfactoryCheck = Checkbutton(self.root, text="Draw olfactory bulbs (uncheck if no\nolfactory bulb visible "
+        self.olfactoryCheck = Checkbutton(self.root, text="Draw olfactory bulbs (uncheck if no olfactory bulb visible "
                                                           "in all images)", variable=self.olfactory_check)
         self.olfactoryCheck.grid(row=9, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
@@ -246,9 +246,9 @@ class Gui:
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(self.root, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
-        self.nextButton.grid(row=19, column=2, columnspan=1)
+        self.nextButton.grid(row=19, column=2, columnspan=2, sticky=E)
         self.previousButton = Button(self.root, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName, 0))
-        self.previousButton.grid(row=19, column=0, columnspan=1)
+        self.previousButton.grid(row=19, column=0, columnspan=2, sticky=W)
 
         self.statusBar = Label(self.root, textvariable=self.status_str, bd=1, relief=SUNKEN, anchor=W)
         self.statusBar.grid(row=20, column=0, columnspan=9, sticky='we')
@@ -425,9 +425,9 @@ class Gui:
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root, value=imageNum)
         imageNameLabel = Label(self.root, textvariable=imageName)
-        imageNameLabel.grid(row=6, column=0, columnspan=1)
+        imageNameLabel.grid(row=6, column=0, columnspan=2,  sticky=W)
         imageNumLabel = Label(self.root, textvariable=imageNumPrep)
-        imageNumLabel.grid(row=6, column=2, columnspan=1)
+        imageNumLabel.grid(row=6, column=2, columnspan=2, sticky=E)
 
     def onSelect(self, event):
         w = event.widget
