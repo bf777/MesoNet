@@ -20,7 +20,7 @@ import scipy
 import pylab
 from PIL import Image
 import pandas as pd
-from keras import backend as K
+from keras import backend as k
 from polylabel import polylabel
 
 # Set background colour as black to fix issue with more than one background region being identified.
@@ -32,8 +32,8 @@ COLOR_DICT = np.array([Background, Region])
 NUM_COLORS = 9
 
 
-def testGenerator(test_path, output_mask_path, num_image=60, target_size=(512, 512), flag_multi_class=False, as_gray=True,
-                  atlas_to_brain_align=True):
+def testGenerator(test_path, output_mask_path, num_image=60, target_size=(512, 512), flag_multi_class=False,
+                  as_gray=True, atlas_to_brain_align=True):
     """
     Import images and resize it to the target size of the model.
     :param test_path: path to input images
@@ -160,7 +160,7 @@ def inpaintMask(mask):
 
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
-              atlas_to_brain_align, model, mat_cnt_list, pts, olfactory_check, use_unet, plot_landmarks, align_once,
+              atlas_to_brain_align, model, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
               region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
@@ -173,21 +173,22 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     :param region_labels: choose whether to est
     """
     print(bregma_list)
+    tif_list = glob.glob(os.path.join(image_path, "*tif"))
     if atlas_to_brain_align:
         image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
+        image_name_arr.sort(key=natural_sort_key)
+        if tif_list:
+            print(tif_list)
+            tif_stack = imageio.mimread(os.path.join(image_path, tif_list[0]))
+            num_images = len(tif_stack)
+            print(num_images)
+            image_name_arr = tif_stack
     else:
         # FOR ALIGNING BRAIN TO ATLAS
         # image_name_arr = glob.glob(os.path.join(mask_path, "*_atlas.png"))
         image_name_arr = glob.glob(os.path.join(mask_path, "*_brain_warp.png"))
-    image_name_arr.sort(key=natural_sort_key)
+        image_name_arr.sort(key=natural_sort_key)
 
-    tif_list = glob.glob(os.path.join(image_path, "*tif"))
-    if tif_list:
-        print(tif_list)
-        tif_stack = imageio.mimread(os.path.join(image_path, tif_list[0]))
-        num_images = len(tif_stack)
-        print(num_images)
-        image_name_arr = tif_stack
 
     region_bgr_lower = (220, 220, 220)
     region_bgr_upper = (255, 255, 255)
@@ -237,12 +238,12 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                           atlas_to_brain_align, git_repo_base, olfactory_check)
         bregma_x, bregma_y = bregma_list[i]
         new_data = []
-        if len(tif_list) == 0:
-            img = cv2.imread(item)
-        else:
+        if len(tif_list) != 0 and atlas_to_brain_align:
             img = item
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-            img = cv2.resize(img, (512, 512))
+        else:
+            print(item)
+            img = cv2.imread(item)
         if atlas_to_brain_align:
             img = cv2.resize(img, (512, 512))
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
@@ -365,24 +366,24 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # opening = cv2.erode(mask_color, kernel, iterations=1)
             # io.imsave(os.path.join(mask_path, 'opening_test_{}.png'.format(i)), opening)
             # sure background area
-            kernel = np.ones((3, 3), np.uint8)  # 3, 3
-            sure_bg = cv2.erode(atlas_bw, kernel, iterations=1)  # 7, 5
+            # kernel = np.ones((3, 3), np.uint8)  # 3, 3
+            # sure_bg = cv2.erode(atlas_bw, kernel, iterations=1)  # 7, 5
             # Finding sure foreground area
             # dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)  # 5
             # dist_transform = np.uint8(dist_transform)
             # ret, sure_fg = cv2.threshold(dist_transform, threshold * dist_transform.max(), 255, 0)
             # Finding unknown region
-            sure_fg = atlas_bw
-            sure_fg = np.uint8(sure_fg)
+            # sure_fg = atlas_bw
+            # sure_fg = np.uint8(sure_fg)
             # sure_fg = cv2.erode(sure_fg, kernel, iterations=2)
-            unknown = cv2.subtract(sure_fg, sure_bg)
-            io.imsave(os.path.join(mask_path, 'opening_test_{}.png'.format(i)), unknown)
-            ret, markers = cv2.connectedComponents(sure_fg)
+            # unknown = cv2.subtract(sure_fg, sure_bg)
+            # io.imsave(os.path.join(mask_path, 'opening_test_{}.png'.format(i)), unknown)
+            # ret, markers = cv2.connectedComponents(sure_fg)
             # Add one to all labels so that sure background is not 0, but 1
-            markers = markers + 1
+            # markers = markers + 1
             # Now, mark the region of unknown with zero
-            markers[unknown == 255] = 0
-            io.imsave(os.path.join(mask_path, 'markers_{}.png'.format(i)), unknown)
+            # markers[unknown == 255] = 0
+            # io.imsave(os.path.join(mask_path, 'markers_{}.png'.format(i)), unknown)
             # io.imsave(os.path.join(mask_path, 'markers_{}.png'.format(i)), markers)
             img = np.uint8(img)
             # labels = cv2.watershed(img, markers)
@@ -626,6 +627,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         if plot_landmarks:
             for pt, color in zip(pts[i], colors):
                 cv2.circle(img, (int(pt[0]), int(pt[1])), 10, color, -1)
+            for pt, color in zip(pts2[i], colors):
+                cv2.circle(img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
         # Generates a transparent version of the brain atlas.
@@ -647,6 +650,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         if plot_landmarks:
             for pt, color in zip(pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
+            for pt, color in zip(pts2[i], colors):
+                cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))
         d = {'sorted_label': sorted_labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
@@ -655,5 +660,5 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             os.mkdir(os.path.join(segmented_save_path, 'region_labels'))
         df.to_csv(os.path.join(segmented_save_path, 'region_labels', '{}_region_labels.csv'.format(i)))
     print('Analysis complete! Check the outputs in the folders of {}.'.format(save_path))
-    K.clear_session()
+    k.clear_session()
     os.chdir('../..')

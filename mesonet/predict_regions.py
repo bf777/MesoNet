@@ -11,7 +11,8 @@ from mesonet.utils import parse_yaml
 
 
 def predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                  atlas_to_brain_align, region_labels):
+                  atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks,
+                  align_once, region_labels):
     """
     Segment brain images to predict the location of brain regions.
     :param input_file: Input folder containing brain images.
@@ -23,6 +24,9 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     :param mask_generate: Choose whether or not to only generate masks of the brain contour from this function.
     :param git_repo_base: The path to the base git repository containing necessary resources for MesoNet (reference
     atlases, DeepLabCut config files, etc.)
+    :param atlas_to_brain_align: If True, warp and register an atlas to the brain image; if False, warp and register a
+    brain image to the atlas.
+    :param pts
     :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
     Mouse Brain Atlas.
     """
@@ -48,7 +52,8 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     if not mask_generate:
         # Predicts and identifies brain regions based on output mask
         applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base,
-                  atlas_to_brain_align, model, region_labels)
+                  atlas_to_brain_align, model, pts, pts2, olfactory_check, use_unet, plot_landmarks,
+                  align_once, region_labels)
 
 
 def predict_regions(config_file):
@@ -68,5 +73,14 @@ def predict_regions(config_file):
     git_repo_base = cfg['git_repo_base']
     region_labels = cfg['region_labels']
     atlas_to_brain_align = cfg['atlas_to_brain_align']
+    mat_cnt_list = cfg['mat_cnt_list']
+    pts = []
+    pts2 = []
+    olfactory_check = cfg['olfactory_check']
+    use_unet = cfg['use_unet']
+    plot_landmarks = cfg['plot_landmarks']
+    align_once = cfg['align_once']
+
     predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                  atlas_to_brain_align, region_labels)
+                  atlas_to_brain_align, mat_cnt_list, pts, pts2, olfactory_check, use_unet, plot_landmarks,
+                  align_once, region_labels)
