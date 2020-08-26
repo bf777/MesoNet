@@ -507,8 +507,11 @@ class Gui:
         else:
             plot_landmarks = False
         if mask_generate and not haveMasks and atlas_to_brain_align and use_unet == 1:
+            pts = []
+            pts2 = []
             predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                          atlas_to_brain_align, region_labels)
+                          atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
+                          region_labels)
         DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
                    mat_save, threshold, git_repo_base, region_labels, self.landmark_arr, use_unet, atlas_to_brain_align,
                    model, olfactory_check, plot_landmarks, align_once)

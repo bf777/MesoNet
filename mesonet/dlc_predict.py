@@ -253,6 +253,9 @@ def predict_dlc(config_file):
     use_unet = cfg['use_unet']
     atlas_to_brain_align = cfg['atlas_to_brain_align']
     model = os.path.join(cwd, cfg['model'])
+    olfactory_check = cfg['olfactory_check']
     plot_landmarks = cfg['plot_landmarks']
+    align_once = cfg['align_once']
     DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
-               region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, plot_landmarks)
+               region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, olfactory_check, plot_landmarks,
+               align_once)

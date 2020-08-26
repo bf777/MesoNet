@@ -201,7 +201,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         im_right = cv2.imread(os.path.join(git_repo_base, 'atlases/right_hemi.png'))
         ret, im_right = cv2.threshold(im_right, 5, 255, cv2.THRESH_BINARY_INV)
         im_left = np.uint8(im_left)
-
         im_right = np.uint8(im_right)
         im = np.uint8(im)
     # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_ROIs.mat'))
@@ -384,11 +383,12 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             atlas_mask_right = cv2.resize(atlas_mask_right, (im.shape[0], im.shape[1]))
             atlas_mask_right = np.uint8(atlas_mask_right)
         else:
-            atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_smooth2_binary.png")
+            atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         atlas_mask = np.uint8(atlas_mask)
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
+        print(mask_dir)
         print("Performing first transformation of atlas {}...".format(n))
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
         pts2_for_input = np.array([pts2[n][0:len(pts[n])]]).astype('float32')
@@ -472,7 +472,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts[align_val], pts2[align_val], cwd,
                                                align_val, True)
         else:
-            dst = atlas_warped
+            dst = getMaskContour(mask_dir, atlas_warped, pts[align_val], pts2[align_val], cwd, align_val, True)
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
 
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
@@ -485,8 +485,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                                                    align_val, False)
                 atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
             else:
-                dst = getMaskContour(mask_dir, dst, pts3[align_val], pts4[align_val], cwd, align_val, False)
-
+                dst = getMaskContour(atlas_mask_dir, dst, pts3[align_val], pts4[align_val], cwd, align_val, False)
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
         else:

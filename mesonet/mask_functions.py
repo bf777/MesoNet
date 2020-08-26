@@ -213,7 +213,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         base_c = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         base_c = imutils.grab_contours(base_c)
         base_c_max.append(max(base_c, key=cv2.contourArea))
-    if not atlas_to_brain_align:
+    if not atlas_to_brain_align and use_unet:
         # FOR ALIGNING ATLAS TO BRAIN
         num_images = len(glob.glob(os.path.join(mask_path, '*_brain_warp*')))
         output = os.path.join(mask_path, '..')
@@ -227,7 +227,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         else:
             input_path = mask_path
         predictRegion(input_path, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                      atlas_to_brain_align, region_labels)
+                      atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
+                      region_labels)
     for i, item in enumerate(image_name_arr):
         label_num = 0
         if not atlas_to_brain_align:
