@@ -109,10 +109,17 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     cortical boundaries and the brain atlas.
     :param mask_output_path: The output path of the completed atlas with overlaid masks
     :param n: The number of the current atlas and corresponding transformed mask
+    :param use_unet: Choose whether or not to define the borders of the cortex using a U-net model.
+    :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
+    to the atlas.
+    :param git_repo_base: The path to the base git repository containing necessary resources for MesoNet (reference
+    atlases, DeepLabCut config files, etc.)
+    :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
     """
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
-    print(mask_warped_path)
+    # print(mask_warped_path)
+    # print(use_unet)
     if use_unet == 1:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
         if olfactory_check == 1:
@@ -134,13 +141,13 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
             mask_input = cv2.bitwise_and(atlas, mask_warped)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
-        if atlas_to_brain_align and (olfactory_check == 1):
+        if olfactory_check == 1:
             olfactory_path = os.path.join(git_repo_base, 'atlases')
             olfactory_left = cv2.imread(os.path.join(olfactory_path, '02.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_right = cv2.imread(os.path.join(olfactory_path, '01.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_mask_left, cnts_for_olfactory_left, hierarchy = cv2.findContours(olfactory_left, cv2.RETR_TREE,
                                                                             cv2.CHAIN_APPROX_NONE)
-            print("LEN OLFACTORY LEFT: {}".format(len(cnts_for_olfactory_left)))
+            # print("LEN OLFACTORY LEFT: {}".format(len(cnts_for_olfactory_left)))
             olfactory_left_cnt = min(cnts_for_olfactory_left, key=cv2.contourArea)
             olfactory_mask_right, cnts_for_olfactory_right, hierarchy = cv2.findContours(olfactory_right, cv2.RETR_TREE,
                                                                             cv2.CHAIN_APPROX_NONE)
@@ -160,7 +167,7 @@ def inpaintMask(mask):
 
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
-              atlas_to_brain_align, model, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
+              atlas_to_brain_align, model, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks, align_once,
               region_labels=True):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
@@ -170,18 +177,34 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     :param segmented_save_path: path to overall folder for saving segmented/labelled brain images
     :param mat_save: choose whether or not to output brain regions to .mat files
     :param threshold: set threshold for segmentation of foregrounds
+    :param git_repo_base: The path to the base git repository containing necessary resources for MesoNet (reference
+    atlases, DeepLabCut config files, etc.)
+    :param bregma_list: The list of bregma locations (or landmarks closest to bregma).
+    :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
+    Mouse Brain Atlas.
+    :param use_unet: Choose whether or not to define the borders of the cortex using a U-net model.
+    :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
+    to the atlas.
+    :param model: The name of the U-net model (for passthrough to mask_functions.py)
+    :param dlc_pts: The landmarks for brain-atlas registration as determined by the DeepLabCut model.
+    :param atlas_pts: The landmarks for brain-atlas registration from the original brain atlas.
+    :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
+    :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
+    circles) on final brain image.
+    :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
+    save time if you have many frames of the same brain with a fixed camera position.
     :param region_labels: choose whether to est
     """
-    print(bregma_list)
+    # print(bregma_list)
     tif_list = glob.glob(os.path.join(image_path, "*tif"))
     if atlas_to_brain_align:
         image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
         image_name_arr.sort(key=natural_sort_key)
         if tif_list:
-            print(tif_list)
+            # print(tif_list)
             tif_stack = imageio.mimread(os.path.join(image_path, tif_list[0]))
             num_images = len(tif_stack)
-            print(num_images)
+            # print(num_images)
             image_name_arr = tif_stack
     else:
         # FOR ALIGNING BRAIN TO ATLAS
@@ -204,7 +227,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     cm = pylab.get_cmap('viridis')
     colors = [cm(1. * i / NUM_COLORS)[0:3] for i in range(NUM_COLORS)]
     colors = [tuple(color_idx * 255 for color_idx in color_t) for color_t in colors]
-    print(colors)
     # vertical_aligns = []
     for file in mat_files:
         mat = scipy.io.loadmat(os.path.join(git_repo_base, 'atlases/mat_contour_base/', file))
@@ -221,13 +243,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         from mesonet.predict_regions import predictRegion
         mask_generate = True
         tif_list = glob.glob(os.path.join(image_path, "*tif"))
-        print(tif_list)
+        # print(tif_list)
         if tif_list:
             input_path = image_path
         else:
             input_path = mask_path
         predictRegion(input_path, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                      atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
+                      atlas_to_brain_align, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks, align_once,
                       region_labels)
     for i, item in enumerate(image_name_arr):
         label_num = 0
@@ -235,7 +257,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             atlas_path = os.path.join(mask_path, '{}_atlas.png'.format(str(i)))
             mask_input_path = os.path.join(mask_path, '{}.png'.format(i))
             mask_warped_path = os.path.join(mask_path, '{}_mask_warped.png'.format(str(i)))
-            atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_path, i, 1,
+            atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_path, i, use_unet,
                           atlas_to_brain_align, git_repo_base, olfactory_check)
         bregma_x, bregma_y = bregma_list[i]
         new_data = []
@@ -243,7 +265,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             img = item
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         else:
-            print(item)
+            # print(item)
             img = cv2.imread(item)
         if atlas_to_brain_align:
             img = cv2.resize(img, (512, 512))
@@ -279,7 +301,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             # Find contours in original aligned atlas
             cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
             cnts_orig = imutils.grab_contours(cnts_orig)
-            print("CNTS ORIG: {}".format(len(cnts_orig)))
+            # print("CNTS ORIG: {}".format(len(cnts_orig)))
             labels_cnts = []
             for num_label, cnt_orig in enumerate(cnts_orig):  # cnts_orig
                 # cnt_orig_moment = cv2.moments(cnt_orig)
@@ -446,7 +468,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         # else:
         #     cnts = cnts_orig
         cnts = cnts_orig
-        print("LEN CNTS: {}".format(len(cnts)))
+        # print("LEN CNTS: {}".format(len(cnts)))
         for (z, cnt), (coord_label_num, coord) in zip(enumerate(cnts),
                                                       enumerate(orig_list_labels_sorted)):
             # label = str(coord_label_num)
@@ -624,11 +646,11 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                                                      label_for_mat, z): c_rel_centre},
                                 appendmat=False)
             count += 1
-        print(plot_landmarks)
+        # print(plot_landmarks)
         if plot_landmarks:
-            for pt, color in zip(pts[i], colors):
+            for pt, color in zip(dlc_pts[i], colors):
                 cv2.circle(img, (int(pt[0]), int(pt[1])), 10, color, -1)
-            for pt, color in zip(pts2[i], colors):
+            for pt, color in zip(atlas_pts[i], colors):
                 cv2.circle(img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
@@ -649,9 +671,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                         {'transparent_{}'.format(i): img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
         if plot_landmarks:
-            for pt, color in zip(pts[i], colors):
+            for pt, color in zip(dlc_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
-            for pt, color in zip(pts2[i], colors):
+            for pt, color in zip(atlas_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))

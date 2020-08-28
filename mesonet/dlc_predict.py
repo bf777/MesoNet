@@ -47,6 +47,15 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
     Mouse Brain Atlas.
     :param landmark_arr: A list of numbers indicating which landmarks should be used by the model.
+    :param use_unet: Choose whether or not to define the borders of the cortex using a U-net model.
+    :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
+    to the atlas.
+    :param model: The name of the U-net model (for passthrough to mask_functions.py)
+    :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
+    :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
+    circles) on final brain image.
+    :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
+    save time if you have many frames of the same brain with a fixed camera position.
     """
     img_array = []
     if sensory_match == 1:
@@ -156,7 +165,7 @@ def DLCPredictBehavior(config, input_file, output):
     for filename in glob.glob(os.path.join(input_file, '*.mp4')):
         video_array.append(os.path.join(input_file, filename))
 
-    for f in glob.glob(os.path.join(input_file, '*.png')):
+    for _ in glob.glob(os.path.join(input_file, '*.png')):
         _nsre = re.compile('([0-9]+)')
         return [int(text) if text.isdigit() else text.lower()
                 for text in re.split(_nsre, s)]
@@ -171,8 +180,8 @@ def DLCPredictBehavior(config, input_file, output):
         video_output_path = [video_output_path]
         video_name = [video_name]
 
-        if not os.path.isdir(video_output_path):
-            os.mkdir(video_output_path)
+        if not os.path.isdir(video_output_path[0]):
+            os.mkdir(video_output_path[0])
         out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
         for i in range(len(img_array)):
             out.write(img_array[i])

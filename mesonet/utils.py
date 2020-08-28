@@ -43,7 +43,14 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     it if your brain images are not being segmented properly! In general, increasing this number causes each brain
     region contour to be smaller (less like the brain atlas); decreasing this number causes each brain region contour to
     be larger (more like the brain atlas).
-    :param use_unet: Select whether or not to use a U-net model when aligning the atlas to the brain image.
+    :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
+    :param use_unet: Choose whether or not to identify the borders of the cortex using a U-net model.
+    :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
+    to the atlas.
+    :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
+    circles) on final brain image.
+    :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
+    save time if you have many frames of the same brain with a fixed camera position.
     :param model: The location (within the MesoNet repository) of a U-net model to be used for finding the boundaries
     of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
     segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have

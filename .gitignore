@@ -4,11 +4,8 @@ dist/
 *.egg-info/
 *.egg
 
-# U-net models (user needs to download these manually as they are very large)
+# U-net models (user needs to download these manually as they are too large to be hosted on GitHub)
 mesonet/models/*.hdf5
-
-# Sensory map images (user needs to provide their own)
-mesonet/sensory/*
 
 # Old versions of scripts kept as backups
 mesonet/*_old.py

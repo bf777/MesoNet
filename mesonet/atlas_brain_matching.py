@@ -29,7 +29,7 @@ def find_peaks(img):
     max_loc_arr = []
     img = cv2.imread(str(img), 0)
     im = img.copy()
-    x_min = int(np.around(im.shape[0]/2))
+    x_min = int(np.around(im.shape[0] / 2))
     im1 = im[:, x_min:im.shape[0]]
     im2 = im[:, 0:x_min]
     (minVal, max_val, minLoc, max_loc) = cv2.minMaxLoc(im1)
@@ -43,15 +43,15 @@ def find_peaks(img):
     return max_loc_arr
 
 
-def coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr):
+def coords_to_mat(sub_dlc_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr):
     if bregma_present:
-        x_bregma, y_bregma = sub_pts[bregma_index]
-        for pt, landmark in zip(sub_pts, landmark_arr):
+        x_bregma, y_bregma = sub_dlc_pts[bregma_index]
+        for pt, landmark in zip(sub_dlc_pts, landmark_arr):
             x_pt = pt[0]
             y_pt = pt[1]
             pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
             pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
-            print("landmark position:{}".format(pt_adj))
+            # print("landmark position:{}".format(pt_adj))
             if not os.path.isdir(os.path.join(output_mask_path, 'mat_coords')):
                 os.mkdir(os.path.join(output_mask_path, 'mat_coords'))
             scipy.io.savemat(os.path.join(output_mask_path,
@@ -59,10 +59,10 @@ def coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, la
                              {'landmark_coords_{}_{}'.format(i, landmark): pt_adj_to_mat}, appendmat=False)
 
 
-def sensory_to_mat(sub_pts, bregma_pt, i, output_mask_path):
+def sensory_to_mat(sub_dlc_pts, bregma_pt, i, output_mask_path):
     x_bregma, y_bregma = bregma_pt
     sensory_names = ['tail_left', 'tail_right', 'visual', 'whisker']
-    for pt, landmark in zip(sub_pts, sensory_names):
+    for pt, landmark in zip(sub_dlc_pts, sensory_names):
         x_pt = pt[0]
         y_pt = pt[1]
         pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
@@ -109,11 +109,11 @@ def atlas_from_mat(input_file, mat_cnt_list):
         ret, atlas_resize = cv2.threshold(atlas_resize, 127, 255, 0)
         io.imsave('atlas_unresized_test.png', atlas_resize)
         roi_mask_new, roi_cnt, hierarchy = cv2.findContours(atlas_resize, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        print("ROI contour list length: {}".format(len(roi_cnt)))
+        # print("ROI contour list length: {}".format(len(roi_cnt)))
         for val in roi_cnt:
             c_to_save = max(val, key=cv2.contourArea)
             mat_cnt_list.append(c_to_save)
-            print("MAT contour list length: {}".format(len(mat_cnt_list)))
+            # print("MAT contour list length: {}".format(len(mat_cnt_list)))
             cv2.drawContours(atlas_base, val, -1, (255, 255, 255), 1)
         ret, thresh = cv2.threshold(atlas_base, 5, 255, cv2.THRESH_BINARY_INV)
     return thresh
@@ -134,7 +134,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     """
     c_landmarks = np.empty([0, 2])
     c_atlas_landmarks = np.empty([0, 2])
-    print(mask_dir)
+    # print(mask_dir)
     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
     atlas_to_warp = atlas_img
     mask = np.uint8(mask)
@@ -146,8 +146,8 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
         c_atlas_landmarks = np.concatenate((c_atlas_landmarks, cnt))
     c_landmarks = np.concatenate((c_landmarks, predicted_pts))
     c_atlas_landmarks = np.concatenate((c_atlas_landmarks, actual_pts))
-    print(c_landmarks)
-    print(c_atlas_landmarks)
+    # print(c_landmarks)
+    # print(c_atlas_landmarks)
     tform = PiecewiseAffineTransform()
     tform.estimate(c_atlas_landmarks, c_landmarks)
     dst = warp(atlas_to_warp, tform, output_shape=(512, 512))
@@ -175,12 +175,23 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     atlases, DeepLabCut config files, etc.)
     :param region_labels: Choose whether or not to attempt to label each region with its name from the Allen Institute
     Mouse Brain Atlas.
+    :param landmark_arr_orig: The original array of landmarks from DeepLabCut (to be distinguished from any automatic
+    exclusions to landmark array based on prediction quality).
+    :param use_unet: Choose whether or not to identify the borders of the cortex using a U-net model.
+    :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
+    to the atlas.
+    :param model: The name of the U-net model (for passthrough to mask_functions.py)
+    :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
+    :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
+    circles) on final brain image.
+    :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
+    save time if you have many frames of the same brain with a fixed camera position.
     """
     # load brain images folder
     brain_img_arr = []
     dlc_img_arr = []
     peak_arr = []
-    mat_cnt_list = []
+    # mat_cnt_list = []
 
     # Prepare output folder
     cwd = os.getcwd()
@@ -232,8 +243,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         atlas_arr = np.array([(int(cv2.moments(circle)["m10"] / cv2.moments(circle)["m00"]),
                                int(cv2.moments(circle)["m01"] / cv2.moments(circle)["m00"])) for circle in
                               circles])
-        print(atlas_arr)
-        print(len(atlas_arr))
 
     # atlas_arr = np.array([(100.00000, 148.00000), (256.00000, 254.00000), (413.00000, 148.00000),
     #                       (256.00000, 446.00000)])
@@ -258,14 +267,14 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             peak_arr_flat = []
             peak_arr = []
 
-    pts = []
-    pts2 = []
-    pts3 = []
-    pts4 = []
-    sub_pts = []
-    sub_pts2 = []
-    sub_pts3 = []
-    sub_pts4 = []
+    dlc_pts = []
+    atlas_pts = []
+    sensory_peak_pts = []
+    sensory_atlas_pts = []
+    sub_dlc_pts = []
+    sub_atlas_pts = []
+    sub_sensory_peak_pts = []
+    sub_sensory_atlas_pts = []
 
     bregma_index_list = []
     bregma_list = []
@@ -279,7 +288,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     # atlas_indices = [0, 1, 2, 3]  # [0, 3, 2, 1]
     for arr_index, i in enumerate(range(0, len(x_coord))):
         landmark_arr = landmark_arr_orig
-        print('x_coords: {}'.format(x_coord))
+        # print('x_coords: {}'.format(x_coord))
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
         # accuracy_flat = accuracy.iloc[i].values.astype('float32')
@@ -311,51 +320,48 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         for val_dlc, coord_dlc_set in enumerate(dlc_list):
             nodes = np.asarray(atlas_list)
             pts_dist = np.sum(abs(nodes - coord_dlc_set), axis=1)
-            # print("pts dist: {}".format(pts_dist))
+            # print("dlc_pts dist: {}".format(pts_dist))
             min_dist = np.argmin(pts_dist)
             min_landmark_arr.append(min_dist)
         # landmark_indices = np.argsort(min_landmark_arr).tolist()
         landmark_indices = landmark_indices[0:len(landmark_arr)]
         atlas_indices = min_landmark_arr
-        print("atlas indices: {}".format(atlas_indices))
+        # print("atlas indices: {}".format(atlas_indices))
 
-        pts_dist = np.absolute(np.asarray(atlas_list) - np.asarray((im.shape[0]/2, im.shape[1]/2)))
+        pts_dist = np.absolute(np.asarray(atlas_list) - np.asarray((im.shape[0] / 2, im.shape[1] / 2)))
         pts_avg_dist = [np.mean(v) for v in pts_dist]
         # print("bregma dist: {}".format(pts_avg_dist))
         bregma_index = np.argmin(np.asarray(pts_avg_dist))
         # print("bregma index: {}".format(bregma_index))
 
-        # 0 = left, 1 = bregma, 2 = right, 3 = lambda
         for j in landmark_indices:
-            sub_pts.append([x_coord_flat[j], y_coord_flat[j]])
-            # print("sub_pts: {}".format(sub_pts))
-        # 1 = left, 2 = bregma, 3 = right, 0 = lambda
+            sub_dlc_pts.append([x_coord_flat[j], y_coord_flat[j]])
         for j in atlas_indices:
-            sub_pts2.append([atlas_arr[j][0], atlas_arr[j][1]])
-            # print("sub_pts2: {}".format(sub_pts2))
-        print(sub_pts)
-        print(sub_pts2)
-        pts.append(sub_pts)
-        pts2.append(sub_pts2)
-        coords_to_mat(sub_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr)
-        print(bregma_index)
+            sub_atlas_pts.append([atlas_arr[j][0], atlas_arr[j][1]])
+        # print(sub_dlc_pts)
+        # print(sub_atlas_pts)
+        dlc_pts.append(sub_dlc_pts)
+        atlas_pts.append(sub_atlas_pts)
+        coords_to_mat(sub_dlc_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr)
+        # print(bregma_index)
         bregma_index_list.append(bregma_index)
-        sub_pts = []
-        sub_pts2 = []
+        sub_dlc_pts = []
+        sub_atlas_pts = []
     if sensory_match:
         k_coord, m_coord = np.array([(189, 323, 435, 348), (315, 315, 350, 460)])
         coords_peak = peak_arr_total
         for img_num, img in enumerate(brain_img_arr):
             for j in [1, 0, 3, 2]:  # Get peak values from heatmaps
-                sub_pts3.append([coords_peak[img_num][j][0], coords_peak[img_num][j][1]])
+                sub_sensory_peak_pts.append([coords_peak[img_num][j][0], coords_peak[img_num][j][1]])
             for j in [0, 1, 2, 3]:  # Get circle locations
-                sub_pts4.append([k_coord[j], m_coord[j]])
-            pts3.append(sub_pts3)
-            pts4.append(sub_pts4)
-            sensory_to_mat(sub_pts3, pts[img_num][3], img_num, output_mask_path)
-            sub_pts3 = []
-            sub_pts4 = []
-        pts3, pts4 = np.asarray(pts3).astype('float32'), np.asarray(pts4).astype('float32')
+                sub_sensory_atlas_pts.append([k_coord[j], m_coord[j]])
+            sensory_peak_pts.append(sub_sensory_peak_pts)
+            sensory_atlas_pts.append(sub_sensory_atlas_pts)
+            sensory_to_mat(sub_sensory_peak_pts, dlc_pts[img_num][3], img_num, output_mask_path)
+            sub_sensory_peak_pts = []
+            sub_sensory_atlas_pts = []
+        sensory_peak_pts, sensory_atlas_pts = np.asarray(sensory_peak_pts).astype('float32'), \
+                                              np.asarray(sensory_atlas_pts).astype('float32')
 
     for (n, br) in enumerate(brain_img_arr):
         align_val = n
@@ -370,8 +376,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             im = np.uint8(im)
             im = cv2.resize(im, (512, 512))
 
-        io.imsave(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), im)
-        # cv2.imread(os.path.join(cwd, "../output_mask/atlas_unskewed.png".format(n)), cv2.IMREAD_GRAYSCALE)
         if atlas_to_brain_align:
             atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow1_smooth_binary.png")
             atlas_mask_dir_left = os.path.join(git_repo_base, "atlases/left_hemisphere_smooth.png")
@@ -383,28 +387,28 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             atlas_mask_right = cv2.resize(atlas_mask_right, (im.shape[0], im.shape[1]))
             atlas_mask_right = np.uint8(atlas_mask_right)
         else:
-            atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
+            atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_smooth2_binary.png")
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         atlas_mask = np.uint8(atlas_mask)
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
-        print(mask_dir)
+        # print(mask_dir)
         print("Performing first transformation of atlas {}...".format(n))
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
-        pts2_for_input = np.array([pts2[n][0:len(pts[n])]]).astype('float32')
-        pts_for_input = np.array([pts[n]]).astype('float32')
-        print(len(pts2_for_input[0]))
+        atlas_pts_for_input = np.array([atlas_pts[n][0:len(dlc_pts[n])]]).astype('float32')
+        pts_for_input = np.array([dlc_pts[n]]).astype('float32')
+        # print(len(atlas_pts_for_input[0]))
 
         if align_once:
             align_val = 0
         else:
             align_val = n
 
-        if len(pts2_for_input[0]) == 2:
-            pts2_for_input = np.append(pts2_for_input[0], [[0, 0]], axis=0)
+        if len(atlas_pts_for_input[0]) == 2:
+            atlas_pts_for_input = np.append(atlas_pts_for_input[0], [[0, 0]], axis=0)
             pts_for_input = np.append(pts_for_input[0], [[0, 0]], axis=0)
-        if len(pts2_for_input[0]) <= 2:
-            warp_coords = cv2.estimateAffinePartial2D(pts2_for_input, pts_for_input)[0]
+        if len(atlas_pts_for_input[0]) <= 2:
+            warp_coords = cv2.estimateAffinePartial2D(atlas_pts_for_input, pts_for_input)[0]
             if atlas_to_brain_align:
                 atlas_warped_left = cv2.warpAffine(im_left, warp_coords, (512, 512))
                 atlas_warped_right = cv2.warpAffine(im_right, warp_coords, (512, 512))
@@ -418,23 +422,26 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 io.imsave(atlas_right_transform_path, atlas_warped_right)
             else:
                 atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(pts2_for_input[0]) == 3:
-            warp_coords = cv2.getAffineTransform(pts2_for_input, pts_for_input)
+        elif len(atlas_pts_for_input[0]) == 3:
+            warp_coords = cv2.getAffineTransform(atlas_pts_for_input, pts_for_input)
             atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(pts2_for_input[0]) >= 4:
-            print("FOUR POINTS")
-            print(pts2_for_input[0][0][0:2])
-            print(np.array(pts2[align_val], dtype=np.float32))
+        elif len(atlas_pts_for_input[0]) >= 4:
+            # print(atlas_pts_for_input[0][0][0:2])
+            # print(np.array(atlas_pts[align_val], dtype=np.float32))
             if atlas_to_brain_align:
-                pts2_left = np.array([pts2[align_val][0], pts2[align_val][2], pts2[align_val][3]], dtype=np.float32)
-                pts2_right = np.array([pts2[align_val][1], pts2[align_val][2], pts2[align_val][3]], dtype=np.float32)
-                pts1_left = np.array([pts[align_val][0], pts[align_val][2], pts[align_val][3]], dtype=np.float32)
-                pts1_right = np.array([pts[align_val][1], pts[align_val][2], pts[align_val][3]], dtype=np.float32)
-                print(pts2_left.flags)
-                print(pts1_left.flags)
-                print("WARP COORDS: {}, {}".format(pts2_left, pts1_left))
-                warp_coords_left = cv2.getAffineTransform(pts2_left, pts1_left)
-                warp_coords_right = cv2.getAffineTransform(pts2_right, pts1_right)
+                atlas_pts_left = np.array([atlas_pts[align_val][0], atlas_pts[align_val][2], atlas_pts[align_val][3]],
+                                          dtype=np.float32)
+                atlas_pts_right = np.array([atlas_pts[align_val][1], atlas_pts[align_val][2], atlas_pts[align_val][3]],
+                                           dtype=np.float32)
+                dlc_pts_left = np.array([dlc_pts[align_val][0], dlc_pts[align_val][2], dlc_pts[align_val][3]],
+                                     dtype=np.float32)
+                dlc_pts_right = np.array([dlc_pts[align_val][1], dlc_pts[align_val][2], dlc_pts[align_val][3]],
+                                      dtype=np.float32)
+                # print(atlas_pts_left.flags)
+                # print(dlc_pts_left.flags)
+                # print("WARP COORDS: {}, {}".format(atlas_pts_left, dlc_pts_left))
+                warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
+                warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
                 atlas_warped_left = cv2.warpAffine(im_left, warp_coords_left, (512, 512))
                 atlas_warped_right = cv2.warpAffine(im_right, warp_coords_right, (512, 512))
                 atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
@@ -446,19 +453,21 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 io.imsave(atlas_left_transform_path, atlas_warped_left)
                 io.imsave(atlas_right_transform_path, atlas_warped_right)
             else:
-                pts_np = np.array([pts[align_val][0], pts[align_val][1], pts[align_val][2]], dtype=np.float32)
-                pts2_np = np.array([pts2[align_val][0], pts2[align_val][1], pts2[align_val][2]], dtype=np.float32)
-                warp_coords = cv2.getAffineTransform(pts_np, pts2_np)
+                pts_np = np.array([dlc_pts[align_val][0], dlc_pts[align_val][1], dlc_pts[align_val][2]],
+                                  dtype=np.float32)
+                atlas_pts_np = np.array([atlas_pts[align_val][0], atlas_pts[align_val][1], atlas_pts[align_val][2]],
+                                        dtype=np.float32)
+                warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
                 atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
 
         if atlas_to_brain_align:
-            if len(pts2_for_input[0]) == 2:
+            if len(atlas_pts_for_input[0]) == 2:
                 atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords, (512, 512))
                 atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords, (512, 512))
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
-            if len(pts2_for_input[0]) == 3:
+            if len(atlas_pts_for_input[0]) == 3:
                 atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
-            if len(pts2_for_input[0]) >= 4:
+            if len(atlas_pts_for_input[0]) >= 4:
                 atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords_left, (512, 512))
                 atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords_right, (512, 512))
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
@@ -468,11 +477,14 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
         if use_unet == 1 and atlas_to_brain_align:
-            dst = getMaskContour(mask_dir, atlas_warped, pts[align_val], pts2[align_val], cwd, align_val, True)
-            atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts[align_val], pts2[align_val], cwd,
+            dst = getMaskContour(mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd, align_val, True)
+            atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, dlc_pts[align_val], atlas_pts[align_val],
+                                               cwd,
                                                align_val, True)
         else:
-            dst = getMaskContour(mask_dir, atlas_warped, pts[align_val], pts2[align_val], cwd, align_val, True)
+            dst = atlas_warped
+            # dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
+            # align_val, True)
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
 
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
@@ -480,12 +492,15 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         if sensory_match:
             # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
             if atlas_to_brain_align:
-                dst = getMaskContour(mask_dir, atlas_warped, pts3[align_val], pts4[align_val], cwd, align_val, False)
-                atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, pts3[align_val], pts4[align_val], cwd,
+                dst = getMaskContour(mask_dir, atlas_warped, sensory_peak_pts[align_val], sensory_atlas_pts[align_val],
+                                     cwd, align_val, False)
+                atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, sensory_peak_pts[align_val],
+                                                   sensory_atlas_pts[align_val], cwd,
                                                    align_val, False)
                 atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
             else:
-                dst = getMaskContour(atlas_mask_dir, dst, pts3[align_val], pts4[align_val], cwd, align_val, False)
+                dst = getMaskContour(atlas_mask_dir, dst, sensory_peak_pts[align_val], sensory_atlas_pts[align_val],
+                                     cwd, align_val, False)
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
         else:
@@ -504,9 +519,9 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                           atlas_to_brain_align, git_repo_base, olfactory_check)
         if bregma_present:
             bregma_val = int(bregma_index_list[n])
-            bregma_list.append(pts[n][bregma_val])
-            print("Bregma list: {}".format(bregma_list))
+            bregma_list.append(dlc_pts[n][bregma_val])
+            # print("Bregma list: {}".format(bregma_list))
     # Converts the transformed brain atlas into a segmentation method for the original brain image
     applyMask(brain_img_dir, output_mask_path, output_overlay_path, output_overlay_path, mat_save, threshold,
-              git_repo_base, bregma_list, atlas_to_brain_align, model, pts, pts2, olfactory_check,
+              git_repo_base, bregma_list, atlas_to_brain_align, model, dlc_pts, atlas_pts, olfactory_check,
               use_unet, plot_landmarks, align_once, region_labels)
