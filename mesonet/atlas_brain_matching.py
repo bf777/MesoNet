@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import cv2
 import imutils
+import math
 import scipy.io
 import skimage.io as io
 import skimage.transform as trans
@@ -117,6 +118,24 @@ def atlas_from_mat(input_file, mat_cnt_list):
             cv2.drawContours(atlas_base, val, -1, (255, 255, 255), 1)
         ret, thresh = cv2.threshold(atlas_base, 5, 255, cv2.THRESH_BINARY_INV)
     return thresh
+
+
+def atlas_rotate(dlc_pts, im):
+    print(dlc_pts)
+    dlc_y_pts = [coord if (240 <= coord[1] <= 270) else (1000, 1000) for coord in dlc_pts]
+    dlc_y_pts = [coord for coord in dlc_y_pts if coord[1] < 1000]
+
+    # https://stackoverflow.com/questions/42258637/how-to-know-the-angle-between-two-points
+    rotate_rad = math.atan2((im.shape[0]/2)-dlc_y_pts[0][1], (im.shape[1]/2)-dlc_y_pts[0][0])
+    print((im.shape[0]/2-dlc_y_pts[0][1], im.shape[1]/2-dlc_y_pts[0][0]))
+    rotate_deg = -1 * (90 - abs(math.degrees(rotate_rad)))
+    print(rotate_deg)
+    im_rotate_mat = cv2.getRotationMatrix2D((im.shape[1]/2, im.shape[0]/2), rotate_deg, 1.0)
+    im_rotated = cv2.warpAffine(im, im_rotate_mat, (512, 512))
+    x_min = int(np.around(im_rotated.shape[0] / 2))
+    im_left = im_rotated[:, 0:x_min]
+    im_right = im_rotated[:, x_min:im_rotated.shape[0]]
+    return im_left, im_right
 
 
 def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_mask):
@@ -429,14 +448,16 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             # print(atlas_pts_for_input[0][0][0:2])
             # print(np.array(atlas_pts[align_val], dtype=np.float32))
             if atlas_to_brain_align:
+                if not atlas_to_brain_align:
+                    im_left, im_right = atlas_rotate(dlc_pts[n], im)
                 atlas_pts_left = np.array([atlas_pts[align_val][0], atlas_pts[align_val][2], atlas_pts[align_val][3]],
                                           dtype=np.float32)
                 atlas_pts_right = np.array([atlas_pts[align_val][1], atlas_pts[align_val][2], atlas_pts[align_val][3]],
                                            dtype=np.float32)
                 dlc_pts_left = np.array([dlc_pts[align_val][0], dlc_pts[align_val][2], dlc_pts[align_val][3]],
-                                     dtype=np.float32)
+                                        dtype=np.float32)
                 dlc_pts_right = np.array([dlc_pts[align_val][1], dlc_pts[align_val][2], dlc_pts[align_val][3]],
-                                      dtype=np.float32)
+                                         dtype=np.float32)
                 # print(atlas_pts_left.flags)
                 # print(dlc_pts_left.flags)
                 # print("WARP COORDS: {}, {}".format(atlas_pts_left, dlc_pts_left))
@@ -444,8 +465,11 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
                 atlas_warped_left = cv2.warpAffine(im_left, warp_coords_left, (512, 512))
                 atlas_warped_right = cv2.warpAffine(im_right, warp_coords_right, (512, 512))
-                atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
-                ret, atlas_warped = cv2.threshold(atlas_warped, 5, 255, cv2.THRESH_BINARY_INV)
+                if atlas_to_brain_align:
+                    atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
+                    ret, atlas_warped = cv2.threshold(atlas_warped, 5, 255, cv2.THRESH_BINARY_INV)
+                else:
+                    atlas_warped = cv2.add(atlas_warped_left, atlas_warped_right)
                 atlas_left_transform_path = os.path.join(output_mask_path,
                                                          '{}_atlas_left_transform.png'.format(str(n)))
                 atlas_right_transform_path = os.path.join(output_mask_path,
@@ -456,7 +480,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 pts_np = np.array([dlc_pts[align_val][0], dlc_pts[align_val][1], dlc_pts[align_val][2]],
                                   dtype=np.float32)
                 atlas_pts_np = np.array([atlas_pts[align_val][0], atlas_pts[align_val][1], atlas_pts[align_val][2]],
-                                        dtype=np.float32)
+                                       dtype=np.float32)
                 warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
                 atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
 
@@ -476,15 +500,14 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         io.imsave(atlas_first_transform_path, atlas_warped)
         # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
-        if use_unet == 1 and atlas_to_brain_align:
+        if use_unet and atlas_to_brain_align:
             dst = getMaskContour(mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd, align_val, True)
             atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, dlc_pts[align_val], atlas_pts[align_val],
-                                               cwd,
-                                               align_val, True)
+                                               cwd, align_val, True)
         else:
             dst = atlas_warped
             # dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
-            # align_val, True)
+            #                      align_val, True)
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
 
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of

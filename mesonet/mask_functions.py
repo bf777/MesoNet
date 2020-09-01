@@ -120,9 +120,9 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
     # print(mask_warped_path)
     # print(use_unet)
-    if use_unet == 1:
+    if use_unet:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
-        if olfactory_check == 1:
+        if olfactory_check:
             cnts_for_olfactory = cv2.findContours(mask_input.copy(), cv2.RETR_EXTERNAL,
                                     cv2.CHAIN_APPROX_NONE)
             cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
@@ -132,7 +132,7 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
             # FOR ALIGNING ATLAS TO BRAIN
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
-            if olfactory_check == 1:
+            if olfactory_check:
                 olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
                 for bulb in olfactory_bulbs:
                     cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
@@ -141,7 +141,7 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
             mask_input = cv2.bitwise_and(atlas, mask_warped)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
-        if olfactory_check == 1:
+        if olfactory_check:
             olfactory_path = os.path.join(git_repo_base, 'atlases')
             olfactory_left = cv2.imread(os.path.join(olfactory_path, '02.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_right = cv2.imread(os.path.join(olfactory_path, '01.png'), cv2.IMREAD_GRAYSCALE)
@@ -554,7 +554,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
 
             # If .mat save checkbox checked in GUI, save contour paths and centre to .mat files for each contour
-            if mat_save == 1:
+            if mat_save:
                 mat_save = True
             else:
                 mat_save = False
@@ -666,13 +666,15 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         img_rgba.save(os.path.join(save_path, "{}_mask_transparent.png".format(i)))
         img_transparent = cv2.imread(os.path.join(save_path, "{}_mask_transparent.png".format(i)))
         img_trans_for_mat = np.uint8(img_transparent)
-        if mat_save == 1:
+        if mat_save:
             sio.savemat(os.path.join(segmented_save_path, 'mat_contour/transparent_{}'.format(i)),
                         {'transparent_{}'.format(i): img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
         if plot_landmarks:
+            print(dlc_pts[i])
             for pt, color in zip(dlc_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
+            print(atlas_pts[i])
             for pt, color in zip(atlas_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
