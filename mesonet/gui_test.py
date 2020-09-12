@@ -486,20 +486,20 @@ class Gui:
 
         if left:
             self.landmark_arr.append(0)
-        if bregma:
-            self.landmark_arr.append(4)
-        if right:
-            self.landmark_arr.append(6)
-        if lambd:
-            self.landmark_arr.append(5)
         if top_left:
             self.landmark_arr.append(1)
-        if top_centre:
-            self.landmark_arr.append(3)
-        if top_right:
-            self.landmark_arr.append(7)
         if bottom_left:
             self.landmark_arr.append(2)
+        if top_centre:
+            self.landmark_arr.append(3)
+        if bregma:
+            self.landmark_arr.append(4)
+        if lambd:
+            self.landmark_arr.append(5)
+        if right:
+            self.landmark_arr.append(6)
+        if top_right:
+            self.landmark_arr.append(7)
         if bottom_right:
             self.landmark_arr.append(8)
 

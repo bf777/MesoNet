@@ -19,7 +19,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/bf777/mesonet",
     install_requires=['imutils', 'scikit-image', 'scipy', 'numpy==1.16.4', 'keras', 'opencv-python', 'Pillow',
-                      'deeplabcut', 'pandas', 'matplotlib', 'python-polylabel'],
+                      'deeplabcut', 'pandas', 'matplotlib', 'python-polylabel', 'imgaug'],
     packages=['mesonet', ],
     classifiers=[
         "Programming Language :: Python :: 3",

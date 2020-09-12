@@ -122,19 +122,22 @@ def atlas_from_mat(input_file, mat_cnt_list):
 
 def atlas_rotate(dlc_pts, im):
     print(dlc_pts)
-    dlc_y_pts = [coord if (240 <= coord[1] <= 270) else (1000, 1000) for coord in dlc_pts]
-    dlc_y_pts = [coord for coord in dlc_y_pts if coord[1] < 1000]
+    dlc_y_pts = [coord if (190 <= coord[0] <= 330) else (1000, 1000) for coord in dlc_pts]
+    dlc_y_pts = [coord for coord in dlc_y_pts if coord[0] < 1000]
 
     # https://stackoverflow.com/questions/42258637/how-to-know-the-angle-between-two-points
-    rotate_rad = math.atan2((im.shape[0]/2)-dlc_y_pts[0][1], (im.shape[1]/2)-dlc_y_pts[0][0])
-    print((im.shape[0]/2-dlc_y_pts[0][1], im.shape[1]/2-dlc_y_pts[0][0]))
-    rotate_deg = -1 * (90 - abs(math.degrees(rotate_rad)))
+    print(dlc_y_pts)
+    rotate_rad = math.atan2(0, (im.shape[1]/2)-dlc_y_pts[-1][0])
+    print((im.shape[0]/2)-dlc_y_pts[-1][1], (im.shape[1]/2)-dlc_y_pts[-1][0])
+    rotate_deg = -1 * (abs(math.degrees(rotate_rad)))
     print(rotate_deg)
     im_rotate_mat = cv2.getRotationMatrix2D((im.shape[1]/2, im.shape[0]/2), rotate_deg, 1.0)
     im_rotated = cv2.warpAffine(im, im_rotate_mat, (512, 512))
     x_min = int(np.around(im_rotated.shape[0] / 2))
     im_left = im_rotated[:, 0:x_min]
     im_right = im_rotated[:, x_min:im_rotated.shape[0]]
+    print(im_left.shape)
+    print(im_right.shape)
     return im_left, im_right
 
 
@@ -173,6 +176,52 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     if main_mask:
         io.imsave(os.path.join(cwd, "mask_{}.png".format(n)), mask)
     return dst
+
+
+def homography_match(warp_from, warp_to, output_mask_path, n):
+    # Create ORB detector with 5000 features.
+    orb_detector = cv2.ORB_create(5000)
+
+    # Find keypoints and descriptors.
+    # The first arg is the image, second arg is the mask
+    #  (which is not reqiured in this case).
+    kp1, d1 = orb_detector.detectAndCompute(warp_from, None)  # im
+    kp2, d2 = orb_detector.detectAndCompute(warp_to, None)  # atlas_warped
+
+    # Match features between the two images.
+    # We create a Brute Force matcher with
+    # Hamming distance as measurement mode.
+    matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+    # Match the two sets of descriptors.
+    matches = matcher.match(d1, d2)
+
+    # Sort matches on the basis of their Hamming distance.
+    matches.sort(key=lambda x: x.distance)
+
+    # Take the top 90 % matches forward.
+    matches = matches[:int(len(matches) * 90)]
+    no_of_matches = len(matches)
+
+    # Define empty matrices of shape no_of_matches * 2.
+    p1 = np.zeros((no_of_matches, 2))
+    p2 = np.zeros((no_of_matches, 2))
+
+    for i in range(len(matches)):
+        p1[i, :] = kp1[matches[i].queryIdx].pt
+        p2[i, :] = kp2[matches[i].trainIdx].pt
+
+    # Find the homography matrix.
+    homography, mask = cv2.findHomography(p1, p2, cv2.RANSAC)
+
+    # Use this matrix to transform the
+    # colored image wrt the reference image.
+    atlas_warped = cv2.warpPerspective(warp_to,
+                                       homography, (512, 512))
+    atlas_homography_transform_path = os.path.join(output_mask_path,
+                                                   '{}_atlas_homography.png'.format(str(n)))
+    io.imsave(atlas_homography_transform_path, atlas_warped)
+    return atlas_warped
 
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
@@ -386,6 +435,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         align_val = n
         if atlas_to_brain_align:
             im = np.uint8(im)
+            br = cv2.imread(br)
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             if '.png' in br:
@@ -447,9 +497,25 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         elif len(atlas_pts_for_input[0]) >= 4:
             # print(atlas_pts_for_input[0][0][0:2])
             # print(np.array(atlas_pts[align_val], dtype=np.float32))
-            if atlas_to_brain_align:
-                if not atlas_to_brain_align:
-                    im_left, im_right = atlas_rotate(dlc_pts[n], im)
+            # if atlas_to_brain_align:
+            im_final_size = (512, 512)
+            #if not atlas_to_brain_align:
+            #    # im_left, im_right = atlas_rotate(dlc_pts[n], im)
+            #    im_final_size = (256, 512)
+            #else:
+            #    im_final_size = (512, 512)
+            # left [0, 2, 3]
+            # right [1, 2, 3]
+            try:
+                atlas_pts_left = np.array([atlas_pts[align_val][0], atlas_pts[align_val][4], atlas_pts[align_val][5]],
+                                          dtype=np.float32)
+                atlas_pts_right = np.array([atlas_pts[align_val][6], atlas_pts[align_val][4], atlas_pts[align_val][5]],
+                                           dtype=np.float32)
+                dlc_pts_left = np.array([dlc_pts[align_val][0], dlc_pts[align_val][4], dlc_pts[align_val][5]],
+                                        dtype=np.float32)
+                dlc_pts_right = np.array([dlc_pts[align_val][6], dlc_pts[align_val][4], dlc_pts[align_val][5]],
+                                         dtype=np.float32)
+            except:
                 atlas_pts_left = np.array([atlas_pts[align_val][0], atlas_pts[align_val][2], atlas_pts[align_val][3]],
                                           dtype=np.float32)
                 atlas_pts_right = np.array([atlas_pts[align_val][1], atlas_pts[align_val][2], atlas_pts[align_val][3]],
@@ -458,31 +524,41 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                                         dtype=np.float32)
                 dlc_pts_right = np.array([dlc_pts[align_val][1], dlc_pts[align_val][2], dlc_pts[align_val][3]],
                                          dtype=np.float32)
-                # print(atlas_pts_left.flags)
-                # print(dlc_pts_left.flags)
-                # print("WARP COORDS: {}, {}".format(atlas_pts_left, dlc_pts_left))
-                warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
-                warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
-                atlas_warped_left = cv2.warpAffine(im_left, warp_coords_left, (512, 512))
-                atlas_warped_right = cv2.warpAffine(im_right, warp_coords_right, (512, 512))
-                if atlas_to_brain_align:
-                    atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
-                    ret, atlas_warped = cv2.threshold(atlas_warped, 5, 255, cv2.THRESH_BINARY_INV)
-                else:
-                    atlas_warped = cv2.add(atlas_warped_left, atlas_warped_right)
-                atlas_left_transform_path = os.path.join(output_mask_path,
-                                                         '{}_atlas_left_transform.png'.format(str(n)))
-                atlas_right_transform_path = os.path.join(output_mask_path,
-                                                          '{}_atlas_right_transform.png'.format(str(n)))
-                io.imsave(atlas_left_transform_path, atlas_warped_left)
-                io.imsave(atlas_right_transform_path, atlas_warped_right)
+            # print(atlas_pts_left.flags)
+            # print(dlc_pts_left.flags)
+            # print("WARP COORDS: {}, {}".format(atlas_pts_left, dlc_pts_left))
+            warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
+            warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
+            if atlas_to_brain_align:
+                atlas_warped_left = cv2.warpAffine(im_left, warp_coords_left, im_final_size)
+                atlas_warped_right = cv2.warpAffine(im_right, warp_coords_right, im_final_size)
+                atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
+                ret, atlas_warped = cv2.threshold(atlas_warped, 5, 255, cv2.THRESH_BINARY_INV)
+                # atlas_warped = homography_match(br, atlas, output_mask_path, n)
             else:
-                pts_np = np.array([dlc_pts[align_val][0], dlc_pts[align_val][1], dlc_pts[align_val][2]],
-                                  dtype=np.float32)
-                atlas_pts_np = np.array([atlas_pts[align_val][0], atlas_pts[align_val][1], atlas_pts[align_val][2]],
-                                       dtype=np.float32)
-                warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
-                atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+                atlas_warped_left = cv2.warpAffine(im, warp_coords_left, im_final_size)
+                atlas_warped_right = cv2.warpAffine(im, warp_coords_right, im_final_size)
+                x_min = int(np.around(im.shape[0] / 2))
+                atlas_warped_left = atlas_warped_left[:, 0:x_min]
+                atlas_warped_right = atlas_warped_right[:, x_min:im.shape[0]]
+                atlas_warped = np.concatenate((atlas_warped_left, atlas_warped_right), axis=1)
+                # atlas_warped = homography_match(im, atlas, output_mask_path, n)
+            atlas_left_transform_path = os.path.join(output_mask_path,
+                                                     '{}_atlas_left_transform.png'.format(str(n)))
+            atlas_right_transform_path = os.path.join(output_mask_path,
+                                                      '{}_atlas_right_transform.png'.format(str(n)))
+            io.imsave(atlas_left_transform_path, atlas_warped_left)
+            io.imsave(atlas_right_transform_path, atlas_warped_right)
+            # else:
+            #    pts_np = np.array([dlc_pts[align_val][0], dlc_pts[align_val][1], dlc_pts[align_val][2]],
+            #                      dtype=np.float32)
+            #    atlas_pts_np = np.array([atlas_pts[align_val][0], atlas_pts[align_val][1], atlas_pts[align_val][2]],
+            #                            dtype=np.float32)
+            #    warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
+            #    atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+
+        # Save the output.
+        # cv2.imwrite('output.jpg', transformed_img)
 
         if atlas_to_brain_align:
             if len(atlas_pts_for_input[0]) == 2:

@@ -10,3 +10,4 @@ from mesonet.dlc_predict import predict_dlc
 from mesonet.predict_regions import predict_regions
 from mesonet.train_model import train_model
 from mesonet.gui_start import gui_start
+from mesonet.img_augment import img_augment
