@@ -434,12 +434,12 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         labels_x = []
         labels_y = []
         areas = []
-        labels_arr = []
+        # labels_arr = []
         sorted_labels_arr = []
-        labels_cnts = []
+        # labels_cnts = []
         # label_jitter = random.randrange(-2, 2)
         label_jitter = 0
-        count_label = 0
+        # count_label = 0
         # print("LABELS ORIG: {}".format(len(np.unique(labels))))
         mask = np.zeros(mask_color.shape, dtype="uint8")
         # for (n, label) in enumerate(np.unique(labels)):
