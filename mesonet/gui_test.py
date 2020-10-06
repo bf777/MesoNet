@@ -15,7 +15,7 @@ import imageio
 
 from mesonet.dlc_predict import DLCPredict, DLCPredictBehavior
 from mesonet.predict_regions import predictRegion
-from mesonet.utils import config_project, find_git_repo
+from mesonet.utils import config_project, find_git_repo, natural_sort_key
 
 
 class Gui:
@@ -417,6 +417,7 @@ class Gui:
             fileList = glob.glob(os.path.join(folderName, '*_mask.png'))
         elif glob.glob(os.path.join(folderName, '*.png')):
             fileList = glob.glob(os.path.join(folderName, '*.png'))
+            fileList.sort(key=natural_sort_key)
         elif glob.glob(os.path.join(folderName, '*.tif')):
             is_tif = True
             tif_list = glob.glob(os.path.join(folderName, '*.tif'))
@@ -428,24 +429,24 @@ class Gui:
         if self.j <= -1:
             self.j = self.picLen - 1
         if delta != 0:
-            for file in fileList:
-                if is_tif or fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask_segmented.png".format(self.j))) \
-                        or fnmatch.fnmatch(file, os.path.join(folderName, "{}.png".format(self.j))) or \
-                        fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask.png".format(self.j))):
-                    if is_tif:
-                        image_orig = Image.fromarray(file)
-                        self.imageFileName = tif_list[0]
-                        self.imageFileName = os.path.basename(self.imageFileName)
-                    else:
-                        self.imageFileName = os.path.basename(file)
-                        image = os.path.join(folderName, file)
-                        image_orig = Image.open(image)
-                    image_resize = image_orig.resize((512, 512))
-                    image_disp = ImageTk.PhotoImage(image_resize)
-                    self.canvas.create_image(256, 256, image=image_disp)
-                    label = Label(image=image_disp)
-                    label.image = image_disp
-                    self.root.update()
+            # for file in fileList:
+            #if is_tif or fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask_segmented.png".format(self.j))) \
+            #        or fnmatch.fnmatch(file, os.path.join(folderName, "{}.png".format(self.j))) or \
+            #        fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask.png".format(self.j))):
+            if is_tif:
+                image_orig = Image.fromarray(fileList[0])
+                self.imageFileName = tif_list[0]
+                self.imageFileName = os.path.basename(self.imageFileName)
+            else:
+                self.imageFileName = os.path.basename(fileList[self.j])
+                image = os.path.join(folderName, fileList[self.j])
+                image_orig = Image.open(image)
+            image_resize = image_orig.resize((512, 512))
+            image_disp = ImageTk.PhotoImage(image_resize)
+            self.canvas.create_image(256, 256, image=image_disp)
+            label = Label(image=image_disp)
+            label.image = image_disp
+            self.root.update()
         imageName = StringVar(self.root, value=self.imageFileName)
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root, value=imageNum)
