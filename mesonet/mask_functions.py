@@ -677,6 +677,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             print(atlas_pts[i])
             for pt, color in zip(atlas_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 5, color, -1)
+                print((pt[0] - atlas_pts[i][4][0], pt[1] - atlas_pts[i][4][1]))
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))
         d = {'sorted_label': sorted_labels_arr, 'x': labels_x, 'y': labels_y, 'area': areas}
