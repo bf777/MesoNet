@@ -156,7 +156,7 @@ def find_git_repo():
         git_repo_marker = "mesonet.txt"
         if platform == "linux" or platform == "linux2" or platform == "darwin":
             # linux or mac
-            root_folder = '~/'
+            root_folder = '/'
         elif platform == "win32":
             # Windows
             root_folder = 'C:\\'
