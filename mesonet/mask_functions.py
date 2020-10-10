@@ -44,6 +44,8 @@ def testGenerator(test_path, output_mask_path, num_image=60, target_size=(512, 5
     """
     suff = 'png'
     print(test_path)
+    img_list = glob.glob(os.path.join(test_path, "*png"))
+    img_list.sort(key=natural_sort_key)
     tif_list = glob.glob(os.path.join(test_path, "*tif"))
     print(tif_list)
     if tif_list:
@@ -58,7 +60,7 @@ def testGenerator(test_path, output_mask_path, num_image=60, target_size=(512, 5
             img = cv2.resize(img, target_size)
         elif len(tif_list) == 0:
             if atlas_to_brain_align:
-                img = io.imread(os.path.join(test_path, "{}.{}".format(i, suff)))
+                img = io.imread(os.path.join(test_path, img_list[i]))
             else:
                 img = io.imread(os.path.join(test_path, "{}_brain_warp.{}".format(i, suff)))
             img = trans.resize(img, target_size)
