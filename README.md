@@ -19,14 +19,19 @@ as adapted in [zhixuhao](https://github.com/zhixuhao)'s [unet repository](https:
 1. For DeepLabCut functionality (necessary for identifying brain atlas landmarks!),
 [install and set up a DeepLabCut environment](https://github.com/AlexEMG/DeepLabCut/blob/master/docs/installation.md).
 We recommend using their supplied Anaconda environments.
-2. Activate the DeepLabCut environment (as described above, usually `activate dlc-windowsGPU` or similar). 
+2. Activate the DeepLabCut environment (as described above, usually `activate DLC-GPU` on Windows or 
+`source activate DLC-GPU` on Linux/Mac - replace `DLC-GPU` with `DLC-CPU` if you installed the CPU version of DeepLabCut). 
 3. Clone this git repository: `git clone https://github.com/bf777/MesoNet.git`
 4. Enter the git repository folder using `cd mesonet`, then run `python setup.py install` to install additional
 dependencies for MesoNet (installation via pip coming soon!)
-5. Enter the main directory of MesoNet using `cd mesonet` again.
 
 ## Usage
 Follow our tutorial [on the wiki](https://github.com/bf777/MesoNet/wiki/Quick-Start-Guide).
+
+## Supported platforms
+MesoNet has been tested on Windows 8.1, Windows 10, and Linux (Ubuntu 16.04 and Arch 5.7); it should also work
+on older versions of Windows and on MacOS, but these platforms have not been tested. It works with or without a GPU, but
+a GPU is _strongly_ recommended for faster training and processing.
 
 ## Contributors
 The code was written by [Brandon Forys](https://github.com/bf777);
