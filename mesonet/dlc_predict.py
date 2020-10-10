@@ -109,7 +109,8 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
             os.mkdir(video_output_path)
         # fourcc = cv2.VideoWriter_fourcc(*'DIB ')
         out = cv2.VideoWriter(video_name, -1, 30, size)
-        for i in range(len(img_array)):
+        for i in range(0, len(img_array)):
+            print("img {} written!".format(i))
             out.write(img_array[i])
         out.release()
 
