@@ -109,9 +109,9 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
             os.mkdir(video_output_path)
         # fourcc = cv2.VideoWriter_fourcc(*'DIB ')
         out = cv2.VideoWriter(video_name, -1, 30, size)
-        for i in range(0, len(img_array)):
-            print("img {} written!".format(i))
-            out.write(img_array[i])
+        for i in img_array:
+            # print("img {} written!".format(i))
+            out.write(i)
         out.release()
 
         deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True)
