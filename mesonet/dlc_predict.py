@@ -13,6 +13,7 @@ import glob
 import imageio
 import os
 import numpy as np
+from sys import platform
 
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
@@ -88,6 +89,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     size = (512, 512)
     print(len(filenames))
     for filename in filenames:
+        print(filename)
         if tif_list:
             img = filename
             img = np.uint8(img)
@@ -108,7 +110,11 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         if not os.path.isdir(video_output_path):
             os.mkdir(video_output_path)
         # fourcc = cv2.VideoWriter_fourcc(*'DIB ')
-        out = cv2.VideoWriter(video_name, -1, 30, size)
+        if platform == "linux" or platform == "linux2":
+            fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
+        else:
+            fourcc = -1
+        out = cv2.VideoWriter(video_name, fourcc, 30, size)
         for i in img_array:
             # print("img {} written!".format(i))
             out.write(i)
