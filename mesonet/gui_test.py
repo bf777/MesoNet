@@ -18,11 +18,11 @@ from mesonet.predict_regions import predictRegion
 from mesonet.utils import config_project, find_git_repo, natural_sort_key
 
 
-class Gui:
+class Gui(object):
     """
     The main GUI interface for applying MesoNet to a new dataset.
     """
-    def __init__(self):
+    def __init__(self, git_repo):
         # The main window of the app
         self.root = Tk()
         self.root.resizable(False, False)
@@ -51,7 +51,10 @@ class Gui:
         self.config_dir = 'dlc'
         self.model_dir = 'models'
 
-        self.git_repo_base = find_git_repo()
+        if git_repo == '':
+            self.git_repo_base = find_git_repo()
+        else:
+            self.git_repo_base = os.path.join(git_repo, 'mesonet')
         self.config_path = os.path.join(self.git_repo_base, self.config_dir, 'config.yaml')
         self.behavior_config_path = os.path.join(self.git_repo_base, self.config_dir, 'behavior', ' config.yaml')
         self.model_top_dir = os.path.join(self.git_repo_base, self.model_dir)
@@ -59,7 +62,7 @@ class Gui:
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=7, column=0, columnspan=4, rowspan=12, sticky=N + S + W)
+        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=11, sticky=N + S + W)
 
         # Render model selector listbox
         self.modelSelect = []
@@ -114,24 +117,33 @@ class Gui:
         self.configDLCEntryBox = Entry(self.root, textvariable=self.configDLCName_str, width=50)
         self.configDLCEntryBox.grid(row=3, column=1, padx=5, pady=5)
 
+        self.gitLabel = Label(self.root, text="MesoNet git repo folder")
+        self.gitLabel.grid(row=4, column=0, sticky=E + W)
+        self.gitButton = Button(self.root, text="Browse...", command=lambda: self.OpenFile(4))
+
+        self.git_str = StringVar(self.root, value=self.git_repo_base)
+        self.gitButton.grid(row=4, column=2, sticky=E)
+        self.gitEntryBox = Entry(self.root, textvariable=self.git_str, width=50)
+        self.gitEntryBox.grid(row=4, column=1, padx=5, pady=5)
+
         # Set behavioural data files
         self.BfileEntryLabel = Label(self.root, text="Behavior input folder")
-        self.BfileEntryLabel.grid(row=4, column=0, sticky=E + W)
+        self.BfileEntryLabel.grid(row=5, column=0, sticky=E + W)
         self.BfileEntryButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(0))
 
         self.BfolderName_str = StringVar(self.root, value=self.folderName)
-        self.BfileEntryButton.grid(row=4, column=2, sticky=E)
+        self.BfileEntryButton.grid(row=5, column=2, sticky=E)
         self.BfileEntryBox = Entry(self.root, textvariable=self.BfolderName_str, width=50)
-        self.BfileEntryBox.grid(row=4, column=1, padx=5, pady=5)
+        self.BfileEntryBox.grid(row=5, column=1, padx=5, pady=5)
 
         self.BfileSaveLabel = Label(self.root, text="Behavior Save folder")
-        self.BfileSaveLabel.grid(row=5, column=0, sticky=E + W)
+        self.BfileSaveLabel.grid(row=6, column=0, sticky=E + W)
         self.BfileSaveButton = Button(self.root, text="Browse...", command=lambda: self.OpenBFile(1))
 
         self.saveBFolderName_str = StringVar(self.root, value=self.saveBFolderName)
-        self.BfileSaveButton.grid(row=5, column=2, sticky=E)
+        self.BfileSaveButton.grid(row=6, column=2, sticky=E)
         self.BfileSaveBox = Entry(self.root, textvariable=self.saveBFolderName_str, width=50)
-        self.BfileSaveBox.grid(row=5, column=1, padx=5, pady=5)
+        self.BfileSaveBox.grid(row=6, column=1, padx=5, pady=5)
 
         # Buttons for making predictions
         # Buttons below will only be active if a save file has been selected
@@ -375,6 +387,29 @@ class Gui:
             except:
                 dlc_path_err = "No DLC config file selected!"
                 self.statusHandler(dlc_path_err)
+        elif openOrSave == 4:
+            newGitName = filedialog.askdirectory(initialdir=self.cwd,
+                                                 title="Choose MesoNet git repository")
+            try:
+                newGitName = os.path.join(newGitName, 'mesonet')
+                self.git_str.set(newGitName)
+                self.git_repo_base = newGitName
+                self.config_path = os.path.join(self.git_repo_base, self.config_dir, 'config.yaml')
+                self.configDLCName_str.set(self.config_path)
+                self.behavior_config_path = os.path.join(self.git_repo_base, self.config_dir, 'behavior',
+                                                         ' config.yaml')
+                self.model_top_dir = os.path.join(self.git_repo_base, self.model_dir)
+                self.modelSelect = []
+                for file in os.listdir(self.model_top_dir):
+                    if fnmatch.fnmatch(file, "*.hdf5"):
+                        self.modelSelect.append(file)
+                self.modelListBox.delete(0, END)
+                for item in self.modelSelect:
+                    self.modelListBox.insert(END, item)
+                self.root.update()
+            except:
+                dlc_path_err = "No git repo selected!"
+                self.statusHandler(dlc_path_err)
 
     def OpenBFile(self, openOrSave):
         if openOrSave == 0:
@@ -451,9 +486,9 @@ class Gui:
         imageNum = 'Image {}/{}'.format(self.j + 1, self.picLen)
         imageNumPrep = StringVar(self.root, value=imageNum)
         imageNameLabel = Label(self.root, textvariable=imageName)
-        imageNameLabel.grid(row=6, column=0, columnspan=2,  sticky=W)
+        imageNameLabel.grid(row=7, column=0, columnspan=2,  sticky=W)
         imageNumLabel = Label(self.root, textvariable=imageNumPrep)
-        imageNumLabel.grid(row=6, column=2, columnspan=2, sticky=E)
+        imageNumLabel.grid(row=7, column=2, columnspan=2, sticky=E)
 
     def onSelect(self, event):
         w = event.widget
@@ -566,5 +601,5 @@ class Gui:
         self.ImageDisplay(1, self.folderName, 1)
 
 
-def gui():
-    Gui().root.mainloop()
+def gui(git_find):
+    Gui(git_find).root.mainloop()
