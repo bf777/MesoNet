@@ -395,7 +395,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             if min_dist not in min_landmark_arr:
                 min_landmark_arr.append(min_dist)
             else:
-                if len(min_landmark_arr) > 0 and len(min_landmark_arr_list) > 0:
+                if len(min_landmark_arr) > 0:
                     min_landmark_arr = min_landmark_arr_list[-1]
                     break
 
