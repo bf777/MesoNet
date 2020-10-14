@@ -313,45 +313,45 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 except:
                     print("Could not draw contour!")
                 # print(num_label)
-                if num_label not in [0, 1]:
-                    try:
-                        c_orig_as_list = cnt_orig.tolist()
-                        c_orig_as_list = [[c_val[0] for c_val in c_orig_as_list]]
-                        orig_polylabel = polylabel(c_orig_as_list)
-                        # print(orig_polylabel)
-                        orig_x, orig_y = int(orig_polylabel[0]), int(orig_polylabel[1])
-                        orig_list.append((orig_x, orig_y))
-                        orig_list_labels.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
-                        if (orig_x - bregma_x) < 0:
-                            orig_list_labels_left.append(
-                                (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
-                        elif (orig_x - bregma_x) > 0:
-                            orig_list_labels_right.append(
-                                (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
-                        # orig_list_labels.append((orig_x - (np.shape(atlas_bw)[0])/2, orig_y - (np.shape(atlas_bw)[1])/2,
-                        #                          orig_x, orig_y, num_label))
-                        # orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
-                        # orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
-                        # for coord in cnt_orig:
-                        #     if coord[0][0] == orig_x:
-                        #         edge_coords_orig_y.append(coord[0].tolist())
-                        #     if coord[0][1] == orig_y:
-                        #         edge_coords_orig_x.append(coord[0].tolist())
-                        # # print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x,
-                        # edge_coords_orig_y))
-                        # adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
-                        # adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
-                        # adj_centre = [adj_centre_x, adj_centre_y]
-                        # if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
-                        #     # print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
-                        #     orig_x, orig_y = (adj_centre[0], adj_centre[1])
-                        # edge_coords_orig_x = []
-                        # edge_coords_orig_y = []
-                        # cv2.putText(img, str(num_label),
-                        #             (int(orig_x), int(orig_y)),
-                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
-                    except:
-                        print("cannot find moments!")
+                # if num_label not in [0, 1]:
+                try:
+                    c_orig_as_list = cnt_orig.tolist()
+                    c_orig_as_list = [[c_val[0] for c_val in c_orig_as_list]]
+                    orig_polylabel = polylabel(c_orig_as_list)
+                    # print(orig_polylabel)
+                    orig_x, orig_y = int(orig_polylabel[0]), int(orig_polylabel[1])
+                    orig_list.append((orig_x, orig_y))
+                    orig_list_labels.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                    if (orig_x - bregma_x) < 0:
+                        orig_list_labels_left.append(
+                            (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                    elif (orig_x - bregma_x) > 0:
+                        orig_list_labels_right.append(
+                            (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                    # orig_list_labels.append((orig_x - (np.shape(atlas_bw)[0])/2, orig_y - (np.shape(atlas_bw)[1])/2,
+                    #                          orig_x, orig_y, num_label))
+                    # orig_x = int(cnt_orig_moment["m10"] / cnt_orig_moment["m00"])
+                    # orig_y = int(cnt_orig_moment["m01"] / cnt_orig_moment["m00"])
+                    # for coord in cnt_orig:
+                    #     if coord[0][0] == orig_x:
+                    #         edge_coords_orig_y.append(coord[0].tolist())
+                    #     if coord[0][1] == orig_y:
+                    #         edge_coords_orig_x.append(coord[0].tolist())
+                    # # print("{}: edge coords x: {}, edge coords y: {}".format(num_label, edge_coords_orig_x,
+                    # edge_coords_orig_y))
+                    # adj_centre_x = int(np.mean([edge_coords_orig_x[0][0], edge_coords_orig_x[-1][0]]))
+                    # adj_centre_y = int(np.mean([edge_coords_orig_y[0][1], edge_coords_orig_y[-1][1]]))
+                    # adj_centre = [adj_centre_x, adj_centre_y]
+                    # if abs(adj_centre_x - orig_x) <= 100 and abs(adj_centre_x - orig_y) <= 100:
+                    #     # print("adjusted centre: {}, {}".format(adj_centre[0], adj_centre[1]))
+                    #     orig_x, orig_y = (adj_centre[0], adj_centre[1])
+                    # edge_coords_orig_x = []
+                    # edge_coords_orig_y = []
+                    # cv2.putText(img, str(num_label),
+                    #             (int(orig_x), int(orig_y)),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+                except:
+                    print("cannot find moments!")
                 orig_list.sort()
             # orig_list_labels_sorted = sorted(orig_list_labels, key=lambda t: t[0])
             orig_list_labels_sorted_left = sorted(orig_list_labels_left, key=lambda t: t[0], reverse=True)
@@ -470,7 +470,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         # else:
         #     cnts = cnts_orig
         cnts = cnts_orig
-        # print("LEN CNTS: {}".format(len(cnts)))
+        print("LEN CNTS: {}".format(len(cnts)))
+        print("LEN LABELS: {}".format(len(orig_list_labels_sorted)))
         for (z, cnt), (coord_label_num, coord) in zip(enumerate(cnts),
                                                       enumerate(orig_list_labels_sorted)):
             # label = str(coord_label_num)

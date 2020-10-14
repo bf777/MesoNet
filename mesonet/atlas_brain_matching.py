@@ -385,18 +385,22 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # Initialize result as max value
         min_landmark_arr = []
 
-        # print(atlas_list)
-        # print(dlc_list)
+        print(atlas_list)
+        print(dlc_list)
         for val_dlc, coord_dlc_set in enumerate(dlc_list):
             nodes = np.asarray(atlas_list)
             pts_dist = np.sum(abs(nodes - coord_dlc_set), axis=1)
             # print("dlc_pts dist: {}".format(pts_dist))
             min_dist = np.argmin(pts_dist)
+            print(pts_dist)
+            print(min_dist)
+            print(min_landmark_arr)
             if min_dist not in min_landmark_arr:
                 min_landmark_arr.append(min_dist)
             else:
                 if len(min_landmark_arr) > 0:
-                    min_landmark_arr = min_landmark_arr_list[-1]
+                    if len(min_landmark_arr_list) > 0:
+                        min_landmark_arr = min_landmark_arr_list[-1]
                     break
 
         min_landmark_arr_list.append(min_landmark_arr)
@@ -416,7 +420,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         #                                                         min_landmark_arr][0]
 
         landmark_indices = landmark_indices[0:len(min_landmark_arr)]
+
         atlas_indices = min_landmark_arr
+        # atlas_indices = landmark_arr
+
         # atlas_indices = landmark_indices[0:len(landmark_arr)]
         # landmark_indices = min_landmark_arr
         # print("atlas indices: {}".format(atlas_indices))
