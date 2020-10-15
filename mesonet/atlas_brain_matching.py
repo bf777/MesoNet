@@ -360,6 +360,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     # atlas_indices = [0, 1, 2, 3]  # [0, 3, 2, 1]
     for arr_index, i in enumerate(range(0, len(x_coord))):
         landmark_arr = landmark_arr_orig
+        print(landmark_arr)
         # print('x_coords: {}'.format(x_coord))
         x_coord_flat = x_coord.iloc[i].values.astype('float32')
         y_coord_flat = y_coord.iloc[i].values.astype('float32')
@@ -384,6 +385,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             atlas_coord = (coord_atlas[0], coord_atlas[1])
             atlas_list.append(atlas_coord)
             # print("coord_atlas: {}".format(coord_atlas))
+        atlas_list = [atlas_list[i] for i in landmark_arr]
         # Initialize result as max value
         min_landmark_arr = []
 
@@ -413,8 +415,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         #    min_dist = np.argmin(pts_dist)
         #    min_landmark_arr.append(min_dist)
         # landmark_indices = np.argsort(min_landmark_arr).tolist()
-        print('DLC indices: {}'.format(min_landmark_arr))
-        print('landmark indices: {}'.format(landmark_indices))
+        # print('DLC indices: {}'.format(min_landmark_arr))
+        # print('landmark indices: {}'.format(landmark_indices))
 
         #for item, count in collections.Counter(min_landmark_arr).items():
         #    if count > 1:
@@ -422,9 +424,14 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         #                                                         min_landmark_arr][0]
 
         # landmark_indices = landmark_indices[0:len(min_landmark_arr)]
+        landmark_indices = landmark_indices[0:len(landmark_arr)]
 
         # atlas_indices = min_landmark_arr
         atlas_indices = landmark_arr
+
+        print('atlas indices: {}'.format(atlas_indices))
+        print('landmark indices: {}'.format(landmark_indices))
+        print('x coords: {}'.format(x_coord_flat))
 
         # atlas_indices = landmark_indices[0:len(landmark_arr)]
         # landmark_indices = min_landmark_arr
@@ -432,9 +439,9 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
         pts_dist = np.absolute(np.asarray(atlas_list) - np.asarray((im.shape[0] / 2, im.shape[1] / 2)))
         pts_avg_dist = [np.mean(v) for v in pts_dist]
-        # print("bregma dist: {}".format(pts_avg_dist))
+        print("bregma dist: {}".format(pts_avg_dist))
         bregma_index = np.argmin(np.asarray(pts_avg_dist))
-        # print("bregma index: {}".format(bregma_index))
+        print("bregma index: {}".format(bregma_index))
 
         for j in landmark_indices:
             sub_dlc_pts.append([x_coord_flat[j], y_coord_flat[j]])

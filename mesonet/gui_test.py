@@ -448,8 +448,10 @@ class Gui(object):
         self.j += delta
         if glob.glob(os.path.join(folderName, '*_mask_segmented.png')):
             fileList = glob.glob(os.path.join(folderName, '*_mask_segmented.png'))
+            fileList.sort(key=natural_sort_key)
         elif glob.glob(os.path.join(folderName, '*_mask.png')):
             fileList = glob.glob(os.path.join(folderName, '*_mask.png'))
+            fileList.sort(key=natural_sort_key)
         elif glob.glob(os.path.join(folderName, '*.png')):
             fileList = glob.glob(os.path.join(folderName, '*.png'))
             fileList.sort(key=natural_sort_key)
