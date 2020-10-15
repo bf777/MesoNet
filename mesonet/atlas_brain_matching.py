@@ -316,6 +316,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
     # atlas_arr = np.array([(100.00000, 148.00000), (256.00000, 254.00000), (413.00000, 148.00000),
     #                       (256.00000, 446.00000)])
+    atlas_arr = np.array([(102, 148), (166, 88), (214, 454), (256, 88), (256, 256), (256, 428), (410, 148),
+                          (346, 88), (298, 454)])
 
     peak_arr_flat = []
     peak_arr_total = []
@@ -387,23 +389,23 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
         print(atlas_list)
         print(dlc_list)
-        for val_dlc, coord_dlc_set in enumerate(dlc_list):
-            nodes = np.asarray(atlas_list)
-            pts_dist = np.sum(abs(nodes - coord_dlc_set), axis=1)
-            # print("dlc_pts dist: {}".format(pts_dist))
-            min_dist = np.argmin(pts_dist)
-            print(pts_dist)
-            print(min_dist)
-            print(min_landmark_arr)
-            if min_dist not in min_landmark_arr:
-                min_landmark_arr.append(min_dist)
-            else:
-                if len(min_landmark_arr) > 0:
-                    if len(min_landmark_arr_list) > 0:
-                        min_landmark_arr = min_landmark_arr_list[-1]
-                    break
+        #for val_dlc, coord_dlc_set in enumerate(dlc_list):
+        #    nodes = np.asarray(atlas_list)
+        #   pts_dist = np.sum(abs(nodes - coord_dlc_set), axis=1)
+        #    # print("dlc_pts dist: {}".format(pts_dist))
+        #    min_dist = np.argmin(pts_dist)
+        #    print(pts_dist)
+        #    print(min_dist)
+        #    print(min_landmark_arr)
+        #    if min_dist not in min_landmark_arr:
+        #        min_landmark_arr.append(min_dist)
+        #    else:
+        #        if len(min_landmark_arr) > 0:
+        #            if len(min_landmark_arr_list) > 0:
+        #                min_landmark_arr = min_landmark_arr_list[-1]
+        #            break
 
-        min_landmark_arr_list.append(min_landmark_arr)
+        # min_landmark_arr_list.append(min_landmark_arr)
         # for val_atlas, coord_atlas_set in enumerate(atlas_list):
         #    nodes = np.asarray(dlc_list)
         #    pts_dist = np.sum(abs(nodes - coord_atlas_set), axis=1)
@@ -419,10 +421,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         #        min_landmark_arr[min_landmark_arr.index(item)] = [x for x in landmark_arr_orig if x not in
         #                                                         min_landmark_arr][0]
 
-        landmark_indices = landmark_indices[0:len(min_landmark_arr)]
+        # landmark_indices = landmark_indices[0:len(min_landmark_arr)]
 
-        atlas_indices = min_landmark_arr
-        # atlas_indices = landmark_arr
+        # atlas_indices = min_landmark_arr
+        atlas_indices = landmark_arr
 
         # atlas_indices = landmark_indices[0:len(landmark_arr)]
         # landmark_indices = min_landmark_arr
