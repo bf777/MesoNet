@@ -633,11 +633,11 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, dlc_pts[align_val], atlas_pts[align_val],
                                                cwd, align_val, True)
         else:
-            dst = atlas_warped
-            #if olfactory_check:
-            #    atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
-            #dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
-            #                     align_val, True)
+            # dst = atlas_warped
+            if olfactory_check:
+                atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
+            dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
+                                 align_val, True)
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
 
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
