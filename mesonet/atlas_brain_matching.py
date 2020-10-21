@@ -159,6 +159,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     c_atlas_landmarks = np.empty([0, 2])
     # print(mask_dir)
     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
+    # mask = mask_dir
     atlas_to_warp = atlas_img
     mask = np.uint8(mask)
     mask_new, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -487,7 +488,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             im = cv2.resize(im, (512, 512))
 
         if atlas_to_brain_align:
-            atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow1_smooth_binary.png")
+            # atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow1_smooth_binary.png")
+            atlas_mask_dir = os.path.join(git_repo_base, "atlases/atlas_smooth2_binary.png")
             atlas_mask_dir_left = os.path.join(git_repo_base, "atlases/left_hemisphere_smooth.png")
             atlas_mask_dir_right = os.path.join(git_repo_base, "atlases/right_hemisphere_smooth.png")
             atlas_mask_left = cv2.imread(atlas_mask_dir_left, cv2.IMREAD_UNCHANGED)
@@ -613,25 +615,39 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # cv2.imwrite('output.jpg', transformed_img)
 
         if atlas_to_brain_align:
+            atlas_mask_read = cv2.imread(atlas_mask_dir, cv2.IMREAD_GRAYSCALE)
             if len(atlas_pts_for_input[0]) == 2:
                 atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords, (512, 512))
                 atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords, (512, 512))
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
+                # atlas_mask_transform = cv2.warpAffine(atlas_mask_read, warp_coords, (512, 512))
             if len(atlas_pts_for_input[0]) == 3:
                 atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+                # atlas_mask_transform = cv2.warpAffine(atlas_mask_read, warp_coords, (512, 512))
             if len(atlas_pts_for_input[0]) >= 4:
                 atlas_mask_left_warped = cv2.warpAffine(atlas_mask_left, warp_coords_left, (512, 512))
                 atlas_mask_right_warped = cv2.warpAffine(atlas_mask_right, warp_coords_right, (512, 512))
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
+                # atlas_mask_transform = cv2.warpAffine(atlas_mask_read, warp_coords_left, (512, 512))
+                # atlas_mask_transform = cv2.warpAffine(atlas_mask_transform, warp_coords_right, (512, 512))
+            atlas_mask_warped = np.uint8(atlas_mask_warped)
 
         atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
         io.imsave(atlas_first_transform_path, atlas_warped)
+        atlas_warped_transform_path = os.path.join(output_mask_path, '{}_atlas_warped_transform.png'.format(str(n)))
+        io.imsave(atlas_warped_transform_path, atlas_mask_warped)
         # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
-        if use_unet and atlas_to_brain_align:
-            dst = getMaskContour(mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd, align_val, True)
-            atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, dlc_pts[align_val], atlas_pts[align_val],
-                                               cwd, align_val, True)
+        if atlas_to_brain_align:
+            if olfactory_check:
+                atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
+            dst = getMaskContour(atlas_warped_transform_path, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
+                                 align_val, True)
+            # dst = getMaskContour(mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd, align_val, True)
+            # atlas_mask_warped = getMaskContour(atlas_warped_transform_path, atlas_mask_warped, dlc_pts[align_val],
+            #                                   atlas_pts[align_val], cwd, align_val, True)
+            # atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, dlc_pts[align_val], atlas_pts[align_val],
+            #                                    cwd, align_val, True)
         else:
             # dst = atlas_warped
             if olfactory_check:
