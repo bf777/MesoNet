@@ -356,15 +356,17 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     coords = pd.read_csv(coords_input)
     x_coord = coords.iloc[2:, 1::3]
     y_coord = coords.iloc[2:, 2::3]
-    # accuracy = coords.iloc[2:, 3::3]
+    accuracy = coords.iloc[2:, 3::3]
+    acc_left_total = accuracy.iloc[:, 0:5]
+    acc_right_total = accuracy.iloc[:, 3:8]
+    # print(acc_left_total)
+    # print(acc_right_total)
     landmark_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8]  # [0, 3, 2, 1]
     # atlas_indices = [0, 1, 2, 3]  # [0, 3, 2, 1]
     for arr_index, i in enumerate(range(0, len(x_coord))):
         landmark_arr = landmark_arr_orig
         print(landmark_arr)
         # print('x_coords: {}'.format(x_coord))
-        x_coord_flat = x_coord.iloc[i].values.astype('float32')
-        y_coord_flat = y_coord.iloc[i].values.astype('float32')
         # accuracy_flat = accuracy.iloc[i].values.astype('float32')
         # accuracy_where = np.where(accuracy_flat <= 0.20)
         # # print("accuracy arr: {}".format(accuracy_where[0]))
@@ -374,6 +376,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # else:
         #     print("WARNING: landmarks at positions {} are LOW ACCURACY".format(accuracy_where))
         #     landmark_arr = landmark_arr_orig
+        x_coord_flat = x_coord.iloc[i].values.astype('float32')
+        y_coord_flat = y_coord.iloc[i].values.astype('float32')
         x_coord_flat = x_coord_flat[landmark_arr]
         y_coord_flat = y_coord_flat[landmark_arr]
         dlc_list = []
@@ -549,8 +553,17 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             #    im_final_size = (512, 512)
             # left = [0, 2, 3]
             # right = [1, 2, 3]
-            left = [0, 4, 5]
-            right = [6, 4, 5]
+            # left = [0, 4, 5]
+            # right = [6, 4, 5]
+            print(acc_left_total)
+            print(acc_right_total)
+            left = acc_left_total.iloc[n, :].values.astype('float32').tolist()
+            right = acc_right_total.iloc[n, :].values.astype('float32').tolist()
+            left = np.argsort(left).tolist()
+            right = np.argsort(right).tolist()
+            right = [x+1 for x in right]
+            print(left)
+            print(right)
             try:
                 atlas_pts_left = np.array([atlas_pts[align_val][left[0]], atlas_pts[align_val][left[1]],
                                            atlas_pts[align_val][left[2]]],
@@ -641,19 +654,23 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         if atlas_to_brain_align:
             if olfactory_check:
                 atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
-            dst = getMaskContour(atlas_warped_transform_path, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
-                                 align_val, True)
-            # dst = getMaskContour(mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd, align_val, True)
+            dst = atlas_warped
+            # if not use_unet:
+            #    dst = atlas_warped
+            # else:
+            #    dst = getMaskContour(mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd, align_val, True)
+            # dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
+            #                      align_val, True)
             # atlas_mask_warped = getMaskContour(atlas_warped_transform_path, atlas_mask_warped, dlc_pts[align_val],
             #                                   atlas_pts[align_val], cwd, align_val, True)
             # atlas_mask_warped = getMaskContour(mask_dir, atlas_mask_warped, dlc_pts[align_val], atlas_pts[align_val],
             #                                    cwd, align_val, True)
         else:
-            # dst = atlas_warped
-            if olfactory_check:
-                atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
-            dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
-                                 align_val, True)
+            dst = atlas_warped
+            # if olfactory_check:
+            #    atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
+            # dst = getMaskContour(atlas_mask_dir, atlas_warped, dlc_pts[align_val], atlas_pts[align_val], cwd,
+            #                     align_val, True)
         mask_warped_path = os.path.join(output_mask_path, '{}_mask_warped.png'.format(str(n)))
 
         # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
