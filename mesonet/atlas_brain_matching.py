@@ -562,6 +562,12 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
             left = np.argsort(left).tolist()
             right = np.argsort(right).tolist()
             right = [x+1 for x in right]
+            if set([1, 3, 5, 7]).issubset(landmark_arr):
+                left = [1, 3, 5]
+                right = [3, 5, 7]
+            else:
+                left = [x for x in landmark_indices if x in range(0, 6)][0:2]
+                right = [x for x in landmark_indices if x in range(3, 9)][0:2]
             print(left)
             print(right)
             try:
