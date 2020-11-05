@@ -70,22 +70,12 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     tif_list = glob.glob(os.path.join(input_file, "*tif"))
     if tif_list:
         print(tif_list)
-        img_ext = '.tif'
         tif_stack = imageio.mimread(os.path.join(input_file, tif_list[0]))
-        num_image = len(tif_stack)
         filenames = tif_stack
     else:
-        img_ext = '.png'
         filenames = glob.glob(os.path.join(input_file, '*.png'))
         filenames.sort(key=natural_sort_key)
 
-    # if img_ext == '.tif':
-    #     deeplabcut.analyze_time_lapse_frames(config, input_file, frametype=img_ext, save_as_csv=True)
-    #     coords_input = glob.glob(os.path.join(input_file, "*.csv"))[0]
-    #     print("Landmark prediction complete!")
-    #     if not atlas:
-    #         atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
-    #                         git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model)
     size = (512, 512)
     print(len(filenames))
     for filename in filenames:

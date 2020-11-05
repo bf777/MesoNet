@@ -49,7 +49,7 @@ class GuiTrain:
         self.dlc_folder = self.cwd
         self.task = self.DEFAULT_TASK
         self.name = self.DEFAULT_NAME
-        self.bodyparts = ['A', 'B', 'C', 'D']
+        self.bodyparts = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
         self.config_path = ''
         self.steps_per_epoch = 300
         self.epochs = 60
@@ -252,18 +252,18 @@ class GuiTrain:
             self.j = -1
         self.j += delta
         if glob.glob(os.path.join(folderName, '*_mask_segmented.png')):
-            fileList = glob.glob(os.path.join(folderName, '*_mask_segmented.png'))
+            file_list = glob.glob(os.path.join(folderName, '*_mask_segmented.png'))
         elif glob.glob(os.path.join(folderName, '*_mask.png')):
-            fileList = glob.glob(os.path.join(folderName, '*_mask.png'))
+            file_list = glob.glob(os.path.join(folderName, '*_mask.png'))
         else:
-            fileList = glob.glob(os.path.join(folderName, '*.png'))
-        self.picLen = len(fileList)
+            file_list = glob.glob(os.path.join(folderName, '*.png'))
+        self.picLen = len(file_list)
         if self.j > self.picLen - 1:
             self.j = 0
         if self.j <= -1:
             self.j = self.picLen - 1
         if delta != 0:
-            for file in fileList:
+            for file in file_list:
                 if fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask_segmented.png".format(self.j))) or \
                         fnmatch.fnmatch(file, os.path.join(folderName, "{}.png".format(self.j))) or \
                         fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask.png".format(self.j))):

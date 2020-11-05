@@ -269,7 +269,11 @@ class Gui(object):
                                                                              self.saveFolderName,
                                                                              int(self.mat_save.get()), self.threshold,
                                                                              False, self.git_repo_base,
-                                                                             self.region_labels.get()))
+                                                                             self.region_labels.get(),
+                                                                             self.olfactory_check.get(),
+                                                                             self.unet_select.get(),
+                                                                             self.plot_landmarks.get(),
+                                                                             self.align_once.get()))
         self.predictAllImButton.grid(row=17, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
@@ -367,7 +371,7 @@ class Gui(object):
                 self.statusHandler(save_path_err)
         elif openOrSave == 2:
             newSensoryName = filedialog.askdirectory(initialdir=self.cwd,
-                                                    title="Choose folder containing the sensory images you want to use")
+                                                     title="Choose folder containing the sensory images you want to use")
             try:
                 self.sensoryName_str.set(newSensoryName)
                 self.sensoryName = newSensoryName
@@ -446,37 +450,39 @@ class Gui(object):
         if reset == 1:
             self.j = -1
         self.j += delta
+        file_list = []
+        tif_list = []
         if glob.glob(os.path.join(folderName, '*_mask_segmented.png')):
-            fileList = glob.glob(os.path.join(folderName, '*_mask_segmented.png'))
-            fileList.sort(key=natural_sort_key)
+            file_list = glob.glob(os.path.join(folderName, '*_mask_segmented.png'))
+            file_list.sort(key=natural_sort_key)
         elif glob.glob(os.path.join(folderName, '*_mask.png')):
-            fileList = glob.glob(os.path.join(folderName, '*_mask.png'))
-            fileList.sort(key=natural_sort_key)
+            file_list = glob.glob(os.path.join(folderName, '*_mask.png'))
+            file_list.sort(key=natural_sort_key)
         elif glob.glob(os.path.join(folderName, '*.png')):
-            fileList = glob.glob(os.path.join(folderName, '*.png'))
-            fileList.sort(key=natural_sort_key)
+            file_list = glob.glob(os.path.join(folderName, '*.png'))
+            file_list.sort(key=natural_sort_key)
         elif glob.glob(os.path.join(folderName, '*.tif')):
             is_tif = True
             tif_list = glob.glob(os.path.join(folderName, '*.tif'))
             tif_stack = imageio.mimread(tif_list[0])
-            fileList = tif_stack
-        self.picLen = len(fileList)
+            file_list = tif_stack
+        self.picLen = len(file_list)
         if self.j > self.picLen - 1:
             self.j = 0
         if self.j <= -1:
             self.j = self.picLen - 1
         if delta != 0:
-            # for file in fileList:
+            # for file in file_list:
             #if is_tif or fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask_segmented.png".format(self.j))) \
             #        or fnmatch.fnmatch(file, os.path.join(folderName, "{}.png".format(self.j))) or \
             #        fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask.png".format(self.j))):
             if is_tif:
-                image_orig = Image.fromarray(fileList[0])
+                image_orig = Image.fromarray(file_list[0])
                 self.imageFileName = tif_list[0]
                 self.imageFileName = os.path.basename(self.imageFileName)
             else:
-                self.imageFileName = os.path.basename(fileList[self.j])
-                image = os.path.join(folderName, fileList[self.j])
+                self.imageFileName = os.path.basename(file_list[self.j])
+                image = os.path.join(folderName, file_list[self.j])
                 image_orig = Image.open(image)
             image_resize = image_orig.resize((512, 512))
             image_disp = ImageTk.PhotoImage(image_resize)
@@ -542,11 +548,14 @@ class Gui(object):
             self.landmark_arr.append(8)
 
     def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                       region_labels):
+                       olfactory_check, use_unet, plot_landmarks, align_once, region_labels):
         self.statusHandler('Processing...')
         atlas_to_brain_align = True
+        pts = []
+        pts2 = []
         predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                      atlas_to_brain_align, region_labels)
+                      atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
+                      region_labels)
         self.saveFolderName = output
         if mask_generate:
             self.folderName = os.path.join(self.saveFolderName, "output_mask")
@@ -561,26 +570,6 @@ class Gui(object):
                    olfactory_check, plot_landmarks, align_once):
         self.statusHandler('Processing...')
         self.chooseLandmarks()
-        # if atlas_to_brain_align == 1:
-        #     atlas_to_brain_align = True
-        # else:
-        #     atlas_to_brain_align = False
-        # if plot_landmarks == 1:
-        #     plot_landmarks = True
-        # else:
-        #     plot_landmarks = False
-        # if olfactory_check == 1:
-        #     olfactory_check = True
-        # else:
-        #     olfactory_check = False
-        # if use_unet == 1:
-        #     use_unet = True
-        # else:
-        #     use_unet = False
-        # if align_once == 1:
-        #     align_once = True
-        # else:
-        #     align_once = False
         if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
             pts = []
             pts2 = []

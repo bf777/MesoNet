@@ -8,6 +8,7 @@ This file has been adapted from main.py in https://github.com/zhixuhao/unet
 from mesonet.model import *
 from mesonet.data import *
 import numpy as np
+import pandas as pd
 from keras.callbacks import ModelCheckpoint
 from mesonet.utils import parse_yaml
 from mesonet.dlc_predict import DLC_edit_bodyparts
@@ -30,25 +31,26 @@ def trainModel(input_file, model_name, log_folder, git_repo_base, steps_per_epoc
     """
     data_gen_args = dict(rotation_range=0.3, width_shift_range=0.05, height_shift_range=0.05, shear_range=0.05,
                          zoom_range=0.05, horizontal_flip=True, fill_mode='nearest')
-    myGene = trainGenerator(2, input_file, 'image', 'label', data_gen_args, save_to_dir=None)
+    train_gen = trainGenerator(2, input_file, 'image', 'label', data_gen_args, save_to_dir=None)
     model_path = os.path.join(git_repo_base, 'models', model_name)
     if os.path.exists(model_path):
         model = load_model(model_path)
     else:
         model = unet()
     model_checkpoint = ModelCheckpoint(model_name, monitor='loss', verbose=1, save_best_only=True)
-    history_callback = model.fit_generator(myGene, steps_per_epoch=steps_per_epoch, epochs=epochs,
+    history_callback = model.fit_generator(train_gen, steps_per_epoch=steps_per_epoch, epochs=epochs,
                                            callbacks=[model_checkpoint])
     loss_history = history_callback.history["loss"]
-    print(history_callback.history)
     try:
         acc_history = history_callback.history["acc"]
         np_acc_hist = np.array(acc_history)
-        np.savetxt(os.path.join(log_folder, "acc_history.csv"), np_acc_hist, delimiter=",")
+        log_acc_df = pd.DataFrame(np_acc_hist, columns=['acc'])
+        log_acc_df.to_csv(os.path.join(log_folder, "acc_history.csv"))
     except:
         print("Cannot find acc history!")
     np_loss_hist = np.array(loss_history)
-    np.savetxt(os.path.join(log_folder, "loss_history.csv"), np_loss_hist, delimiter=",")
+    log_loss_df = pd.DataFrame(np_loss_hist, columns=['loss'])
+    log_loss_df.to_csv(os.path.join(log_folder, "loss_history.csv"))
     model.save(model_path)
 
 

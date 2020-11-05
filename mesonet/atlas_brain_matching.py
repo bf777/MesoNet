@@ -19,7 +19,6 @@ import imageio
 import os
 import fnmatch
 import glob
-import collections
 
 
 def find_peaks(img):
@@ -513,7 +512,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
         # First alignment of brain atlas using three cortical landmarks and standard affine transform
         atlas_pts_for_input = np.array([atlas_pts[n][0:len(dlc_pts[n])]]).astype('float32')
         pts_for_input = np.array([dlc_pts[n]]).astype('float32')
-        # print(len(atlas_pts_for_input[0]))
 
         if align_once:
             align_val = 0
@@ -653,14 +651,12 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
 
         atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
         io.imsave(atlas_first_transform_path, atlas_warped)
-        atlas_warped_transform_path = os.path.join(output_mask_path, '{}_atlas_warped_transform.png'.format(str(n)))
-        io.imsave(atlas_warped_transform_path, atlas_mask_warped)
         # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
         if atlas_to_brain_align:
-            if olfactory_check:
-                atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
             dst = atlas_warped
+            # if olfactory_check:
+            #     atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
             # if not use_unet:
             #    dst = atlas_warped
             # else:
@@ -692,10 +688,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
             else:
                 dst = atlas_warped
-                #if olfactory_check:
-                #    atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow2_smooth_binary.png")
-                #dst = getMaskContour(atlas_mask_dir, dst, sensory_peak_pts[align_val], sensory_atlas_pts[align_val],
-                #                     cwd, align_val, False)
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
         else:
