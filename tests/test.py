@@ -56,7 +56,6 @@ def test_mesonet_process():
               'https://github.com/DeepLabCut/DeepLabCut/blob/master/docs/installation.md for GPU installation '
               'troubleshooting tips.')
 
-
     assert os.path.isdir(os.path.join(output_file, 'dlc_output'))
     assert os.path.isdir(os.path.join(output_file, 'output_mask'))
     assert os.path.isdir(os.path.join(output_file, 'output_overlay'))
