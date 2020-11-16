@@ -313,6 +313,7 @@ class Gui(object):
             self.predictBehaviourButton.config(state='disabled')
             self.landmarkPlotCheck.config(state='disabled')
             self.alignOnceCheck.config(state='disabled')
+            self.origLabelCheck.config(state='disabled')
 
             self.landmarkLeftCheck.config(state='disabled')
             self.landmarkRightCheck.config(state='disabled')
@@ -357,6 +358,7 @@ class Gui(object):
                 self.sensoryMapCheck.config(state='normal')
                 self.landmarkPlotCheck.config(state='normal')
                 self.alignOnceCheck.config(state='normal')
+                self.origLabelCheck.config(state='normal')
 
                 self.landmarkLeftCheck.config(state='normal')
                 self.landmarkRightCheck.config(state='normal')
