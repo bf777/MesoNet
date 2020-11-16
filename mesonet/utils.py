@@ -14,8 +14,8 @@ from sys import platform
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
                    atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True, use_unet=True,
-                   atlas_to_brain_align=True, olfactory_check=True, plot_landmarks=True, align_once=True,
-                   threshold=0.0001, model='models/unet_bundary.hdf5',
+                   atlas_to_brain_align=True, olfactory_check=True, plot_landmarks=True, align_once=False,
+                   original_label=False, threshold=0.0001, model='models/unet_bundary.hdf5',
                    region_labels=False, steps_per_epoch=300, epochs=60):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
@@ -95,7 +95,8 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             atlas_to_brain_align=atlas_to_brain_align,
             olfactory_check=olfactory_check,
             plot_landmarks=plot_landmarks,
-            align_once=align_once
+            align_once=align_once,
+            original_label=original_label
         )
     elif mode == 'train':
         filename = "mesonet_train_config.yaml"

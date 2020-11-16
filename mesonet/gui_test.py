@@ -34,7 +34,6 @@ class Gui(object):
         self.saveFolderName = self.cwd
         self.saveBFolderName = self.cwd
         self.threshold = 0.01  # 0.001
-        self.haveMasks = False
 
         self.j = -1
         self.delta = 0
@@ -62,7 +61,7 @@ class Gui(object):
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=11, sticky=N + S + W)
+        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=12, sticky=N + S + W)
 
         # Render model selector listbox
         self.modelSelect = []
@@ -165,6 +164,8 @@ class Gui(object):
         self.plot_landmarks.set(True)
         self.align_once = BooleanVar()
         self.align_once.set(False)
+        self.original_label = BooleanVar()
+        self.original_label.set(False)
 
         self.landmark_left = BooleanVar()
         self.landmark_left.set(True)
@@ -217,35 +218,39 @@ class Gui(object):
                                           variable=self.align_once, onvalue=True, offvalue=False)
         self.alignOnceCheck.grid(row=13, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
+        self.origLabelCheck = Checkbutton(self.root, text="Use old label consistency method (less consistent)",
+                                          variable=self.original_label, onvalue=True, offvalue=False)
+        self.origLabelCheck.grid(row=14, column=4, columnspan=5, padx=2, sticky=N + S + W)
+
         # Enable selection of landmarks for alignment
         self.landmarkLeftCheck = Checkbutton(self.root, text="Left",
                                              variable=self.landmark_left, onvalue=True, offvalue=False)
-        self.landmarkLeftCheck.grid(row=14, column=4, padx=2, sticky=N + S + W)
+        self.landmarkLeftCheck.grid(row=15, column=4, padx=2, sticky=N + S + W)
         self.landmarkRightCheck = Checkbutton(self.root, text="Right",
                                               variable=self.landmark_right, onvalue=True, offvalue=False)
-        self.landmarkRightCheck.grid(row=14, column=5, padx=2, sticky=N + S + W)
+        self.landmarkRightCheck.grid(row=15, column=5, padx=2, sticky=N + S + W)
         self.landmarkBregmaCheck = Checkbutton(self.root, text="Bregma",
                                                variable=self.landmark_bregma, onvalue=True, offvalue=False)
-        self.landmarkBregmaCheck.grid(row=14, column=6, padx=2, sticky=N + S + W)
+        self.landmarkBregmaCheck.grid(row=15, column=6, padx=2, sticky=N + S + W)
         self.landmarkLambdaCheck = Checkbutton(self.root, text="Lambda",
                                                variable=self.landmark_lambda, onvalue=True, offvalue=False)
-        self.landmarkLambdaCheck.grid(row=14, column=7, padx=2, sticky=N + S + W)
+        self.landmarkLambdaCheck.grid(row=15, column=7, padx=2, sticky=N + S + W)
 
         self.landmarkTopLeftCheck = Checkbutton(self.root, text="Top left",
                                                 variable=self.landmark_top_left, onvalue=True, offvalue=False)
-        self.landmarkTopLeftCheck.grid(row=15, column=4, padx=2, sticky=N + S + W)
+        self.landmarkTopLeftCheck.grid(row=16, column=4, padx=2, sticky=N + S + W)
         self.landmarkTopCentreCheck = Checkbutton(self.root, text="Top centre",
                                                   variable=self.landmark_top_centre, onvalue=True, offvalue=False)
-        self.landmarkTopCentreCheck.grid(row=15, column=5, padx=2, sticky=N + S + W)
+        self.landmarkTopCentreCheck.grid(row=16, column=5, padx=2, sticky=N + S + W)
         self.landmarkTopRightCheck = Checkbutton(self.root, text="Top right",
                                                  variable=self.landmark_top_right, onvalue=True, offvalue=False)
-        self.landmarkTopRightCheck.grid(row=15, column=6, padx=2, sticky=N + S + W)
+        self.landmarkTopRightCheck.grid(row=16, column=6, padx=2, sticky=N + S + W)
         self.landmarkBottomLeftCheck = Checkbutton(self.root, text="Bottom left",
                                                    variable=self.landmark_bottom_left, onvalue=True, offvalue=False)
-        self.landmarkBottomLeftCheck.grid(row=15, column=7, padx=2, sticky=N + S + W)
+        self.landmarkBottomLeftCheck.grid(row=16, column=7, padx=2, sticky=N + S + W)
         self.landmarkBottomRightCheck = Checkbutton(self.root, text="Bottom right",
                                                     variable=self.landmark_bottom_right, onvalue=True, offvalue=False)
-        self.landmarkBottomRightCheck.grid(row=15, column=8, padx=2, sticky=N + S + W)
+        self.landmarkBottomRightCheck.grid(row=16, column=8, padx=2, sticky=N + S + W)
 
         self.predictDLCButton = Button(self.root, text="Predict brain regions\nusing landmarks",
                                        command=lambda: self.PredictDLC(self.config_path, self.folderName,
@@ -262,8 +267,9 @@ class Gui(object):
                                                                        self.atlas_to_brain_align.get(),
                                                                        self.olfactory_check.get(),
                                                                        self.plot_landmarks.get(),
-                                                                       self.align_once.get()))
-        self.predictDLCButton.grid(row=16, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+                                                                       self.align_once.get(),
+                                                                       self.original_label.get()))
+        self.predictDLCButton.grid(row=17, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictAllImButton = Button(self.root, text="Predict brain regions directly\nusing pretrained U-net model",
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model,
                                                                              self.saveFolderName,
@@ -274,22 +280,22 @@ class Gui(object):
                                                                              self.unet_select.get(),
                                                                              self.plot_landmarks.get(),
                                                                              self.align_once.get()))
-        self.predictAllImButton.grid(row=17, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+        self.predictAllImButton.grid(row=18, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
                                                                                 self.BFolderName,
                                                                                 self.saveBFolderName))
-        self.predictBehaviourButton.grid(row=18, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+        self.predictBehaviourButton.grid(row=19, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
 
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(self.root, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
-        self.nextButton.grid(row=19, column=2, columnspan=2, sticky=E)
+        self.nextButton.grid(row=20, column=2, columnspan=2, sticky=E)
         self.previousButton = Button(self.root, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName, 0))
-        self.previousButton.grid(row=19, column=0, columnspan=2, sticky=W)
+        self.previousButton.grid(row=20, column=0, columnspan=2, sticky=W)
 
         self.statusBar = Label(self.root, textvariable=self.status_str, bd=1, relief=SUNKEN, anchor=W)
-        self.statusBar.grid(row=20, column=0, columnspan=9, sticky='we')
+        self.statusBar.grid(row=21, column=0, columnspan=9, sticky='we')
 
         # Bind right and left arrow keys to forward/backward controls
         self.root.bind('<Right>', self.forward)
@@ -567,7 +573,7 @@ class Gui(object):
 
     def PredictDLC(self, config, input_file, output, atlas, sensory_match, sensory_path, model, num_images, mat_save,
                    threshold, mask_generate, haveMasks, git_repo_base, region_labels, use_unet, atlas_to_brain_align,
-                   olfactory_check, plot_landmarks, align_once):
+                   olfactory_check, plot_landmarks, align_once, original_label):
         self.statusHandler('Processing...')
         self.chooseLandmarks()
         if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
@@ -578,7 +584,7 @@ class Gui(object):
                           region_labels)
         DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
                    mat_save, threshold, git_repo_base, region_labels, self.landmark_arr, use_unet, atlas_to_brain_align,
-                   model, olfactory_check, plot_landmarks, align_once)
+                   model, olfactory_check, plot_landmarks, align_once, original_label)
         saveFolderName = output
         if not atlas:
             self.folderName = os.path.join(saveFolderName, "output_overlay")

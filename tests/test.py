@@ -22,12 +22,12 @@ def test_mesonet_process():
 
     input_file = os.path.join(os.getcwd(), 'test_input')
     output_file = os.path.join(os.getcwd(), 'test_output')
-    config_file = mesonet.config_project(input_file, output_file, 'test')
+    config_file = mesonet.config_project(input_file, output_file, 'test', align_once=False)
 
     # Config file tests
     config_dict = mesonet.parse_yaml(config_file)
     assert len(config_dict['landmark_arr']) == 9
-    assert config_dict['num_images'] == 10
+    assert config_dict['num_images'] == 12
 
     # Procedure tests
     t0 = time.time()

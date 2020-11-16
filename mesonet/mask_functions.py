@@ -43,13 +43,10 @@ def testGenerator(test_path, output_mask_path, num_image=60, target_size=(512, 5
     :param as_gray: if input image is grayscale, process data input accordingly
     """
     suff = 'png'
-    print(test_path)
     img_list = glob.glob(os.path.join(test_path, "*png"))
     img_list.sort(key=natural_sort_key)
     tif_list = glob.glob(os.path.join(test_path, "*tif"))
-    print(tif_list)
     if tif_list:
-        print(tif_list)
         tif_stack = imageio.mimread(os.path.join(test_path, tif_list[0]))
         num_image = len(tif_stack)
     for i in range(num_image):
@@ -102,7 +99,7 @@ def saveResult(save_path, npyfile, flag_multi_class=False, num_class=2):
 
 
 def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_path, n, use_unet,
-                  atlas_to_brain_align, git_repo_base, olfactory_check):
+                  atlas_to_brain_align, git_repo_base, olfactory_check, atlas_label):
     """
     Overlays the U-net mask and a smoothing mask for the cortical boundaries on the transformed brain atlas.
     :param atlas_path: The path to the atlas to be transformed
@@ -120,8 +117,6 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     """
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
-    # print(mask_warped_path)
-    # print(use_unet)
     if use_unet:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
         if olfactory_check:
@@ -132,12 +127,20 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:
             # FOR ALIGNING ATLAS TO BRAIN
+            if len(atlas_label) > 0:
+                atlas_label[np.where(mask_input == 0)] = 1000
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
+            mask_input_ref = np.zeros_like(mask_input)
             if olfactory_check:
                 olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
                 for bulb in olfactory_bulbs:
                     cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
+                if len(atlas_label) > 0:
+                    cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[0]], color=[300])
+                    cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[1]], color=[400])
+                    atlas_label[np.where(atlas_label == 300)] = 300
+                    atlas_label[np.where(atlas_label == 400)] = 400
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
@@ -148,15 +151,15 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
             olfactory_left = cv2.imread(os.path.join(olfactory_path, '02.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_right = cv2.imread(os.path.join(olfactory_path, '01.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_mask_left, cnts_for_olfactory_left, hierarchy = cv2.findContours(olfactory_left, cv2.RETR_TREE,
-                                                                            cv2.CHAIN_APPROX_NONE)
-            # print("LEN OLFACTORY LEFT: {}".format(len(cnts_for_olfactory_left)))
+                                                                                       cv2.CHAIN_APPROX_NONE)
             olfactory_left_cnt = min(cnts_for_olfactory_left, key=cv2.contourArea)
             olfactory_mask_right, cnts_for_olfactory_right, hierarchy = cv2.findContours(olfactory_right, cv2.RETR_TREE,
-                                                                            cv2.CHAIN_APPROX_NONE)
+                                                                                         cv2.CHAIN_APPROX_NONE)
             olfactory_right_cnt = min(cnts_for_olfactory_right, key=cv2.contourArea)
             cv2.fillPoly(mask_input, pts=[olfactory_left_cnt], color=[255, 255, 255])
             cv2.fillPoly(mask_input, pts=[olfactory_right_cnt], color=[255, 255, 255])
     io.imsave(os.path.join(mask_output_path, "{}.png".format(n)), mask_input)
+    return atlas_label
 
 
 def inpaintMask(mask):
@@ -170,7 +173,7 @@ def inpaintMask(mask):
 
 def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, threshold, git_repo_base, bregma_list,
               atlas_to_brain_align, model, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks, align_once,
-              region_labels=True):
+              atlas_label_list, region_labels=True, original_label=False):
     """
     Use mask output from model to segment brain image into brain regions, and save various outputs.
     :param image_path: path to folder where brain images are saved
@@ -193,9 +196,17 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
     :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
     :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
     circles) on final brain image.
+    :param atlas_label_list: A list of aligned atlases in which each brain region is filled with a unique numeric label.
+    This allows for consistent identification of brain regions across images. If original_label is True, this is an
+    empty list.
     :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
     save time if you have many frames of the same brain with a fixed camera position.
-    :param region_labels: choose whether to est
+    :param region_labels: choose whether to assign a name to each region based on an existing brain atlas (not currently
+    implemented).
+    :param original_label: if True, uses a brain region labelling approach that attempts to automatically sort brain
+    regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
+    approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
+    unique number).
     """
 
     tif_list = glob.glob(os.path.join(image_path, "*tif"))
@@ -234,11 +245,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         # FOR ALIGNING ATLAS TO BRAIN
         num_images = len(glob.glob(os.path.join(mask_path, '*_brain_warp*')))
         output = os.path.join(mask_path, '..')
-        # print(output)
         from mesonet.predict_regions import predictRegion
         mask_generate = True
         tif_list = glob.glob(os.path.join(image_path, "*tif"))
-        # print(tif_list)
         if tif_list:
             input_path = image_path
         else:
@@ -253,14 +262,13 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             mask_input_path = os.path.join(mask_path, '{}.png'.format(i))
             mask_warped_path = os.path.join(mask_path, '{}_mask_warped.png'.format(str(i)))
             atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_path, i, use_unet,
-                          atlas_to_brain_align, git_repo_base, olfactory_check)
+                          atlas_to_brain_align, git_repo_base, olfactory_check, [])
         bregma_x, bregma_y = bregma_list[i]
         new_data = []
         if len(tif_list) != 0 and atlas_to_brain_align:
             img = item
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         else:
-            # print(item)
             img = cv2.imread(item)
         if atlas_to_brain_align:
             img = cv2.resize(img, (512, 512))
@@ -287,59 +295,99 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         if align_once:
             watershed_run_rule = i == 0
 
+        labels_from_region = []
+
         if watershed_run_rule:
             orig_list = []
             orig_list_labels = []
             orig_list_labels_left = []
             orig_list_labels_right = []
+            # unique_regions = (np.unique(atlas_label)).tolist()
+            # unique_regions = [e for e in unique_regions if e.is_integer()]
+            unique_regions = [-275, -268, -255, -249, -164, -150, -143, -136, -129, -98, -78, -71, -64, -57, -50, -43,
+                              -36, -29, -21, -15, 0, 15, 21, 29, 36, 43, 50, 57, 64, 71, 78, 98, 129, 136, 143, 150,
+                              164, 249, 255, 268, 275, 300, 400]
+            # atlas_label_df = pd.DataFrame(atlas_label)
+            # atlas_label_df.to_csv(os.path.join(save_path, "atlas_label.csv"))
+            cnts_orig = []
             # Find contours in original aligned atlas
-            cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-            cnts_orig = imutils.grab_contours(cnts_orig)
+            if atlas_to_brain_align and not original_label:
+                np.savetxt("atlas_label_list_{}.csv".format(i), atlas_label_list[i], delimiter=",")
+                for region_idx in unique_regions:
+                    if region_idx in [300, 400]:
+                        # workaround to address olfactory contours not being found
+                        region = cv2.inRange(atlas_label_list[i], region_idx - 5, region_idx + 5)
+                        io.imsave("atlas_label_im_{}.png".format(i), region)
+                        region_file, cnt_for_idx, hierarchy = cv2.findContours(region.copy(), cv2.RETR_TREE,
+                                                                               cv2.CHAIN_APPROX_NONE)
+                        if len(cnt_for_idx) >= 1:
+                            cnt_for_idx = cnt_for_idx[0]
+                    else:
+                        region = cv2.inRange(atlas_label_list[i], region_idx, region_idx)
+                        cnt_for_idx = cv2.findContours(region.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                        cnt_for_idx = imutils.grab_contours(cnt_for_idx)
+                        if len(cnt_for_idx) >= 1:
+                            cnt_for_idx = max(cnt_for_idx, key=cv2.contourArea)
+                    if len(cnt_for_idx) >= 1:
+                        cnts_orig.append(cnt_for_idx)
+                        labels_from_region.append(region_idx)
+            else:
+                cnts_orig = cv2.findContours(atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                cnts_orig = imutils.grab_contours(cnts_orig)
             labels_cnts = []
-            for num_label, cnt_orig in enumerate(cnts_orig):
+            for (num_label, cnt_orig) in enumerate(cnts_orig):
                 labels_cnts.append(cnt_orig)
                 try:
                     cv2.drawContours(img, cnt_orig, -1, (255, 0, 0), 1)
+                    # io.imsave(os.path.join(segmented_save_path, "check_contour.png"), img)
                 except:
                     print("Could not draw contour!")
-                try:
+                # try:
+                if atlas_to_brain_align:
                     c_orig_as_list = cnt_orig.tolist()
                     c_orig_as_list = [[c_val[0] for c_val in c_orig_as_list]]
-                    orig_polylabel = polylabel(c_orig_as_list)
-                    # print(orig_polylabel)
-                    orig_x, orig_y = int(orig_polylabel[0]), int(orig_polylabel[1])
-                    orig_list.append((orig_x, orig_y))
-                    orig_list_labels.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
-                    if (orig_x - bregma_x) < 0:
-                        orig_list_labels_left.append(
-                            (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
-                    elif (orig_x - bregma_x) > 0:
-                        orig_list_labels_right.append(
-                            (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
-                except:
-                    print("cannot find moments!")
+                else:
+                    c_orig_as_list = cnt_orig.tolist()
+                    c_orig_as_list = [[c_val[0] for c_val in c_orig_as_list]]
+                orig_polylabel = polylabel(c_orig_as_list)
+                orig_x, orig_y = int(orig_polylabel[0]), int(orig_polylabel[1])
+
+                if not original_label and atlas_to_brain_align:
+                    label_to_use = unique_regions.index(labels_from_region[num_label])
+                    (text_width, text_height) = cv2.getTextSize(str(label_to_use), cv2.FONT_HERSHEY_SIMPLEX,
+                                                                0.4, thickness=1)[0]
+                    label_jitter = 0
+                    label_color = (0, 0, 255)
+                    cv2.rectangle(img, (orig_x + label_jitter, orig_y + label_jitter),
+                                  (orig_x + label_jitter + text_width, orig_y + label_jitter - text_height),
+                                  (255, 255, 255), cv2.FILLED)
+                    cv2.putText(img, str(label_to_use),
+                                (int(orig_x + label_jitter), int(orig_y + label_jitter)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.4, label_color, 1)
+                    label_num += 1
+                orig_list.append((orig_x, orig_y))
+                orig_list_labels.append((orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                if (orig_x - bregma_x) < 0:
+                    orig_list_labels_left.append(
+                        (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
+                elif (orig_x - bregma_x) > 0:
+                    orig_list_labels_right.append(
+                        (orig_x - bregma_x, orig_y - bregma_y, orig_x, orig_y, num_label))
                 orig_list.sort()
             orig_list_labels_sorted_left = sorted(orig_list_labels_left, key=lambda t: t[0], reverse=True)
             orig_list_labels_sorted_right = sorted(orig_list_labels_right, key=lambda t: t[0])
             flatten = lambda l: [obj for sublist in l for obj in sublist]
             orig_list_labels_sorted = flatten([orig_list_labels_sorted_left, orig_list_labels_sorted_right])
-            # print(orig_list_labels_sorted)
             vertical_check = np.asarray([val[0] for val in orig_list_labels_sorted])
             for (orig_coord_val, orig_coord) in enumerate(orig_list_labels_sorted):
                 vertical_close = np.where((abs(vertical_check - orig_coord[0]) <= 5))
-                # print(vertical_close)
                 vertical_close_slice = vertical_close[0]
                 vertical_matches = np.asarray(orig_list_labels_sorted)[vertical_close_slice]
-                # print(vertical_matches)
                 if len(vertical_close_slice) > 1:
-                    # print(vertical_aligns)
                     vertical_match_sorted = sorted(vertical_matches, key=lambda t: t[1])
                     orig_list_labels_sorted_np = np.asarray(orig_list_labels_sorted)
-                    # print(orig_list_labels_sorted_np[vertical_close_slice])
                     orig_list_labels_sorted_np[vertical_close_slice] = vertical_match_sorted
-                    # print(orig_list_labels_sorted_np[vertical_close_slice])
                     orig_list_labels_sorted = orig_list_labels_sorted_np.tolist()
-                    # print(orig_list_labels_sorted)
             img = np.uint8(img)
         else:
             for num_label, cnt_orig in enumerate(cnts_orig):  # cnts_orig
@@ -363,8 +411,14 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
         cnts = cnts_orig
         print("LEN CNTS: {}".format(len(cnts)))
         print("LEN LABELS: {}".format(len(orig_list_labels_sorted)))
-        for (z, cnt), (coord_label_num, coord) in zip(enumerate(cnts),
-                                                      enumerate(orig_list_labels_sorted)):
+        if original_label or not atlas_to_brain_align:
+            labels_from_region = [0] * len(orig_list_labels_sorted)
+        for (z, cnt), (coord_idx, coord), label_from_region in zip(enumerate(cnts), enumerate(orig_list_labels_sorted),
+                                                                   labels_from_region):
+            if atlas_to_brain_align and not original_label:
+                coord_label_num = unique_regions.index(labels_from_region[coord_idx])
+            else:
+                coord_label_num = coord_idx
             # compute the center of the contour
             if len(cnts) > 1:
                 z = 0
@@ -381,16 +435,19 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 cnt_loc_label = ""
             rel_x = c_x - bregma_x
             rel_y = c_y - bregma_y
+            if atlas_to_brain_align:
+                c = c[0]
             pt_inside_cnt = [coord_check for coord_check in orig_list_labels_sorted if
                              cv2.pointPolygonTest(c, (int(coord_check[2]), int(coord_check[3])), False) == 1]
-            # print(pt_inside_cnt)
-            try:
-                pt_inside_cnt_idx = orig_list_labels_sorted.index(pt_inside_cnt[0])
-                # print(pt_inside_cnt_idx)
-                label_for_mat = pt_inside_cnt_idx
-            except:
+            if original_label:
+                try:
+                    pt_inside_cnt_idx = orig_list_labels_sorted.index(pt_inside_cnt[0])
+                    label_for_mat = pt_inside_cnt_idx
+                except:
+                    label_for_mat = coord_label_num
+                    print("WARNING: label was not found in region. Order of labels may be incorrect!")
+            else:
                 label_for_mat = coord_label_num
-                print("WARNING: label was not found in region. Order of labels may be incorrect!")
 
             # if cnt_loc_label != '':
             #     coord_label_num = "{} {}".format(coord_label_num, cnt_loc_label)
@@ -470,7 +527,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             #                     cv2.FONT_HERSHEY_SIMPLEX, 0.3, label_color, 1)
             #         label_num += 1
             # if label_num == 0 and not region_labels:
-            if not region_labels:
+            if (not region_labels and original_label) or (not region_labels and not atlas_to_brain_align):
                 (text_width, text_height) = cv2.getTextSize(str(coord_label_num), cv2.FONT_HERSHEY_SIMPLEX,
                                                             0.4, thickness=1)[0]
                 cv2.rectangle(img, (c_x + label_jitter, c_y + label_jitter),
@@ -480,41 +537,39 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                             (int(c_x + label_jitter), int(c_y + label_jitter)),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, label_color, 1)
                 label_num += 1
-                # print(label_num)
-                # print(count_label)
-                # n > 0
-                if mat_save:
-                    # Create an empty array of the same size as the contour, with the centre of the contour
-                    # marked as "255"
-                    c_total = np.zeros_like(mask)
-                    c_centre = np.zeros_like(mask)
-                    # Follow the path of the contour, setting every pixel along the path to 255
-                    # Fill in the contour area with 1s
-                    cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
-                    # Set the contour's centroid to 255
-                    if c_x < mask.shape[0] and c_y < mask.shape[0]:
-                        c_centre[c_x, c_y] = 255
-                    if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
-                        os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
-                    if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
-                        os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
-                    sio.savemat(os.path.join(segmented_save_path,
-                                             'mat_contour/roi_{}_{}_{}_{}.mat'.format(cnt_loc_label,
-                                                                                      i, label_for_mat, z)),
-                                {'roi_{}_{}_{}_{}'.format(cnt_loc_label,
-                                                          i, label_for_mat, z): c_total}, appendmat=False)
-                    sio.savemat(os.path.join(segmented_save_path,
-                                             'mat_contour_centre/roi_centre_{}_{}_{}_{}.mat'.format(
-                                                 cnt_loc_label, i, label_for_mat, z)),
-                                {'roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i, label_for_mat,
-                                                                 z): c_centre},
-                                appendmat=False)
-                    sio.savemat(os.path.join(segmented_save_path,
-                                             'mat_contour_centre/rel_roi_centre_{}_{}_{}_{}.mat'.format(
-                                                 cnt_loc_label, i, label_for_mat, z)),
-                                {'rel_roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i,
-                                                                     label_for_mat, z): c_rel_centre},
-                                appendmat=False)
+
+            if mat_save:
+                # Create an empty array of the same size as the contour, with the centre of the contour
+                # marked as "255"
+                c_total = np.zeros_like(mask)
+                c_centre = np.zeros_like(mask)
+                # Follow the path of the contour, setting every pixel along the path to 255
+                # Fill in the contour area with 1s
+                cv2.fillPoly(c_total, pts=[c], color=(255, 255, 255))
+                # Set the contour's centroid to 255
+                if c_x < mask.shape[0] and c_y < mask.shape[0]:
+                    c_centre[c_x, c_y] = 255
+                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour')):
+                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour'))
+                if not os.path.isdir(os.path.join(segmented_save_path, 'mat_contour_centre')):
+                    os.mkdir(os.path.join(segmented_save_path, 'mat_contour_centre'))
+                sio.savemat(os.path.join(segmented_save_path,
+                                         'mat_contour/roi_{}_{}_{}_{}.mat'.format(cnt_loc_label,
+                                                                                  i, label_for_mat, z)),
+                            {'roi_{}_{}_{}_{}'.format(cnt_loc_label,
+                                                      i, label_for_mat, z): c_total}, appendmat=False)
+                sio.savemat(os.path.join(segmented_save_path,
+                                         'mat_contour_centre/roi_centre_{}_{}_{}_{}.mat'.format(
+                                             cnt_loc_label, i, label_for_mat, z)),
+                            {'roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i, label_for_mat,
+                                                             z): c_centre},
+                            appendmat=False)
+                sio.savemat(os.path.join(segmented_save_path,
+                                         'mat_contour_centre/rel_roi_centre_{}_{}_{}_{}.mat'.format(
+                                             cnt_loc_label, i, label_for_mat, z)),
+                            {'rel_roi_centre_{}_{}_{}_{}'.format(cnt_loc_label, i,
+                                                                 label_for_mat, z): c_rel_centre},
+                            appendmat=False)
             count += 1
         if plot_landmarks:
             for pt, color in zip(dlc_pts[i], colors):
@@ -540,10 +595,8 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                         {'transparent_{}'.format(i): img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
         if plot_landmarks:
-            print(dlc_pts[i])
             for pt, color in zip(dlc_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
-            print(atlas_pts[i])
             for pt, color in zip(atlas_pts[i], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)

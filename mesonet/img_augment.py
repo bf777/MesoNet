@@ -22,8 +22,6 @@ def img_augment_run(input_path, output_path, coords_input, data_gen_args):
     coords = pd.read_csv(coords_input, header=[0, 1, 2], index_col=[0])
     coords_aug = coords.copy()
 
-    # print(coords_aug.iloc[:, 0])
-
     for img_num, img_name in enumerate(img_list):
         img = cv2.imread(img_name)
         coord_row_x = coords.iloc[img_num, 0::2]
@@ -41,34 +39,22 @@ def img_augment_run(input_path, output_path, coords_input, data_gen_args):
             )
         ])
 
-        # Augment keypoints and images.
+        # Augment keypoints and images
         image_aug, kps_aug = seq(image=img, keypoints=keypoints)
-        # image_before = keypoints.draw_on_image(img, size=7)
-        # image_after = kps_aug.draw_on_image(image_aug, size=7)
-
-        # print(flatten([[kp.x, kp.y] for kp in kps_aug.keypoints]))
         coords_aug.iloc[img_num, :] = flatten([[kp.x, kp.y] for kp in kps_aug.keypoints])
         idx_name = coords_aug.index[img_num]
         idx_basename = os.path.basename(idx_name)
         coords_aug.rename(index={idx_name: idx_name.replace(idx_basename,
-                                                           '{}_aug.png'.format(idx_basename.split('.')[0]))},
+                                                            '{}_aug.png'.format(idx_basename.split('.')[0]))},
                           inplace=True)
         print(idx_name.replace(idx_basename, '{}_aug.png'.format(idx_basename.split('.')[0])))
 
-        # io.imsave(os.path.join(output_path, '{}_aug_points_pre.png'.format(img_num)), image_before)
-        # io.imsave(os.path.join(output_path, '{}_aug_points_post.png'.format(img_num)), image_after)
         io.imsave(os.path.join(output_path, os.path.basename(img_name)), img)
         io.imsave(os.path.join(output_path, '{}_aug.png'.format(os.path.basename(img_name).split('.')[0])), image_aug)
 
     # Adapted from DeepLabCut (to facilitate conversion to DLC-compatible format):
     # https://github.com/DeepLabCut/DeepLabCut/blob/master/deeplabcut/generate_training_dataset/labeling_toolbox.py
     coords_aug.sort_index(inplace=True)
-    # coords_aug = coords_aug.iloc[:, 1:]
-    # coords_aug = coords_aug.reindex(
-    #    bodyparts,
-    #    axis=1,
-    #    level=coords_aug.columns.names.index("bodyparts"),
-    #)
     coords_aug = coords_aug.append(coords)
     coords_aug.to_csv(os.path.join(output_path, '{}.csv'.format(os.path.basename(coords_input).split('.')[0])))
     coords_aug.to_hdf(os.path.join(output_path, '{}.h5'.format(os.path.basename(coords_input).split('.')[0])),

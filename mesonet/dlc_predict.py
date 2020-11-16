@@ -18,7 +18,7 @@ from sys import platform
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
                mat_save, threshold, git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align,
-               model, olfactory_check, plot_landmarks, align_once):
+               model, olfactory_check, plot_landmarks, align_once, original_label):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -57,6 +57,10 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
     circles) on final brain image.
     :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
     save time if you have many frames of the same brain with a fixed camera position.
+    :param original_label: if True, uses a brain region labelling approach that attempts to automatically sort brain
+    regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
+    approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
+    unique number).
     """
     img_array = []
     if sensory_match == 1:
@@ -146,7 +150,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
         if not atlas:
             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
                             git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model,
-                            olfactory_check, plot_landmarks, align_once)
+                            olfactory_check, plot_landmarks, align_once, original_label)
 
 
 def DLCPredictBehavior(config, input_file, output):
@@ -262,6 +266,7 @@ def predict_dlc(config_file):
     olfactory_check = cfg['olfactory_check']
     plot_landmarks = cfg['plot_landmarks']
     align_once = cfg['align_once']
+    original_label = cfg['original_label']
     DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
                region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, olfactory_check, plot_landmarks,
-               align_once)
+               align_once, original_label)
