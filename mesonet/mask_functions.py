@@ -114,6 +114,9 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
     :param git_repo_base: The path to the base git repository containing necessary resources for MesoNet (reference
     atlases, DeepLabCut config files, etc.)
     :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
+    :param atlas_label: An atlas in which each brain region is filled with a unique numeric label.
+    This allows for consistent identification of brain regions across images. If original_label is True, this is an
+    empty list.
     """
     atlas = cv2.imread(atlas_path, cv2.IMREAD_GRAYSCALE)
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
@@ -131,7 +134,6 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
                 atlas_label[np.where(mask_input == 0)] = 1000
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
-            mask_input_ref = np.zeros_like(mask_input)
             if olfactory_check:
                 olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
                 for bulb in olfactory_bulbs:

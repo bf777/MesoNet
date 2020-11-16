@@ -212,9 +212,9 @@ def homography_match(warp_from, warp_to, output_mask_path, n):
     return atlas_warped
 
 
-def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
-                    mat_save, threshold, git_repo_base, region_labels, landmark_arr_orig, use_unet,
-                    atlas_to_brain_align, model, olfactory_check, plot_landmarks, align_once, original_label):
+def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base,
+                    region_labels, landmark_arr_orig, use_unet, atlas_to_brain_align, model, olfactory_check,
+                    plot_landmarks, align_once, original_label):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.

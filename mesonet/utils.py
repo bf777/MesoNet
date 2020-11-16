@@ -51,6 +51,10 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     circles) on final brain image.
     :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
     save time if you have many frames of the same brain with a fixed camera position.
+    :param original_label: if True, uses a brain region labelling approach that attempts to automatically sort brain
+    regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
+    approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
+    unique number).
     :param model: The location (within the MesoNet repository) of a U-net model to be used for finding the boundaries
     of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
     segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have
