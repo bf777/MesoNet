@@ -148,6 +148,8 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
             mask_input = cv2.bitwise_and(atlas, mask_warped)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
+        if len(atlas_label) > 0:
+            atlas_label[np.where(mask_input == 0)] = 1000
         if olfactory_check:
             olfactory_path = os.path.join(git_repo_base, 'atlases')
             olfactory_left = cv2.imread(os.path.join(olfactory_path, '02.png'), cv2.IMREAD_GRAYSCALE)
