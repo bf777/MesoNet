@@ -130,10 +130,10 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:
             # FOR ALIGNING ATLAS TO BRAIN
-            if len(atlas_label) > 0:
-                atlas_label[np.where(mask_input == 0)] = 1000
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
+            if len(atlas_label) > 0:
+                atlas_label[np.where(mask_input == 0)] = 1000
             if olfactory_check:
                 olfactory_bulbs = sorted(cnts_for_olfactory, key=cv2.contourArea, reverse=True)[2:4]
                 for bulb in olfactory_bulbs:
@@ -319,7 +319,6 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                     if region_idx in [300, 400]:
                         # workaround to address olfactory contours not being found
                         region = cv2.inRange(atlas_label_list[i], region_idx - 5, region_idx + 5)
-                        io.imsave("atlas_label_im_{}.png".format(i), region)
                         region_file, cnt_for_idx, hierarchy = cv2.findContours(region.copy(), cv2.RETR_TREE,
                                                                                cv2.CHAIN_APPROX_NONE)
                         if len(cnt_for_idx) >= 1:
@@ -437,8 +436,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                 cnt_loc_label = ""
             rel_x = c_x - bregma_x
             rel_y = c_y - bregma_y
-            if atlas_to_brain_align:
-                c = c[0]
+
             pt_inside_cnt = [coord_check for coord_check in orig_list_labels_sorted if
                              cv2.pointPolygonTest(c, (int(coord_check[2]), int(coord_check[3])), False) == 1]
             if original_label:
