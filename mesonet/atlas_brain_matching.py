@@ -296,7 +296,7 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                                    cv2.IMREAD_GRAYSCALE)
     coord_circles_img = np.uint8(coord_circles_img)
     # detect circles in the image
-    circles_mask, circles, hierarchy = cv2.findContours(coord_circles_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    circles, hierarchy = cv2.findContours(coord_circles_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     # ensure at least some circles were found
     if circles is not None:
         # convert the (x, y) coordinates and radius of the circles to integers

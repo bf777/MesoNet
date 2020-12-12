@@ -154,10 +154,10 @@ def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_pat
             olfactory_path = os.path.join(git_repo_base, 'atlases')
             olfactory_left = cv2.imread(os.path.join(olfactory_path, '02.png'), cv2.IMREAD_GRAYSCALE)
             olfactory_right = cv2.imread(os.path.join(olfactory_path, '01.png'), cv2.IMREAD_GRAYSCALE)
-            olfactory_mask_left, cnts_for_olfactory_left, hierarchy = cv2.findContours(olfactory_left, cv2.RETR_TREE,
+            cnts_for_olfactory_left, hierarchy = cv2.findContours(olfactory_left, cv2.RETR_TREE,
                                                                                        cv2.CHAIN_APPROX_NONE)
             olfactory_left_cnt = min(cnts_for_olfactory_left, key=cv2.contourArea)
-            olfactory_mask_right, cnts_for_olfactory_right, hierarchy = cv2.findContours(olfactory_right, cv2.RETR_TREE,
+            cnts_for_olfactory_right, hierarchy = cv2.findContours(olfactory_right, cv2.RETR_TREE,
                                                                                          cv2.CHAIN_APPROX_NONE)
             olfactory_right_cnt = min(cnts_for_olfactory_right, key=cv2.contourArea)
             cv2.fillPoly(mask_input, pts=[olfactory_left_cnt], color=[255, 255, 255])
@@ -321,7 +321,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                     if region_idx in [300, 400]:
                         # workaround to address olfactory contours not being found
                         region = cv2.inRange(atlas_label_list[i], region_idx - 5, region_idx + 5)
-                        region_file, cnt_for_idx, hierarchy = cv2.findContours(region.copy(), cv2.RETR_TREE,
+                        cnt_for_idx, hierarchy = cv2.findContours(region.copy(), cv2.RETR_TREE,
                                                                                cv2.CHAIN_APPROX_NONE)
                         if len(cnt_for_idx) >= 1:
                             cnt_for_idx = cnt_for_idx[0]
