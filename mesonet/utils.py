@@ -163,7 +163,9 @@ def find_git_repo():
         # solution to find git repository on computer adapted from:
         # https://stackoverflow.com/questions/5153317/python-how-to-do-a-system-wide-search-for-a-file-when-just-the-filename-not-pa
 
-        # check for colab
+        # Check if we're using Google Colab; if we are, change the root directory to /content
+        # solution adapted from:
+        # https://stackoverflow.com/questions/53581278/test-if-notebook-is-running-on-google-colab
         in_colab = False
         try:
             import google.colab
@@ -221,4 +223,3 @@ def convert_to_png(input_folder):
                 cv2.imwrite(img_path_multi_idx, arr * 255)
         else:
             cv2.imwrite(img_path, npy)
-

@@ -6,6 +6,7 @@ dist/
 
 # U-net models (user needs to download these manually as they are too large to be hosted on GitHub)
 mesonet/models/*.hdf5
+mesonet/models/*.h5
 
 # Old versions of scripts kept as backups
 mesonet/*_old.py
