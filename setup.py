@@ -11,7 +11,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='mesonet',
-    version='1.0.0.2',
+    version='1.0.0.3',
     author="Brandon Forys",
     author_email="brandon.forys@alumni.ubc.ca",
     description="An automatic brain region identification and segmentation toolbox.",
@@ -19,7 +19,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/bf777/mesonet",
     install_requires=['imutils', 'scikit-image', 'scipy', 'numpy==1.16.4', 'keras==2.3.1', 'opencv-python', 'Pillow',
-                      'deeplabcut', 'pandas', 'matplotlib', 'python-polylabel', 'imgaug'],
+                      'deeplabcut', 'pandas', 'matplotlib', 'python-polylabel', 'imgaug', 'voxelmorph'],
     packages=['mesonet', ],
     classifiers=[
         "Programming Language :: Python :: 3",

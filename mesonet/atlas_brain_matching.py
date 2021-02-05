@@ -6,6 +6,8 @@ Licensed under the MIT License (see LICENSE for details)
 """
 from mesonet.utils import natural_sort_key
 from mesonet.mask_functions import atlas_to_mask, applyMask
+# from mesonet.niftyreg_align import niftyreg_align
+from mesonet.voxelmorph_align import voxelmorph_align
 import numpy as np
 import pandas as pd
 import cv2
@@ -214,7 +216,7 @@ def homography_match(warp_from, warp_to, output_mask_path, n):
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base,
                     region_labels, landmark_arr_orig, use_unet, atlas_to_brain_align, model, olfactory_check,
-                    plot_landmarks, align_once, original_label):
+                    plot_landmarks, align_once, original_label, voxelmorph_model='Motif_model_OB.h5'):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.
@@ -246,6 +248,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
     approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
     unique number).
+    :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,
+    generated using voxelmorph and containing weights for a voxelmorph local deformation model.
     """
     # load brain images folder
     brain_img_arr = []
@@ -530,12 +534,16 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                     atlas_label = cv2.bitwise_or(atlas_label_left, atlas_label_right)
 
             else:
-               pts_np = np.array([dlc_pts[align_val][0], dlc_pts[align_val][1], dlc_pts[align_val][2]],
-                                 dtype=np.float32)
-               atlas_pts_np = np.array([atlas_pts[align_val][0], atlas_pts[align_val][1], atlas_pts[align_val][2]],
-                                       dtype=np.float32)
-               warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
-               atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+                pts_np = np.array([dlc_pts[align_val][0], dlc_pts[align_val][1], dlc_pts[align_val][2]],
+                                  dtype=np.float32)
+                atlas_pts_np = np.array([atlas_pts[align_val][0], atlas_pts[align_val][1], atlas_pts[align_val][2]],
+                                        dtype=np.float32)
+                warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
+                atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+                #try:
+                #    atlas_warped = niftyreg_align(git_repo_base, atlas_warped, output_mask_path, n)
+                #except:
+                #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs. Continuing...".format(str(n)))
 
         if atlas_to_brain_align:
             if len(atlas_pts_for_input[0]) == 2:
@@ -571,6 +579,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 atlas_mask_warped = cv2.resize(atlas_mask_warped, (im.shape[0], im.shape[1]))
             else:
                 dst = atlas_warped
+
+        voxelmorph_model_path = os.path.join(git_repo_base, 'models', 'voxelmorph', voxelmorph_model)
+        atlas_warped = voxelmorph_align(voxelmorph_model_path, atlas_warped)
+
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
         else:

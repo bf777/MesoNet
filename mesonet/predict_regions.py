@@ -12,7 +12,7 @@ from mesonet.utils import parse_yaml
 
 def predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                   atlas_to_brain_align, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks,
-                  align_once, region_labels):
+                  atlas_label_list, align_once, region_labels, original_label):
     """
     Segment brain images to predict the location of brain regions.
     :param input_file: Input folder containing brain images.
@@ -36,8 +36,17 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
     to the atlas.
     :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
     circles) on final brain image.
+    :param atlas_label_list: A list of aligned atlases in which each brain region is filled with a unique numeric label.
+    This allows for consistent identification of brain regions across images. If original_label is True, this is an
+    empty list.
     :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
     save time if you have many frames of the same brain with a fixed camera position.
+    :param region_labels: choose whether to assign a name to each region based on an existing brain atlas (not currently
+    implemented).
+    :param original_label: if True, uses a brain region labelling approach that attempts to automatically sort brain
+    regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
+    approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
+    unique number).
     """
     # Create and define save folders for each output of the prediction
     # Output folder for basic mask (used later in prediction)
@@ -62,7 +71,7 @@ def predictRegion(input_file, num_images, model, output, mat_save, threshold, ma
         # Predicts and identifies brain regions based on output mask
         applyMask(input_file, output_mask_path, output_overlay_path, output, mat_save, threshold, git_repo_base,
                   atlas_to_brain_align, model, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks,
-                  align_once, region_labels)
+                  atlas_label_list, align_once, region_labels, original_label)
 
 
 def predict_regions(config_file):

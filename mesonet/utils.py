@@ -10,6 +10,9 @@ import re
 import os
 from os.path import join
 from sys import platform
+import scipy.io as sio
+import cv2
+import numpy as np
 
 
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
@@ -114,6 +117,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             bodyparts=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
         )
 
+    if glob.glob(os.path.join(input_dir, '*.mat')) or glob.glob(os.path.join(input_dir, '*.npy')):
+        convert_to_png(input_dir)
+
     with open(os.path.join(output_dir, filename), 'w') as outfile:
         yaml.dump(data, outfile)
 
@@ -157,6 +163,14 @@ def find_git_repo():
         # solution to find git repository on computer adapted from:
         # https://stackoverflow.com/questions/5153317/python-how-to-do-a-system-wide-search-for-a-file-when-just-the-filename-not-pa
 
+        # check for colab
+        in_colab = False
+        try:
+            import google.colab
+            in_colab = True
+        except:
+            in_colab = False
+
         root_folder = 'C:\\'
         git_repo_marker = "mesonet.txt"
         if platform == "linux" or platform == "linux2" or platform == "darwin":
@@ -165,8 +179,46 @@ def find_git_repo():
         elif platform == "win32":
             # Windows
             root_folder = 'C:\\'
+        elif in_colab:
+            root_folder = '/content'
         for root, dirs, files in os.walk(root_folder):
             if git_repo_marker in files:
                 git_repo_base = root
                 break
     return git_repo_base
+
+
+def convert_to_png(input_folder):
+    if glob.glob(os.path.join(input_folder, '*.mat')):
+        input_file = glob.glob(os.path.join(input_folder, '*.mat'))[0]
+        base_name = os.path.basename(input_file).split('.')[0]
+        img_path = os.path.join(os.path.split(input_file)[0], base_name + '.png')
+        print(img_path)
+        mat = sio.loadmat(input_file)
+        mat_shape = mat[list(mat.keys())[3]]
+        if len(mat_shape.shape) > 2:
+            for idx_arr in range(0, mat_shape.shape[2]):
+                mat_layer = mat_shape[:, :, idx_arr]
+                base_name_multi_idx = str(idx_arr) + '_' + base_name
+                img_path_multi_idx = os.path.join(os.path.split(input_file)[0], base_name_multi_idx + '.png')
+                cv2.imwrite(img_path_multi_idx, mat_layer)
+        else:
+            mat = mat[str(list({k: v for (k, v) in mat.items() if '__' not in k}.keys())[0])]
+            cv2.imwrite(img_path, mat)
+            print('.mat written to .png!')
+    elif glob.glob(os.path.join(input_folder, '*.npy')):
+        input_file = glob.glob(os.path.join(input_folder, '*.npy'))[0]
+        base_name = os.path.basename(input_file).split('.')[0]
+        img_path = os.path.join(os.path.split(input_file)[0], base_name + '.png')
+        print(img_path)
+        npy = np.load(input_file)
+        print(npy.ndim)
+        if npy.ndim == 3:
+            print(npy)
+            for idx_arr, arr in enumerate(npy):
+                base_name_multi_idx = str(idx_arr) + '_' + base_name
+                img_path_multi_idx = os.path.join(os.path.split(input_file)[0], base_name_multi_idx + '.png')
+                cv2.imwrite(img_path_multi_idx, arr * 255)
+        else:
+            cv2.imwrite(img_path, npy)
+

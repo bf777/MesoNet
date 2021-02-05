@@ -97,6 +97,16 @@ def saveResult(save_path, npyfile, flag_multi_class=False, num_class=2):
         img = labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
         io.imsave(os.path.join(save_path, "{}.png".format(i)), img)
 
+def returnResult(save_path, npyfile):
+    """
+    Saves the predicted mask from each brain image to the save folder.
+    :param save_path: path to overall folder for saving images
+    :param npyfile: results file output after model has made predictions
+    :param flag_multi_class: flag the output images as having multiple classes
+    :param num_class: if flag_multi_class is True, decide how many classes to categorize each brain image into.
+    """
+    img = npyfile[0][:, :, 0]
+    return img
 
 def atlas_to_mask(atlas_path, mask_input_path, mask_warped_path, mask_output_path, n, use_unet,
                   atlas_to_brain_align, git_repo_base, olfactory_check, atlas_label):
@@ -573,10 +583,14 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                                                                  label_for_mat, z): c_rel_centre},
                             appendmat=False)
             count += 1
+        if align_once:
+            idx_to_use = 0
+        else:
+            idx_to_use = i
         if plot_landmarks:
-            for pt, color in zip(dlc_pts[i], colors):
+            for pt, color in zip(dlc_pts[idx_to_use], colors):
                 cv2.circle(img, (int(pt[0]), int(pt[1])), 10, color, -1)
-            for pt, color in zip(atlas_pts[i], colors):
+            for pt, color in zip(atlas_pts[idx_to_use], colors):
                 cv2.circle(img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(segmented_save_path, "{}_mask_segmented.png".format(i)), img)
         img_edited = Image.open(os.path.join(save_path, "{}_mask_binary.png".format(i)))
@@ -597,9 +611,9 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
                         {'transparent_{}'.format(i): img_trans_for_mat})
         masked_img = cv2.bitwise_and(img, img_transparent, mask=mask_color)
         if plot_landmarks:
-            for pt, color in zip(dlc_pts[i], colors):
+            for pt, color in zip(dlc_pts[idx_to_use], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 10, color, -1)
-            for pt, color in zip(atlas_pts[i], colors):
+            for pt, color in zip(atlas_pts[idx_to_use], colors):
                 cv2.circle(masked_img, (int(pt[0]), int(pt[1])), 5, color, -1)
         io.imsave(os.path.join(save_path, "{}_overlay.png".format(i)), masked_img)
         print("Mask {} saved!".format(i))

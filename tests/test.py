@@ -46,8 +46,8 @@ def test_mesonet_process():
     t3 = time.time()
     predict_dlc_time = t3 - t2
 
-    print('Time to run mesonet.predict_regions on 10 images: {} s'.format(np.round(predict_regions_time, 2)))
-    print('Time to run mesonet.predict_dlc on 10 images: {} s'.format(np.round(predict_dlc_time, 2)))
+    print('Time to run mesonet.predict_regions on 12 images: {} s'.format(np.round(predict_regions_time, 2)))
+    print('Time to run mesonet.predict_dlc on 12 images: {} s'.format(np.round(predict_dlc_time, 2)))
 
     print('System info: ')
     print('Platform: {}'.format(platform.platform()))

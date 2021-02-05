@@ -15,7 +15,7 @@ import imageio
 
 from mesonet.dlc_predict import DLCPredict, DLCPredictBehavior
 from mesonet.predict_regions import predictRegion
-from mesonet.utils import config_project, find_git_repo, natural_sort_key
+from mesonet.utils import config_project, find_git_repo, natural_sort_key, convert_to_png
 
 
 class Gui(object):
@@ -451,6 +451,10 @@ class Gui(object):
                 self.statusHandler(save_path_err)
 
     def ImageDisplay(self, delta, folderName, reset):
+        # If input is .mat or .npy, convert to .png
+        if glob.glob(os.path.join(folderName, '*.mat')) or glob.glob(os.path.join(folderName, '*.npy')):
+            convert_to_png(folderName)
+
         # Set up canvas on which images will be displayed
         is_tif = False
         self.imgDisplayed = 1
@@ -581,9 +585,10 @@ class Gui(object):
         if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
             pts = []
             pts2 = []
+            atlas_label_list = []
             predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                          atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
-                          region_labels)
+                          atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, atlas_label_list,
+                          align_once, region_labels, original_label)
         DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
                    mat_save, threshold, git_repo_base, region_labels, self.landmark_arr, use_unet, atlas_to_brain_align,
                    model, olfactory_check, plot_landmarks, align_once, original_label)
