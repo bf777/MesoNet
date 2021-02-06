@@ -97,7 +97,9 @@ def predict_regions(config_file):
     use_unet = cfg['use_unet']
     plot_landmarks = cfg['plot_landmarks']
     align_once = cfg['align_once']
+    atlas_label_list = cfg['atlas_label_list']
+    original_label = cfg['original_label']
 
     predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                   atlas_to_brain_align, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks,
-                  align_once, region_labels)
+                  align_once, atlas_label_list, region_labels, original_label)

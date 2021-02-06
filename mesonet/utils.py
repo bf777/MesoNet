@@ -18,7 +18,7 @@ import numpy as np
 def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
                    atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True, use_unet=True,
                    atlas_to_brain_align=True, olfactory_check=True, plot_landmarks=True, align_once=False,
-                   original_label=False, threshold=0.0001, model='models/unet_bundary.hdf5',
+                   original_label=False, atlas_label_list=[], threshold=0.0001, model='models/unet_bundary.hdf5',
                    region_labels=False, steps_per_epoch=300, epochs=60):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
@@ -58,6 +58,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
     approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
     unique number).
+    :param atlas_label_list: A list of aligned atlases in which each brain region is filled with a unique numeric label.
+    This allows for consistent identification of brain regions across images. If original_label is True, this is an
+    empty list.
     :param model: The location (within the MesoNet repository) of a U-net model to be used for finding the boundaries
     of the brain region (as the default model does), or (if you have a specially trained model for this purpose)
     segmenting the entire brain into regions without the need for atlas alignment. Only choose another model if you have
@@ -103,6 +106,7 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             olfactory_check=olfactory_check,
             plot_landmarks=plot_landmarks,
             align_once=align_once,
+            atlas_label_list=atlas_label_list,
             original_label=original_label
         )
     elif mode == 'train':
