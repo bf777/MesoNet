@@ -110,7 +110,7 @@ def atlas_from_mat(input_file, mat_cnt_list):
         atlas_resize = np.uint8(atlas_im)
         ret, atlas_resize = cv2.threshold(atlas_resize, 127, 255, 0)
         io.imsave('atlas_unresized_test.png', atlas_resize)
-        roi_mask_new, roi_cnt, hierarchy = cv2.findContours(atlas_resize, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        roi_cnt, hierarchy = cv2.findContours(atlas_resize, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for val in roi_cnt:
             c_to_save = max(val, key=cv2.contourArea)
             mat_cnt_list.append(c_to_save)
@@ -152,7 +152,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
     atlas_to_warp = atlas_img
     mask = np.uint8(mask)
-    mask_new, cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     for cnt in cnts:
         cnt = cnt[:, 0, :]
         cnt = np.asarray(cnt).astype('float32')
