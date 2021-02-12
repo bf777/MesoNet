@@ -268,7 +268,7 @@ def applyMask(image_path, mask_path, save_path, segmented_save_path, mat_save, t
             input_path = mask_path
         predictRegion(input_path, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                       atlas_to_brain_align, dlc_pts, atlas_pts, olfactory_check, use_unet, plot_landmarks, align_once,
-                      region_labels)
+                      atlas_label_list, region_labels, original_label)
     for i, item in enumerate(image_name_arr):
         label_num = 0
         if not atlas_to_brain_align:
