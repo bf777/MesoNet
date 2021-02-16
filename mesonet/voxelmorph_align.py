@@ -16,7 +16,7 @@ import voxelmorph as vxm
 from skimage.color import rgb2gray
 
 
-def vxm_data_generator(x_data, batch_size=1):
+def vxm_data_generator(x_data, template, batch_size=1):
     """
     Generator that takes in data of size [N, H, W], and yields data for
     our custom vxm model. Note that we need to provide numpy data for each
@@ -29,12 +29,14 @@ def vxm_data_generator(x_data, batch_size=1):
     # preliminary sizing
     if batch_size == 1:
         x_data = rgb2gray(x_data)
+        print(template.shape)
+        template = rgb2gray(template)
         x_data = np.expand_dims(x_data, axis=0)
+        template = np.expand_dims(template, axis=0)
     vol_shape = x_data.shape[1:]  # extract data shape
     ndims = len(vol_shape)
 
     # prepare a zero array the size of the deformation
-    # we'll explain this below
     zero_phi = np.zeros([batch_size, *vol_shape, ndims])
 
     while True:
@@ -42,14 +44,17 @@ def vxm_data_generator(x_data, batch_size=1):
         # images need to be of the size [batch_size, H, W, 1]
         idx1 = np.random.randint(0, x_data.shape[0], size=batch_size)
         moving_images = x_data[idx1, ..., np.newaxis]
-        idx2 = np.random.randint(0, x_data.shape[0], size=batch_size)
-        fixed_images = x_data[idx2, ..., np.newaxis]
+        idx2 = np.random.randint(0, template.shape[0], size=batch_size)
+        fixed_images = template[idx2, ..., np.newaxis]
         inputs = [moving_images, fixed_images]
 
         # prepare outputs (the 'true' moved image):
         # of course, we don't have this, but we know we want to compare
         # the resulting moved image with the fixed image.
         # we also wish to penalize the deformation field.
+
+        # NOTE: we don't currently use these output images in our analyses;
+        # the inputs are put directly into vxm_model.predict().
         outputs = [fixed_images, zero_phi]
 
         yield inputs, outputs
@@ -61,8 +66,6 @@ def init_vxm_model(img_path, model_path):
         [32, 32, 32, 32],  # encoder features
         [32, 32, 32, 32, 32, 16]  # decoder features
     ]
-
-    # read_img = cv2.imread(img_path)
 
     # Since our input is a 2D image, we can take the shape from the first two dimensions in .shape
     inshape = img_path.shape[0:2]
@@ -76,9 +79,9 @@ def init_vxm_model(img_path, model_path):
     return vxm_model
 
 
-def voxelmorph_align(model_path, img_path):
+def voxelmorph_align(model_path, img_path, template):
     vxm_model = init_vxm_model(img_path, model_path)
-    val_generator = vxm_data_generator(img_path)
+    val_generator = vxm_data_generator(img_path, template)
     val_input, _ = next(val_generator)
 
     # Makes predictions on each image

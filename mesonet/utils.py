@@ -211,16 +211,13 @@ def convert_to_png(input_folder):
         else:
             mat = mat[str(list({k: v for (k, v) in mat.items() if '__' not in k}.keys())[0])]
             cv2.imwrite(img_path, mat)
-            print('.mat written to .png!')
+        print('.mat written to .png!')
     elif glob.glob(os.path.join(input_folder, '*.npy')):
         input_file = glob.glob(os.path.join(input_folder, '*.npy'))[0]
         base_name = os.path.basename(input_file).split('.')[0]
         img_path = os.path.join(os.path.split(input_file)[0], base_name + '.png')
-        print(img_path)
         npy = np.load(input_file)
-        print(npy.ndim)
         if npy.ndim == 3:
-            print(npy)
             for idx_arr, arr in enumerate(npy):
                 base_name_multi_idx = str(idx_arr) + '_' + base_name
                 img_path_multi_idx = os.path.join(os.path.split(input_file)[0], base_name_multi_idx + '.png')

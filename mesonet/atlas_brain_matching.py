@@ -4,7 +4,7 @@ Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
 Licensed under the MIT License (see LICENSE for details)
 """
-from mesonet.utils import natural_sort_key
+from mesonet.utils import natural_sort_key, convert_to_png
 from mesonet.mask_functions import atlas_to_mask, applyMask
 # from mesonet.niftyreg_align import niftyreg_align
 from mesonet.voxelmorph_align import voxelmorph_align
@@ -216,7 +216,8 @@ def homography_match(warp_from, warp_to, output_mask_path, n):
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base,
                     region_labels, landmark_arr_orig, use_unet, atlas_to_brain_align, model, olfactory_check,
-                    plot_landmarks, align_once, original_label, voxelmorph_model='Motif_model_OB.h5'):
+                    plot_landmarks, align_once, original_label, voxelmorph_model='motif_model_atlas.h5',
+                    template_folder='templates'):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.
@@ -256,6 +257,13 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     dlc_img_arr = []
     peak_arr = []
     atlas_label_list = []
+
+    # Prepare template for voxelmorph
+    convert_to_png(os.path.join(git_repo_base, 'atlases', template_folder))
+    print(glob.glob(os.path.join(git_repo_base, 'atlases', template_folder, '*.png'))[0])
+    template = cv2.imread(glob.glob(os.path.join(git_repo_base, 'atlases', template_folder, '*.png'))[0])
+    template = np.uint8(template)
+    template = cv2.resize(template, (512, 512))
 
     # Prepare output folder
     cwd = os.getcwd()
@@ -558,9 +566,6 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 atlas_mask_warped = cv2.bitwise_or(atlas_mask_left_warped, atlas_mask_right_warped)
             atlas_mask_warped = np.uint8(atlas_mask_warped)
 
-        atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
-        io.imsave(atlas_first_transform_path, atlas_warped)
-
         # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
         print("Performing second transformation of atlas {}...".format(n))
         dst = atlas_warped
@@ -581,7 +586,10 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 dst = atlas_warped
 
         voxelmorph_model_path = os.path.join(git_repo_base, 'models', 'voxelmorph', voxelmorph_model)
-        atlas_warped = voxelmorph_align(voxelmorph_model_path, atlas_warped)
+        dst = voxelmorph_align(voxelmorph_model_path, dst, template)
+
+        atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
+        io.imsave(atlas_first_transform_path, dst)
 
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
