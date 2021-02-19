@@ -16,9 +16,30 @@ import numpy as np
 from sys import platform
 
 
-def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
-               region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, olfactory_check, plot_landmarks,
-               align_once, original_label, exist_transform, voxelmorph_model, template_path, flow_path):
+def DLCPredict(
+    config,
+    input_file,
+    output,
+    atlas,
+    sensory_match,
+    sensory_path,
+    mat_save,
+    threshold,
+    git_repo_base,
+    region_labels,
+    landmark_arr,
+    use_unet,
+    atlas_to_brain_align,
+    model,
+    olfactory_check,
+    plot_landmarks,
+    align_once,
+    original_label,
+    exist_transform,
+    voxelmorph_model,
+    template_path,
+    flow_path,
+):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -70,14 +91,14 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, m
     if sensory_match:
         sensory_img_dir = sensory_path
     else:
-        sensory_img_dir = ''
+        sensory_img_dir = ""
     tif_list = glob.glob(os.path.join(input_file, "*tif"))
     if tif_list:
         print(tif_list)
         tif_stack = imageio.mimread(os.path.join(input_file, tif_list[0]))
         filenames = tif_stack
     else:
-        filenames = glob.glob(os.path.join(input_file, '*.png'))
+        filenames = glob.glob(os.path.join(input_file, "*.png"))
         filenames.sort(key=natural_sort_key)
 
     size = (512, 512)
@@ -98,14 +119,14 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, m
         img_array.append(img)
 
     if len(img_array) > 0:
-        video_output_path = os.path.join(output, 'dlc_output')
-        video_name = os.path.join(video_output_path, 'tmp_video.mp4')
+        video_output_path = os.path.join(output, "dlc_output")
+        video_name = os.path.join(video_output_path, "tmp_video.mp4")
 
         if not os.path.isdir(video_output_path):
             os.mkdir(video_output_path)
         # fourcc = cv2.VideoWriter_fourcc(*'DIB ')
         if platform == "linux" or platform == "linux2":
-            fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
+            fourcc = cv2.VideoWriter_fourcc("M", "P", "E", "G")
         else:
             fourcc = -1
         out = cv2.VideoWriter(video_name, fourcc, 30, size)
@@ -114,23 +135,28 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, m
             out.write(i)
         out.release()
 
-        deeplabcut.analyze_videos(config, [video_output_path], videotype='.mp4', save_as_csv=True)
+        deeplabcut.analyze_videos(
+            config, [video_output_path], videotype=".mp4", save_as_csv=True
+        )
         deeplabcut.create_labeled_video(config, [video_name], filtered=True)
-        if '2.0' in deeplabcut.__version__:
-            scorer_name = 'DeepCut'
+        if "2.0" in deeplabcut.__version__:
+            scorer_name = "DeepCut"
         else:
-            scorer_name = 'DLC'
-        output_video_name = ''
-        coords_input = ''
-        for filename in glob.glob(os.path.join(video_output_path, 'tmp_video' + scorer_name + '*.*')):
+            scorer_name = "DLC"
+        output_video_name = ""
+        coords_input = ""
+        for filename in glob.glob(
+            os.path.join(video_output_path, "tmp_video" + scorer_name + "*.*")
+        ):
             try:
-                if '.mp4' in filename:
+                if ".mp4" in filename:
                     output_video_name = filename
-                elif '.csv' in filename:
+                elif ".csv" in filename:
                     coords_input = filename
             except FileNotFoundError:
                 print(
-                    "Please ensure that an output video and corresponding datafile from DeepLabCut are in the folder!")
+                    "Please ensure that an output video and corresponding datafile from DeepLabCut are in the folder!"
+                )
 
         cap = cv2.VideoCapture(output_video_name)
         i = 0
@@ -138,7 +164,7 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, m
             ret, frame = cap.read()
             if not ret:
                 break
-            cv2.imwrite(os.path.join(video_output_path, '{}.png'.format(str(i))), frame)
+            cv2.imwrite(os.path.join(video_output_path, "{}.png".format(str(i))), frame)
             i += 1
 
         cap.release()
@@ -148,10 +174,28 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, m
 
         print("Landmark prediction complete!")
         if not atlas:
-            atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
-                            git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model,
-                            olfactory_check, plot_landmarks, align_once, original_label, exist_transform,
-                            voxelmorph_model, template_path, flow_path)
+            atlasBrainMatch(
+                input_file,
+                sensory_img_dir,
+                coords_input,
+                sensory_match,
+                mat_save,
+                threshold,
+                git_repo_base,
+                region_labels,
+                landmark_arr,
+                use_unet,
+                atlas_to_brain_align,
+                model,
+                olfactory_check,
+                plot_landmarks,
+                align_once,
+                original_label,
+                exist_transform,
+                voxelmorph_model,
+                template_path,
+                flow_path,
+            )
 
 
 def DLCPredictBehavior(config, input_file, output):
@@ -164,27 +208,28 @@ def DLCPredictBehavior(config, input_file, output):
     video_array = []
     img_array = []
     print(input_file)
-    for filename in glob.glob(os.path.join(input_file, '*.mp4')):
+    for filename in glob.glob(os.path.join(input_file, "*.mp4")):
         video_array.append(os.path.join(input_file, filename))
 
-    for _ in glob.glob(os.path.join(input_file, '*.png')):
-        _nsre = re.compile('([0-9]+)')
-        return [int(text) if text.isdigit() else text.lower()
-                for text in re.split(_nsre, s)]
+    for _ in glob.glob(os.path.join(input_file, "*.png")):
+        _nsre = re.compile("([0-9]+)")
+        return [
+            int(text) if text.isdigit() else text.lower() for text in re.split(_nsre, s)
+        ]
         img = cv2.imread(filename)
         height, width, layers = img.shape
         size = (width, height)
         img_array.append(img)
 
     if len(img_array) > 0:
-        video_output_path = os.path.join(output, 'dlc_output', 'behavior')
-        video_name = os.path.join(video_output_path, 'behavior_video.mp4')
+        video_output_path = os.path.join(output, "dlc_output", "behavior")
+        video_name = os.path.join(video_output_path, "behavior_video.mp4")
         video_output_path = [video_output_path]
         video_name = [video_name]
 
         if not os.path.isdir(video_output_path[0]):
             os.mkdir(video_output_path[0])
-        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
+        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*"MP4V"), 30, size)
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()
@@ -192,14 +237,18 @@ def DLCPredictBehavior(config, input_file, output):
         video_output_path = video_array
         video_name = video_array
 
-    deeplabcut.analyze_videos(config, video_output_path, videotype='.mp4', save_as_csv=True, destfolder=output)
-    deeplabcut.create_labeled_video(config, video_name, filtered=True, destfolder=output)
+    deeplabcut.analyze_videos(
+        config, video_output_path, videotype=".mp4", save_as_csv=True, destfolder=output
+    )
+    deeplabcut.create_labeled_video(
+        config, video_name, filtered=True, destfolder=output
+    )
     cv2.destroyAllWindows()
 
 
 def DLCPrep(project_name, your_name, img_path, output_dir_base, copy_videos_bool=True):
     img_array = []
-    filenames = glob.glob(os.path.join(img_path, '*.png'))
+    filenames = glob.glob(os.path.join(img_path, "*.png"))
     filenames.sort(key=natural_sort_key)
     size = (512, 512)
     for filename in filenames:
@@ -209,20 +258,25 @@ def DLCPrep(project_name, your_name, img_path, output_dir_base, copy_videos_bool
         img_array.append(img)
 
     if len(img_array) > 0:
-        if not os.path.isdir(os.path.join(output_dir_base, 'img_for_label')):
-            os.mkdir(os.path.join(output_dir_base, 'img_for_label'))
-        video_output_path = os.path.join(output_dir_base, 'img_for_label')
-        video_name = os.path.join(video_output_path, 'video_for_label.mp4')
+        if not os.path.isdir(os.path.join(output_dir_base, "img_for_label")):
+            os.mkdir(os.path.join(output_dir_base, "img_for_label"))
+        video_output_path = os.path.join(output_dir_base, "img_for_label")
+        video_name = os.path.join(video_output_path, "video_for_label.mp4")
 
         if not os.path.isdir(video_output_path):
             os.mkdir(video_output_path)
-        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*'MP4V'), 30, size)
+        out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*"MP4V"), 30, size)
         for i in range(len(img_array)):
             out.write(img_array[i])
         out.release()
 
-        config_path = deeplabcut.create_new_project(project_name, your_name, [video_name], copy_videos=copy_videos_bool,
-                                                    working_directory=output_dir_base)
+        config_path = deeplabcut.create_new_project(
+            project_name,
+            your_name,
+            [video_name],
+            copy_videos=copy_videos_bool,
+            working_directory=output_dir_base,
+        )
         return config_path
 
 
@@ -234,12 +288,14 @@ def DLCLabel(config_path):
 
 def DLCTrain(config_path, displayiters, saveiters, maxiters):
     deeplabcut.create_training_dataset(config_path)
-    deeplabcut.train_network(config_path, displayiters=displayiters, saveiters=saveiters, maxiters=maxiters)
+    deeplabcut.train_network(
+        config_path, displayiters=displayiters, saveiters=saveiters, maxiters=maxiters
+    )
 
 
 def DLC_edit_bodyparts(config_path, new_bodyparts):
     dlc_cfg = read_config(config_path)
-    dlc_cfg['bodyparts'] = new_bodyparts
+    dlc_cfg["bodyparts"] = new_bodyparts
     write_config(config_path, dlc_cfg)
 
 
@@ -250,28 +306,49 @@ def predict_dlc(config_file):
     """
     cwd = os.getcwd()
     cfg = parse_yaml(config_file)
-    config = cfg['config']
-    atlas = cfg['atlas']
-    sensory_match = cfg['sensory_match']
-    sensory_path = cfg['sensory_path']
-    input_file = cfg['input_file']
-    output = cfg['output']
-    mat_save = cfg['mat_save']
-    threshold = cfg['threshold']
-    git_repo_base = cfg['git_repo_base']
-    region_labels = cfg['region_labels']
-    landmark_arr = cfg['landmark_arr']
-    use_unet = cfg['use_unet']
-    atlas_to_brain_align = cfg['atlas_to_brain_align']
-    model = os.path.join(cwd, cfg['model'])
-    olfactory_check = cfg['olfactory_check']
-    plot_landmarks = cfg['plot_landmarks']
-    align_once = cfg['align_once']
-    original_label = cfg['original_label']
-    exist_transform = cfg['exist_transform']
-    voxelmorph_model = cfg['voxelmorph_model']
-    template_path = cfg['template_path']
-    flow_path = cfg['flow_path']
-    DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
-               region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, olfactory_check, plot_landmarks,
-               align_once, original_label, exist_transform, voxelmorph_model, template_path, flow_path)
+    config = cfg["config"]
+    atlas = cfg["atlas"]
+    sensory_match = cfg["sensory_match"]
+    sensory_path = cfg["sensory_path"]
+    input_file = cfg["input_file"]
+    output = cfg["output"]
+    mat_save = cfg["mat_save"]
+    threshold = cfg["threshold"]
+    git_repo_base = cfg["git_repo_base"]
+    region_labels = cfg["region_labels"]
+    landmark_arr = cfg["landmark_arr"]
+    use_unet = cfg["use_unet"]
+    atlas_to_brain_align = cfg["atlas_to_brain_align"]
+    model = os.path.join(cwd, cfg["model"])
+    olfactory_check = cfg["olfactory_check"]
+    plot_landmarks = cfg["plot_landmarks"]
+    align_once = cfg["align_once"]
+    original_label = cfg["original_label"]
+    exist_transform = cfg["exist_transform"]
+    voxelmorph_model = cfg["voxelmorph_model"]
+    template_path = cfg["template_path"]
+    flow_path = cfg["flow_path"]
+    DLCPredict(
+        config,
+        input_file,
+        output,
+        atlas,
+        sensory_match,
+        sensory_path,
+        mat_save,
+        threshold,
+        git_repo_base,
+        region_labels,
+        landmark_arr,
+        use_unet,
+        atlas_to_brain_align,
+        model,
+        olfactory_check,
+        plot_landmarks,
+        align_once,
+        original_label,
+        exist_transform,
+        voxelmorph_model,
+        template_path,
+        flow_path,
+    )

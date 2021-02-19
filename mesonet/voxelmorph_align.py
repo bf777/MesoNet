@@ -63,17 +63,17 @@ def init_vxm_model(img_path, model_path):
     # configure unet features
     nb_features = [
         [32, 32, 32, 32],  # encoder features
-        [32, 32, 32, 32, 32, 16]  # decoder features
+        [32, 32, 32, 32, 32, 16],  # decoder features
     ]
 
     # Since our input is a 2D image, we can take the shape from the first two dimensions in .shape
     inshape = img_path.shape[0:2]
     print(inshape)
     vxm_model = vxm.networks.VxmDense(inshape, nb_features, int_steps=0)
-    losses = [vxm.losses.MSE().loss, vxm.losses.Grad('l2').loss]
+    losses = [vxm.losses.MSE().loss, vxm.losses.Grad("l2").loss]
     lambda_param = 0.05
     loss_weights = [1, lambda_param]
-    vxm_model.compile(optimizer='Adam', loss=losses, loss_weights=loss_weights)
+    vxm_model.compile(optimizer="Adam", loss=losses, loss_weights=loss_weights)
     vxm_model.load_weights(model_path)
     return vxm_model
 
@@ -93,8 +93,9 @@ def vxm_transform(x_data, flow_path):
     print(x_data.shape)
     print(flow_data.shape)
 
-    results = vxm.networks.Transform(vol_size,
-                                     interp_method='linear', nb_feats=x_data.shape[-1]).predict([x_data, flow_data])
+    results = vxm.networks.Transform(
+        vol_size, interp_method="linear", nb_feats=x_data.shape[-1]
+    ).predict([x_data, flow_data])
     return results
 
 
@@ -111,13 +112,13 @@ def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path)
         # Saves flow image to flow
         flow_img = results[1]
     else:
-        print('using existing transform')
+        print("using existing transform")
         results = vxm_transform(img_path, flow_path)
         # Saves output mask
         print(results.shape)
         output_img = results[0, :, :, 0]
         # Saves flow image to flow
-        flow_img = ''
+        flow_img = ""
 
-    print('Results saved!')
+    print("Results saved!")
     return output_img, flow_img

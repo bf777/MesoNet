@@ -15,11 +15,33 @@ import cv2
 import numpy as np
 
 
-def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='dlc/config.yaml',
-                   atlas=False, sensory_match=False, sensory_path='sensory', mat_save=True, use_unet=True,
-                   atlas_to_brain_align=True, olfactory_check=True, plot_landmarks=True, align_once=False,
-                   original_label=False, atlas_label_list=[], threshold=0.0001, model='models/unet_bundary.hdf5',
-                   region_labels=False, steps_per_epoch=300, epochs=60):
+def config_project(
+    input_dir,
+    output_dir,
+    mode,
+    model_name="unet.hdf5",
+    config="dlc/config.yaml",
+    atlas=False,
+    sensory_match=False,
+    sensory_path="sensory",
+    mat_save=True,
+    use_unet=True,
+    atlas_to_brain_align=True,
+    olfactory_check=True,
+    plot_landmarks=True,
+    align_once=False,
+    original_label=False,
+    exist_transform=False,
+    voxelmorph_model="motif_model_atlas.h5",
+    template_path="templates",
+    flow_path="",
+    atlas_label_list=[],
+    threshold=0.0001,
+    model="models/unet_bundary.hdf5",
+    region_labels=False,
+    steps_per_epoch=300,
+    epochs=60,
+):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
     applying an existing model or training a new one).
@@ -58,6 +80,14 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
     approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
     unique number).
+    :param exist_transform: if True, uses an existing voxelmorph transformation field for all data instead of predicting
+    a new transformation.
+    :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,
+    generated using voxelmorph and containing weights for a voxelmorph local deformation model.
+    :param template_path: the path to a template atlas (.npy or .mat( to which the brain image will be aligned in
+    voxelmorph.
+    :param flow_path: the path to a voxelmorph transformation field that will be used to transform all data instead of
+    predicting a new transformation if exist_transform is True.
     :param atlas_label_list: A list of aligned atlases in which each brain region is filled with a unique numeric label.
     This allows for consistent identification of brain regions across images. If original_label is True, this is an
     empty list.
@@ -84,9 +114,9 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
     filename = "mesonet_config.yaml"
     data = dict()
 
-    if mode == 'test':
+    if mode == "test":
         filename = "mesonet_test_config.yaml"
-        num_images = len(glob.glob(os.path.join(input_dir, '*.png')))
+        num_images = len(glob.glob(os.path.join(input_dir, "*.png")))
         data = dict(
             config=config,
             input_file=input_dir,
@@ -107,9 +137,13 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             plot_landmarks=plot_landmarks,
             align_once=align_once,
             atlas_label_list=atlas_label_list,
-            original_label=original_label
+            original_label=original_label,
+            exist_transform=exist_transform,
+            voxelmorph_model=voxelmorph_model,
+            template_path=template_path,
+            flow_path=flow_path
         )
-    elif mode == 'train':
+    elif mode == "train":
         filename = "mesonet_train_config.yaml"
         data = dict(
             input_file=input_dir,
@@ -118,13 +152,15 @@ def config_project(input_dir, output_dir, mode, model_name='unet.hdf5', config='
             git_repo_base=git_repo_base,
             steps_per_epoch=steps_per_epoch,
             epochs=epochs,
-            bodyparts=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
+            bodyparts=["A", "B", "C", "D", "E", "F", "G", "H", "I"],
         )
 
-    if glob.glob(os.path.join(input_dir, '*.mat')) or glob.glob(os.path.join(input_dir, '*.npy')):
+    if glob.glob(os.path.join(input_dir, "*.mat")) or glob.glob(
+        os.path.join(input_dir, "*.npy")
+    ):
         convert_to_png(input_dir)
 
-    with open(os.path.join(output_dir, filename), 'w') as outfile:
+    with open(os.path.join(output_dir, filename), "w") as outfile:
         yaml.dump(data, outfile)
 
     config_file = os.path.join(output_dir, filename)
@@ -136,7 +172,7 @@ def parse_yaml(config_file):
     Parses the config file and returns a dictionary with its parameters.
     :param config_file: The full path to a MesoNet config file (generated using mesonet.config_project())
     """
-    with open(config_file, 'r') as stream:
+    with open(config_file, "r") as stream:
         try:
             d = yaml.safe_load(stream)
             return d
@@ -152,16 +188,17 @@ def natural_sort_key(s):
     :param s: The list to be sorted.
     :return: Naturally sorted version of list.
     """
-    _nsre = re.compile('([0-9]+)')
-    return [int(text) if text.isdigit() else text.lower()
-            for text in re.split(_nsre, s)]
+    _nsre = re.compile("([0-9]+)")
+    return [
+        int(text) if text.isdigit() else text.lower() for text in re.split(_nsre, s)
+    ]
 
 
 def find_git_repo():
     # Preferred (faster) option to find mesonet git repo is to set it as an environment variable
-    git_repo_base = ''
+    git_repo_base = ""
     try:
-        git_repo_base = os.environ['MESONET_GIT']
+        git_repo_base = os.environ["MESONET_GIT"]
     except:
         # If we can't find the environment variable, search for the mesonet git repository
         # solution to find git repository on computer adapted from:
@@ -173,20 +210,21 @@ def find_git_repo():
         in_colab = False
         try:
             import google.colab
+
             in_colab = True
         except:
             in_colab = False
 
-        root_folder = 'C:\\'
+        root_folder = "C:\\"
         git_repo_marker = "mesonet.txt"
         if platform == "linux" or platform == "linux2" or platform == "darwin":
             # linux or mac
-            root_folder = '/home'
+            root_folder = "/home"
         elif platform == "win32":
             # Windows
-            root_folder = 'C:\\'
+            root_folder = "C:\\"
         elif in_colab:
-            root_folder = '/content'
+            root_folder = "/content"
         for root, dirs, files in os.walk(root_folder):
             if git_repo_marker in files:
                 git_repo_base = root
@@ -195,32 +233,38 @@ def find_git_repo():
 
 
 def convert_to_png(input_folder):
-    if glob.glob(os.path.join(input_folder, '*.mat')):
-        input_file = glob.glob(os.path.join(input_folder, '*.mat'))[0]
-        base_name = os.path.basename(input_file).split('.')[0]
-        img_path = os.path.join(os.path.split(input_file)[0], base_name + '.png')
+    if glob.glob(os.path.join(input_folder, "*.mat")):
+        input_file = glob.glob(os.path.join(input_folder, "*.mat"))[0]
+        base_name = os.path.basename(input_file).split(".")[0]
+        img_path = os.path.join(os.path.split(input_file)[0], base_name + ".png")
         print(img_path)
         mat = sio.loadmat(input_file)
         mat_shape = mat[list(mat.keys())[3]]
         if len(mat_shape.shape) > 2:
             for idx_arr in range(0, mat_shape.shape[2]):
                 mat_layer = mat_shape[:, :, idx_arr]
-                base_name_multi_idx = str(idx_arr) + '_' + base_name
-                img_path_multi_idx = os.path.join(os.path.split(input_file)[0], base_name_multi_idx + '.png')
+                base_name_multi_idx = str(idx_arr) + "_" + base_name
+                img_path_multi_idx = os.path.join(
+                    os.path.split(input_file)[0], base_name_multi_idx + ".png"
+                )
                 cv2.imwrite(img_path_multi_idx, mat_layer)
         else:
-            mat = mat[str(list({k: v for (k, v) in mat.items() if '__' not in k}.keys())[0])]
+            mat = mat[
+                str(list({k: v for (k, v) in mat.items() if "__" not in k}.keys())[0])
+            ]
             cv2.imwrite(img_path, mat)
-        print('.mat written to .png!')
-    elif glob.glob(os.path.join(input_folder, '*.npy')):
-        input_file = glob.glob(os.path.join(input_folder, '*.npy'))[0]
-        base_name = os.path.basename(input_file).split('.')[0]
-        img_path = os.path.join(os.path.split(input_file)[0], base_name + '.png')
+        print(".mat written to .png!")
+    elif glob.glob(os.path.join(input_folder, "*.npy")):
+        input_file = glob.glob(os.path.join(input_folder, "*.npy"))[0]
+        base_name = os.path.basename(input_file).split(".")[0]
+        img_path = os.path.join(os.path.split(input_file)[0], base_name + ".png")
         npy = np.load(input_file)
         if npy.ndim == 3:
             for idx_arr, arr in enumerate(npy):
-                base_name_multi_idx = str(idx_arr) + '_' + base_name
-                img_path_multi_idx = os.path.join(os.path.split(input_file)[0], base_name_multi_idx + '.png')
+                base_name_multi_idx = str(idx_arr) + "_" + base_name
+                img_path_multi_idx = os.path.join(
+                    os.path.split(input_file)[0], base_name_multi_idx + ".png"
+                )
                 cv2.imwrite(img_path_multi_idx, arr * 255)
         else:
             cv2.imwrite(img_path, npy)
