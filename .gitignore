@@ -4,6 +4,11 @@ dist/
 *.egg-info/
 *.egg
 
+# Project files
+*.xml
+*.iml
+*.idea
+
 # U-net models (user needs to download these manually as they are too large to be hosted on GitHub)
 mesonet/models/*.hdf5
 mesonet/models/*.h5
