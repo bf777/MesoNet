@@ -35,6 +35,9 @@ class Gui(object):
         self.saveBFolderName = self.cwd
         self.threshold = 0.01  # 0.001
 
+        self.vxm_model = 'motif_model_atlas.h5'
+        self.flowName = self.cwd
+
         self.j = -1
         self.delta = 0
         self.imgDisplayed = 0
@@ -57,11 +60,12 @@ class Gui(object):
         self.config_path = os.path.join(self.git_repo_base, self.config_dir, 'config.yaml')
         self.behavior_config_path = os.path.join(self.git_repo_base, self.config_dir, 'behavior', ' config.yaml')
         self.model_top_dir = os.path.join(self.git_repo_base, self.model_dir)
+        self.templateName = os.path.join(self.git_repo_base, 'atlases', 'templates')
 
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=12, sticky=N + S + W)
+        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=13, sticky=N + S + W)
 
         # Render model selector listbox
         self.modelSelect = []
@@ -70,7 +74,7 @@ class Gui(object):
                 self.modelSelect.append(file)
 
         self.modelLabel = Label(self.root, text="If using U-net, select a model to analyze the brain regions:")
-        self.modelListBox = Listbox(self.root)
+        self.modelListBox = Listbox(self.root, exportselection=0)
         self.modelLabel.grid(row=0, column=4, columnspan=5, sticky=W + E + S)
         self.modelListBox.grid(row=1, rowspan=4, column=4, columnspan=5, sticky=W + E + N)
         for item in self.modelSelect:
@@ -166,6 +170,8 @@ class Gui(object):
         self.align_once.set(False)
         self.original_label = BooleanVar()
         self.original_label.set(False)
+        self.exist_transform = BooleanVar()
+        self.exist_transform.set(False)
 
         self.landmark_left = BooleanVar()
         self.landmark_left.set(True)
@@ -252,6 +258,14 @@ class Gui(object):
                                                     variable=self.landmark_bottom_right, onvalue=True, offvalue=False)
         self.landmarkBottomRightCheck.grid(row=16, column=8, padx=2, sticky=N + S + W)
 
+        self.vxm_window_open = False
+        if self.vxm_window_open:
+            print("TEST")
+
+        self.vxmSettingsButton = Button(self.root, text="Open VoxelMorph settings",
+                                        command=lambda: self.open_voxelmorph_window())
+        self.vxmSettingsButton.grid(row=17, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+
         self.predictDLCButton = Button(self.root, text="Predict brain regions\nusing landmarks",
                                        command=lambda: self.PredictDLC(self.config_path, self.folderName,
                                                                        self.saveFolderName, False,
@@ -268,8 +282,13 @@ class Gui(object):
                                                                        self.olfactory_check.get(),
                                                                        self.plot_landmarks.get(),
                                                                        self.align_once.get(),
-                                                                       self.original_label.get()))
-        self.predictDLCButton.grid(row=17, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+                                                                       self.original_label.get(),
+                                                                       self.exist_transform.get(),
+                                                                       os.path.join(self.model_top_dir, 'voxelmorph',
+                                                                                    self.vxm_model),
+                                                                       self.templateName,
+                                                                       self.flowName))
+        self.predictDLCButton.grid(row=18, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictAllImButton = Button(self.root, text="Predict brain regions directly\nusing pretrained U-net model",
                                          command=lambda: self.PredictRegions(self.folderName, self.picLen, self.model,
                                                                              self.saveFolderName,
@@ -279,23 +298,24 @@ class Gui(object):
                                                                              self.olfactory_check.get(),
                                                                              self.unet_select.get(),
                                                                              self.plot_landmarks.get(),
-                                                                             self.align_once.get()))
-        self.predictAllImButton.grid(row=18, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+                                                                             self.align_once.get(),
+                                                                             self.region_labels.get()))
+        self.predictAllImButton.grid(row=19, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
         self.predictBehaviourButton = Button(self.root, text="Predict animal movements",
                                              command=lambda: DLCPredictBehavior(self.behavior_config_path,
                                                                                 self.BFolderName,
                                                                                 self.saveBFolderName))
-        self.predictBehaviourButton.grid(row=19, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
+        self.predictBehaviourButton.grid(row=20, column=4, columnspan=5, padx=2, sticky=N + S + W + E)
 
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(self.root, text="->", command=lambda: self.ImageDisplay(1, self.folderName, 0))
-        self.nextButton.grid(row=20, column=2, columnspan=2, sticky=E)
+        self.nextButton.grid(row=21, column=2, columnspan=2, sticky=E)
         self.previousButton = Button(self.root, text="<-", command=lambda: self.ImageDisplay(-1, self.folderName, 0))
-        self.previousButton.grid(row=20, column=0, columnspan=2, sticky=W)
+        self.previousButton.grid(row=21, column=0, columnspan=2, sticky=W)
 
         self.statusBar = Label(self.root, textvariable=self.status_str, bd=1, relief=SUNKEN, anchor=W)
-        self.statusBar.grid(row=21, column=0, columnspan=9, sticky='we')
+        self.statusBar.grid(row=22, column=0, columnspan=9, sticky='we')
 
         # Bind right and left arrow keys to forward/backward controls
         self.root.bind('<Right>', self.forward)
@@ -422,6 +442,24 @@ class Gui(object):
             except:
                 dlc_path_err = "No git repo selected!"
                 self.statusHandler(dlc_path_err)
+        elif openOrSave == 5:
+            newVxmTemplateName = filedialog.askdirectory(initialdir=self.cwd,
+                                                            title="Select VoxelMorph template directory")
+            try:
+                self.templateName_str.set(newVxmTemplateName)
+                self.templateName = newVxmTemplateName
+            except:
+                template_err = "No template folder selected!"
+                self.statusHandler(template_err)
+        elif openOrSave == 6:
+            newVxmFlowName = filedialog.askopenfilename(initialdir=self.cwd,
+                                                        title="Select VoxelMorph flow file")
+            try:
+                self.flowName_str.set(newVxmFlowName)
+                self.flowName = newVxmFlowName
+            except:
+                template_err = "No template file selected!"
+                self.statusHandler(template_err)
 
     def OpenBFile(self, openOrSave):
         if openOrSave == 0:
@@ -449,6 +487,58 @@ class Gui(object):
                 save_path_err = 'No save file selected!'
                 print(save_path_err)
                 self.statusHandler(save_path_err)
+
+    def open_voxelmorph_window(self):
+        # VoxelMorph options window
+        self.vxm_window_open = True
+        self.vxm_window = Toplevel(self.root)
+        self.vxm_window.title('VoxelMorph settings')
+        self.vxm_window.resizable(False, False)
+
+        # Render voxelmorph model selector listbox
+        self.vxm_model_select = []
+        for file in os.listdir(os.path.join(self.model_top_dir, 'voxelmorph')):
+            if fnmatch.fnmatch(file, "*.h5"):
+                self.vxm_model_select.append(file)
+
+        self.vxmModelLabel = Label(self.vxm_window,
+                                   text="If using VoxelMorph, select a model to align the brain image and atlas:")
+        self.vxmModelListBox = Listbox(self.vxm_window, exportselection=0)
+        self.vxmModelLabel.grid(row=0, column=4, columnspan=5, sticky=W + E + S)
+        self.vxmModelListBox.grid(row=1, rowspan=4, column=4, columnspan=5, sticky=W + E + N)
+        for item in self.vxm_model_select:
+            self.vxmModelListBox.insert(END, item)
+
+        if len(self.vxm_model_select) > 0:
+            self.vxmModelListBox.bind('<<ListboxSelect>>', lambda event: self.onSelectVxm(event))
+
+        self.templateEntryLabel = Label(self.vxm_window, text="Template file location")
+        self.templateEntryLabel.grid(row=0, column=0, sticky=E + W)
+
+        self.templateName_str = StringVar(self.vxm_window, value=self.templateName)
+        self.templateEntryButton = Button(self.vxm_window, text="Browse...", command=lambda: self.OpenFile(5))
+
+        self.templateEntryButton.grid(row=0, column=2, sticky=E)
+        self.templateEntryBox = Entry(self.vxm_window, textvariable=self.templateName_str, width=50)
+        self.templateEntryBox.grid(row=0, column=1, padx=5, pady=5)
+
+        self.flowEntryLabel = Label(self.vxm_window, text="Flow file location")
+        self.flowEntryLabel.grid(row=1, column=0, sticky=E + W)
+
+        self.flowName_str = StringVar(self.vxm_window, value=self.flowName)
+        self.flowEntryButton = Button(self.vxm_window, text="Browse...", command=lambda: self.OpenFile(6))
+
+        self.flowEntryButton.grid(row=1, column=2, sticky=E)
+        self.flowEntryBox = Entry(self.vxm_window, textvariable=self.flowName_str, width=50)
+        self.flowEntryBox.grid(row=1, column=1, padx=5, pady=5)
+
+        self.existTransformCheck = Checkbutton(self.vxm_window, text="Use existing transformation",
+                                               variable=self.exist_transform,
+                                               onvalue=True, offvalue=False)
+        self.existTransformCheck.grid(row=2, column=0, columnspan=2, padx=2, sticky=N + S + W)
+
+        self.vxm_window.mainloop()
+
 
     def ImageDisplay(self, delta, folderName, reset):
         # If input is .mat or .npy, convert to .png
@@ -484,10 +574,6 @@ class Gui(object):
         if self.j <= -1:
             self.j = self.picLen - 1
         if delta != 0:
-            # for file in file_list:
-            #if is_tif or fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask_segmented.png".format(self.j))) \
-            #        or fnmatch.fnmatch(file, os.path.join(folderName, "{}.png".format(self.j))) or \
-            #        fnmatch.fnmatch(file, os.path.join(folderName, "{}_mask.png".format(self.j))):
             if is_tif:
                 image_orig = Image.fromarray(file_list[0])
                 self.imageFileName = tif_list[0]
@@ -516,6 +602,14 @@ class Gui(object):
         new_model = self.modelListBox.get(selected)
         self.model = new_model
         print(self.model)
+        self.root.update()
+
+    def onSelectVxm(self, event):
+        w_vxm = event.widget
+        selected_vxm = int(w_vxm.curselection()[0])
+        new_vxm_model = self.vxmModelListBox.get(selected_vxm)
+        self.vxm_model = new_vxm_model
+        print(self.vxm_model)
         self.root.update()
 
     def forward(self, event):
@@ -560,14 +654,15 @@ class Gui(object):
             self.landmark_arr.append(8)
 
     def PredictRegions(self, input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                       olfactory_check, use_unet, plot_landmarks, align_once, region_labels):
+                       region_labels, olfactory_check, use_unet, plot_landmarks, align_once, original_label):
         self.statusHandler('Processing...')
         atlas_to_brain_align = True
         pts = []
         pts2 = []
+        atlas_label_list = []
         predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
                       atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, align_once,
-                      region_labels)
+                      atlas_label_list, region_labels, original_label)
         self.saveFolderName = output
         if mask_generate:
             self.folderName = os.path.join(self.saveFolderName, "output_mask")
@@ -579,7 +674,8 @@ class Gui(object):
 
     def PredictDLC(self, config, input_file, output, atlas, sensory_match, sensory_path, model, num_images, mat_save,
                    threshold, mask_generate, haveMasks, git_repo_base, region_labels, use_unet, atlas_to_brain_align,
-                   olfactory_check, plot_landmarks, align_once, original_label):
+                   olfactory_check, plot_landmarks, align_once, original_label, exist_transform, voxelmorph_model,
+                   template_path, flow_path):
         self.statusHandler('Processing...')
         self.chooseLandmarks()
         if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
@@ -587,11 +683,12 @@ class Gui(object):
             pts2 = []
             atlas_label_list = []
             predictRegion(input_file, num_images, model, output, mat_save, threshold, mask_generate, git_repo_base,
-                          atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks, atlas_label_list,
-                          align_once, region_labels, original_label)
+                          atlas_to_brain_align, pts, pts2, olfactory_check, use_unet, plot_landmarks,
+                          align_once, atlas_label_list, region_labels, original_label)
         DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path,
                    mat_save, threshold, git_repo_base, region_labels, self.landmark_arr, use_unet, atlas_to_brain_align,
-                   model, olfactory_check, plot_landmarks, align_once, original_label)
+                   model, olfactory_check, plot_landmarks, align_once, original_label, exist_transform, voxelmorph_model,
+                   template_path, flow_path)
         saveFolderName = output
         if not atlas:
             self.folderName = os.path.join(saveFolderName, "output_overlay")

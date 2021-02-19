@@ -18,7 +18,7 @@ from sys import platform
 
 def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
                region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, olfactory_check, plot_landmarks,
-               align_once, original_label):
+               align_once, original_label, exist_transform, voxelmorph_model, template_path, flow_path):
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
@@ -150,7 +150,8 @@ def DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, m
         if not atlas:
             atlasBrainMatch(input_file, sensory_img_dir, coords_input, sensory_match, mat_save, threshold,
                             git_repo_base, region_labels, landmark_arr, use_unet, atlas_to_brain_align, model,
-                            olfactory_check, plot_landmarks, align_once, original_label)
+                            olfactory_check, plot_landmarks, align_once, original_label, exist_transform,
+                            voxelmorph_model, template_path, flow_path)
 
 
 def DLCPredictBehavior(config, input_file, output):
@@ -267,6 +268,10 @@ def predict_dlc(config_file):
     plot_landmarks = cfg['plot_landmarks']
     align_once = cfg['align_once']
     original_label = cfg['original_label']
+    exist_transform = cfg['exist_transform']
+    voxelmorph_model = cfg['voxelmorph_model']
+    template_path = cfg['template_path']
+    flow_path = cfg['flow_path']
     DLCPredict(config, input_file, output, atlas, sensory_match, sensory_path, mat_save, threshold, git_repo_base,
                region_labels, landmark_arr, use_unet, atlas_to_brain_align, model, olfactory_check, plot_landmarks,
-               align_once, original_label)
+               align_once, original_label, exist_transform, voxelmorph_model, template_path, flow_path)

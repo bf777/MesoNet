@@ -11,7 +11,6 @@ VoxelMorph is distributed under the Apache License 2.0.
 """
 
 from mesonet.mask_functions import *
-from keras.models import *
 import voxelmorph as vxm
 from skimage.color import rgb2gray
 
@@ -79,16 +78,46 @@ def init_vxm_model(img_path, model_path):
     return vxm_model
 
 
-def voxelmorph_align(model_path, img_path, template):
-    vxm_model = init_vxm_model(img_path, model_path)
-    val_generator = vxm_data_generator(img_path, template)
-    val_input, _ = next(val_generator)
+def vxm_transform(x_data, flow_path):
+    # If we already have a deformation field that we want to apply to all data,
+    # use this deformation field instead of computing a new one.
 
-    # Makes predictions on each image
-    results = vxm_model.predict(val_input)
-    print(len(results))
-    print(results[0].shape)
-    # Saves output mask
-    output_img = [img[0, :, :, 0] for img in results][0]
+    # preliminary sizing
+    flow_data = np.load(flow_path)
+    x_data = rgb2gray(x_data)
+    x_data = np.expand_dims(x_data, axis=0)
+    x_data = x_data[..., np.newaxis]
+
+    vol_size = x_data.shape[1:-1]
+
+    print(x_data.shape)
+    print(flow_data.shape)
+
+    results = vxm.networks.Transform(vol_size,
+                                     interp_method='linear', nb_feats=x_data.shape[-1]).predict([x_data, flow_data])
+    return results
+
+
+def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path):
+    if not exist_transform:
+        vxm_model = init_vxm_model(img_path, model_path)
+        val_generator = vxm_data_generator(img_path, template)
+        val_input, _ = next(val_generator)
+
+        # Makes predictions on each image
+        results = vxm_model.predict(val_input)
+        # Saves output mask
+        output_img = [img[0, :, :, 0] for img in results][0]
+        # Saves flow image to flow
+        flow_img = results[1]
+    else:
+        print('using existing transform')
+        results = vxm_transform(img_path, flow_path)
+        # Saves output mask
+        print(results.shape)
+        output_img = results[0, :, :, 0]
+        # Saves flow image to flow
+        flow_img = ''
+
     print('Results saved!')
-    return output_img
+    return output_img, flow_img

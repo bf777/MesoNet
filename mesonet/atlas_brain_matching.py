@@ -216,8 +216,8 @@ def homography_match(warp_from, warp_to, output_mask_path, n):
 
 def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match, mat_save, threshold, git_repo_base,
                     region_labels, landmark_arr_orig, use_unet, atlas_to_brain_align, model, olfactory_check,
-                    plot_landmarks, align_once, original_label, voxelmorph_model='motif_model_atlas.h5',
-                    template_folder='templates'):
+                    plot_landmarks, align_once, original_label, exist_transform,
+                    voxelmorph_model='motif_model_atlas.h5', template_path='templates', flow_path=''):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
     :param brain_img_dir: The directory containing each brain image to be used.
@@ -259,9 +259,8 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
     atlas_label_list = []
 
     # Prepare template for voxelmorph
-    convert_to_png(os.path.join(git_repo_base, 'atlases', template_folder))
-    print(glob.glob(os.path.join(git_repo_base, 'atlases', template_folder, '*.png'))[0])
-    template = cv2.imread(glob.glob(os.path.join(git_repo_base, 'atlases', template_folder, '*.png'))[0])
+    convert_to_png(template_path)
+    template = cv2.imread(glob.glob(os.path.join(git_repo_base, 'atlases', template_path, '*.png'))[0])
     template = np.uint8(template)
     template = cv2.resize(template, (512, 512))
 
@@ -586,10 +585,13 @@ def atlasBrainMatch(brain_img_dir, sensory_img_dir, coords_input, sensory_match,
                 dst = atlas_warped
 
         voxelmorph_model_path = os.path.join(git_repo_base, 'models', 'voxelmorph', voxelmorph_model)
-        dst = voxelmorph_align(voxelmorph_model_path, dst, template)
+        dst, flow = voxelmorph_align(voxelmorph_model_path, dst, template, exist_transform, flow_path)
 
         atlas_first_transform_path = os.path.join(output_mask_path, '{}_atlas_first_transform.png'.format(str(n)))
         io.imsave(atlas_first_transform_path, dst)
+        if not exist_transform:
+            flow_path = os.path.join(output_mask_path, '{}_flow.npy'.format(str(n)))
+            np.save(flow_path, flow)
 
         if atlas_to_brain_align:
             io.imsave(mask_warped_path, atlas_mask_warped)
