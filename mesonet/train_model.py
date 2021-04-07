@@ -15,7 +15,9 @@ from mesonet.dlc_predict import DLC_edit_bodyparts
 
 
 def trainModel(
-    input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs
+    input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs,
+        rotation_range=0.3, width_shift_range=0.05, height_shift_range=0.05, shear_range=0.05, zoom_range=0.05,
+        horizontal_flip=True, fill_mode="nearest"
 ):
     """
     Trains a U-Net model based on the brain images and corresponding masks supplied to input_file
@@ -32,13 +34,13 @@ def trainModel(
     :return:
     """
     data_gen_args = dict(
-        rotation_range=0.3,
-        width_shift_range=0.05,
-        height_shift_range=0.05,
-        shear_range=0.05,
-        zoom_range=0.05,
-        horizontal_flip=True,
-        fill_mode="nearest",
+        rotation_range=rotation_range,
+        width_shift_range=width_shift_range,
+        height_shift_range=height_shift_range,
+        shear_range=shear_range,
+        zoom_range=zoom_range,
+        horizontal_flip=horizontal_flip,
+        fill_mode=fill_mode,
     )
     train_gen = trainGenerator(
         2, input_file, "image", "label", data_gen_args, save_to_dir=None
@@ -86,6 +88,15 @@ def train_model(config_file):
     epochs = cfg["epochs"]
     bodyparts = cfg["bodyparts"]
     DLC_edit_bodyparts(config_file, bodyparts)
+    rotation_range = cfg["rotation_range"]
+    width_shift_range = cfg["width_shift_range"]
+    height_shift_range = cfg["height_shift_range"]
+    shear_range = cfg["shear_range"]
+    zoom_range = cfg["zoom_range"]
+    horizontal_flip = cfg["horizontal_flip"]
+    fill_mode = cfg["fill_mode"]
     trainModel(
-        input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs
+        input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs,
+        rotation_range, width_shift_range, height_shift_range, shear_range, zoom_range,
+        horizontal_flip, fill_mode
     )

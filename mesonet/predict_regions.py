@@ -76,7 +76,11 @@ def predictRegion(
         os.mkdir(output_overlay_path)
     # Loads in existing model
     print(model)
-    model_to_use = load_model(model)
+    if not mask_generate:
+        model_path = os.path.join(git_repo_base, "models", model)
+        model_to_use = load_model(model_path)
+    else:
+        model_to_use = load_model(model)
     # Resizes and prepares images for prediction
     print(input_file)
     test_gen = testGenerator(
@@ -90,12 +94,14 @@ def predictRegion(
     # Saves output mask
     saveResult(output_mask_path, results)
     if not mask_generate:
+        plot_landmarks = False
+        use_dlc = False
         # Predicts and identifies brain regions based on output mask
         applyMask(
             input_file,
             output_mask_path,
             output_overlay_path,
-            output,
+            output_overlay_path,
             mat_save,
             threshold,
             git_repo_base,
@@ -105,9 +111,10 @@ def predictRegion(
             atlas_pts,
             olfactory_check,
             use_unet,
+            use_dlc,
             plot_landmarks,
-            atlas_label_list,
             align_once,
+            atlas_label_list,
             region_labels,
             original_label,
         )

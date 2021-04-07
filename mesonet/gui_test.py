@@ -12,6 +12,7 @@ from tkinter import filedialog
 
 from PIL import Image, ImageTk
 import imageio
+import threading
 
 from mesonet.dlc_predict import DLCPredict, DLCPredictBehavior
 from mesonet.predict_regions import predictRegion
@@ -20,6 +21,7 @@ from mesonet.utils import (
     find_git_repo,
     natural_sort_key,
     convert_to_png,
+    parse_yaml,
 )
 
 
@@ -28,21 +30,49 @@ class Gui(object):
     The main GUI interface for applying MesoNet to a new dataset.
     """
 
-    def __init__(self, git_repo):
+    def __init__(self, git_repo, config_file):
         # The main window of the app
         self.root = Tk()
         self.root.resizable(False, False)
 
-        self.cwd = os.getcwd()
-        self.folderName = self.cwd
-        self.sensoryName = self.cwd
-        self.BFolderName = self.cwd
-        self.saveFolderName = self.cwd
-        self.saveBFolderName = self.cwd
-        self.threshold = 0.01  # 0.001
+        if config_file:
+            self.cwd = os.getcwd()
+            cfg = parse_yaml(config_file)
+            self.atlas = cfg["atlas"]
+            self.sensory_align = cfg["sensory_match"]
+            self.sensoryName = cfg["sensory_path"]
+            self.folderName = cfg["input_file"]
+            self.saveFolderName = cfg["output"]
+            self.mat_save = cfg["mat_save"]
+            self.threshold = cfg["threshold"]
+            self.git_repo_base = cfg["git_repo_base"]
+            self.region_labels = cfg["region_labels"]
+            self.landmark_arr = cfg["landmark_arr"]
+            self.unet_select = cfg["use_unet"]
+            self.dlc_select = cfg["use_dlc"]
+            self.atlas_to_brain_align = cfg["atlas_to_brain_align"]
+            self.model = cfg["model"]
+            self.olfactory_check = cfg["olfactory_check"]
+            self.plot_landmarks = cfg["plot_landmarks"]
+            self.align_once = cfg["align_once"]
+            self.original_label = cfg["original_label"]
+            self.vxm_select = cfg["use_voxelmorph"]
+            self.exist_transform = cfg["exist_transform"]
+            self.vxm_model = cfg["voxelmorph_model"]
+            self.templateName = cfg["template_path"]
+            self.flowName = cfg["flow_path"]
+        else:
+            self.cwd = os.getcwd()
+            self.folderName = self.cwd
+            self.sensoryName = self.cwd
+            self.saveFolderName = self.cwd
+            self.threshold = 0.01  # 0.001
+            self.vxm_model = "motif_model_atlas.h5"
+            self.flowName = self.cwd
+            self.landmark_arr = []
 
-        self.vxm_model = "motif_model_atlas.h5"
-        self.flowName = self.cwd
+        self.BFolderName = self.cwd
+        self.saveBFolderName = self.cwd
 
         self.j = -1
         self.delta = 0
@@ -54,12 +84,11 @@ class Gui(object):
         self.status_str = StringVar(self.root, value=self.status)
         self.haveMasks = False
         self.imgDisplayed = 0
-        self.landmark_arr = []
 
         self.config_dir = "dlc"
         self.model_dir = "models"
 
-        if git_repo == "":
+        if git_repo == "" and not config_file:
             self.git_repo_base = find_git_repo()
         else:
             self.git_repo_base = os.path.join(git_repo, "mesonet")
@@ -75,7 +104,7 @@ class Gui(object):
         self.Title = self.root.title("MesoNet Analyzer")
 
         self.canvas = Canvas(self.root, width=512, height=512)
-        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=13, sticky=N + S + W)
+        self.canvas.grid(row=8, column=0, columnspan=4, rowspan=15, sticky=N + S + W)
 
         # Render model selector listbox
         self.modelSelect = []
@@ -189,28 +218,33 @@ class Gui(object):
 
         # Buttons for making predictions
         # Buttons below will only be active if a save file has been selected
-        self.mat_save = BooleanVar()
-        self.mat_save.set(True)
-        self.atlas = BooleanVar()
-        self.atlas.set(False)
-        self.sensory_align = BooleanVar()
-        self.sensory_align.set(False)
-        self.region_labels = BooleanVar()
-        self.region_labels.set(False)
-        self.unet_select = BooleanVar()
-        self.unet_select.set(True)
-        self.olfactory_check = BooleanVar()
-        self.olfactory_check.set(True)
-        self.atlas_to_brain_align = BooleanVar()
-        self.atlas_to_brain_align.set(True)
-        self.plot_landmarks = BooleanVar()
-        self.plot_landmarks.set(True)
-        self.align_once = BooleanVar()
-        self.align_once.set(False)
-        self.original_label = BooleanVar()
-        self.original_label.set(False)
-        self.exist_transform = BooleanVar()
-        self.exist_transform.set(False)
+        if not config_file:
+            self.mat_save = BooleanVar()
+            self.mat_save.set(True)
+            self.atlas = BooleanVar()
+            self.atlas.set(False)
+            self.sensory_align = BooleanVar()
+            self.sensory_align.set(False)
+            self.region_labels = BooleanVar()
+            self.region_labels.set(False)
+            self.unet_select = BooleanVar()
+            self.unet_select.set(True)
+            self.dlc_select = BooleanVar()
+            self.dlc_select.set(True)
+            self.vxm_select = BooleanVar()
+            self.vxm_select.set(True)
+            self.olfactory_check = BooleanVar()
+            self.olfactory_check.set(True)
+            self.atlas_to_brain_align = BooleanVar()
+            self.atlas_to_brain_align.set(True)
+            self.plot_landmarks = BooleanVar()
+            self.plot_landmarks.set(True)
+            self.align_once = BooleanVar()
+            self.align_once.set(False)
+            self.original_label = BooleanVar()
+            self.original_label.set(False)
+            self.exist_transform = BooleanVar()
+            self.exist_transform.set(False)
 
         self.landmark_left = BooleanVar()
         self.landmark_left.set(True)
@@ -252,7 +286,31 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.uNetCheck.grid(row=8, column=4, columnspan=5, padx=2, sticky=N + S + W)
+        self.uNetCheck.grid(
+            row=8, column=4, columnspan=5, padx=2, sticky=N + S + W
+        )
+
+        self.dlcCheck = Checkbutton(
+            self.root,
+            text="Use DeepLabCut for alignment",
+            variable=self.dlc_select,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.dlcCheck.grid(
+            row=9, column=4, columnspan=5, padx=2, sticky=N + S + W
+        )
+
+        self.vxmCheck = Checkbutton(
+            self.root,
+            text="Use VoxelMorph for alignment",
+            variable=self.vxm_select,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.vxmCheck.grid(
+            row=10, column=4, columnspan=5, padx=2, sticky=N + S + W
+        )
 
         self.olfactoryCheck = Checkbutton(
             self.root,
@@ -263,7 +321,7 @@ class Gui(object):
             offvalue=False,
         )
         self.olfactoryCheck.grid(
-            row=9, column=4, columnspan=5, padx=2, sticky=N + S + W
+            row=11, column=4, columnspan=5, padx=2, sticky=N + S + W
         )
 
         self.atlasToBrainCheck = Checkbutton(
@@ -274,7 +332,7 @@ class Gui(object):
             offvalue=False,
         )
         self.atlasToBrainCheck.grid(
-            row=10, column=4, columnspan=5, padx=2, sticky=N + S + W
+            row=12, column=4, columnspan=5, padx=2, sticky=N + S + W
         )
 
         self.sensoryMapCheck = Checkbutton(
@@ -285,7 +343,7 @@ class Gui(object):
             offvalue=False,
         )
         self.sensoryMapCheck.grid(
-            row=11, column=4, columnspan=5, padx=2, sticky=N + S + W
+            row=13, column=4, columnspan=5, padx=2, sticky=N + S + W
         )
 
         self.landmarkPlotCheck = Checkbutton(
@@ -296,7 +354,7 @@ class Gui(object):
             offvalue=False,
         )
         self.landmarkPlotCheck.grid(
-            row=12, column=4, columnspan=5, padx=2, sticky=N + S + W
+            row=14, column=4, columnspan=5, padx=2, sticky=N + S + W
         )
 
         self.alignOnceCheck = Checkbutton(
@@ -307,7 +365,7 @@ class Gui(object):
             offvalue=False,
         )
         self.alignOnceCheck.grid(
-            row=13, column=4, columnspan=5, padx=2, sticky=N + S + W
+            row=15, column=4, columnspan=5, padx=2, sticky=N + S + W
         )
 
         self.origLabelCheck = Checkbutton(
@@ -318,7 +376,7 @@ class Gui(object):
             offvalue=False,
         )
         self.origLabelCheck.grid(
-            row=14, column=4, columnspan=5, padx=2, sticky=N + S + W
+            row=16, column=4, columnspan=5, padx=2, sticky=N + S + W
         )
 
         # Enable selection of landmarks for alignment
@@ -329,7 +387,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkLeftCheck.grid(row=15, column=4, padx=2, sticky=N + S + W)
+        self.landmarkLeftCheck.grid(row=17, column=4, padx=2, sticky=N + S + W)
         self.landmarkRightCheck = Checkbutton(
             self.root,
             text="Right",
@@ -337,7 +395,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkRightCheck.grid(row=15, column=5, padx=2, sticky=N + S + W)
+        self.landmarkRightCheck.grid(row=17, column=5, padx=2, sticky=N + S + W)
         self.landmarkBregmaCheck = Checkbutton(
             self.root,
             text="Bregma",
@@ -345,7 +403,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkBregmaCheck.grid(row=15, column=6, padx=2, sticky=N + S + W)
+        self.landmarkBregmaCheck.grid(row=17, column=6, padx=2, sticky=N + S + W)
         self.landmarkLambdaCheck = Checkbutton(
             self.root,
             text="Lambda",
@@ -353,7 +411,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkLambdaCheck.grid(row=15, column=7, padx=2, sticky=N + S + W)
+        self.landmarkLambdaCheck.grid(row=17, column=7, padx=2, sticky=N + S + W)
 
         self.landmarkTopLeftCheck = Checkbutton(
             self.root,
@@ -362,7 +420,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkTopLeftCheck.grid(row=16, column=4, padx=2, sticky=N + S + W)
+        self.landmarkTopLeftCheck.grid(row=18, column=4, padx=2, sticky=N + S + W)
         self.landmarkTopCentreCheck = Checkbutton(
             self.root,
             text="Top centre",
@@ -370,7 +428,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkTopCentreCheck.grid(row=16, column=5, padx=2, sticky=N + S + W)
+        self.landmarkTopCentreCheck.grid(row=18, column=5, padx=2, sticky=N + S + W)
         self.landmarkTopRightCheck = Checkbutton(
             self.root,
             text="Top right",
@@ -378,7 +436,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkTopRightCheck.grid(row=16, column=6, padx=2, sticky=N + S + W)
+        self.landmarkTopRightCheck.grid(row=18, column=6, padx=2, sticky=N + S + W)
         self.landmarkBottomLeftCheck = Checkbutton(
             self.root,
             text="Bottom left",
@@ -386,7 +444,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkBottomLeftCheck.grid(row=16, column=7, padx=2, sticky=N + S + W)
+        self.landmarkBottomLeftCheck.grid(row=18, column=7, padx=2, sticky=N + S + W)
         self.landmarkBottomRightCheck = Checkbutton(
             self.root,
             text="Bottom right",
@@ -394,7 +452,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.landmarkBottomRightCheck.grid(row=16, column=8, padx=2, sticky=N + S + W)
+        self.landmarkBottomRightCheck.grid(row=18, column=8, padx=2, sticky=N + S + W)
 
         self.vxm_window_open = False
         if self.vxm_window_open:
@@ -406,64 +464,75 @@ class Gui(object):
             command=lambda: self.open_voxelmorph_window(),
         )
         self.vxmSettingsButton.grid(
-            row=17, column=4, columnspan=5, padx=2, sticky=N + S + W + E
+            row=19, column=4, columnspan=5, padx=2, sticky=N + S + W + E
         )
 
+        # self.predictDLCButton = Button(
+        #     self.root,
+        #     text="Predict brain regions\nusing landmarks",
+        #     command=lambda: self.PredictDLC(
+        #         self.config_path,
+        #         self.folderName,
+        #         self.saveFolderName,
+        #         False,
+        #         int(self.sensory_align.get()),
+        #         self.sensoryName,
+        #         os.path.join(self.model_top_dir, self.model),
+        #         self.picLen,
+        #         int(self.mat_save.get()),
+        #         self.threshold,
+        #         True,
+        #         self.haveMasks,
+        #         self.git_repo_base,
+        #         self.region_labels.get(),
+        #         self.unet_select.get(),
+        #         self.atlas_to_brain_align.get(),
+        #         self.olfactory_check.get(),
+        #         self.plot_landmarks.get(),
+        #         self.align_once.get(),
+        #         self.original_label.get(),
+        #         self.vxm_select.get(),
+        #         self.exist_transform.get(),
+        #         os.path.join(self.model_top_dir, "voxelmorph", self.vxm_model),
+        #         self.templateName,
+        #         self.flowName,
+        #     ),
+        # )
         self.predictDLCButton = Button(
             self.root,
             text="Predict brain regions\nusing landmarks",
-            command=lambda: self.PredictDLC(
-                self.config_path,
-                self.folderName,
-                self.saveFolderName,
-                False,
-                int(self.sensory_align.get()),
-                self.sensoryName,
-                os.path.join(self.model_top_dir, self.model),
-                self.picLen,
-                int(self.mat_save.get()),
-                self.threshold,
-                True,
-                self.haveMasks,
-                self.git_repo_base,
-                self.region_labels.get(),
-                self.unet_select.get(),
-                self.atlas_to_brain_align.get(),
-                self.olfactory_check.get(),
-                self.plot_landmarks.get(),
-                self.align_once.get(),
-                self.original_label.get(),
-                self.exist_transform.get(),
-                os.path.join(self.model_top_dir, "voxelmorph", self.vxm_model),
-                self.templateName,
-                self.flowName,
-            ),
+            command=lambda: self.EnterThread('predict_dlc')
         )
         self.predictDLCButton.grid(
-            row=18, column=4, columnspan=5, padx=2, sticky=N + S + W + E
+            row=20, column=4, columnspan=5, padx=2, sticky=N + S + W + E
         )
+        # self.predictAllImButton = Button(
+        #     self.root,
+        #     text="Predict brain regions directly\nusing pretrained U-net model",
+        #     command=lambda: self.PredictRegions(
+        #         self.folderName,
+        #         self.picLen,
+        #         self.model,
+        #         self.saveFolderName,
+        #         int(self.mat_save.get()),
+        #         self.threshold,
+        #         False,
+        #         self.git_repo_base,
+        #         self.region_labels.get(),
+        #         self.olfactory_check.get(),
+        #         self.unet_select.get(),
+        #         self.plot_landmarks.get(),
+        #         self.align_once.get(),
+        #         self.region_labels.get(),
+        #     ),
+        # )
         self.predictAllImButton = Button(
             self.root,
             text="Predict brain regions directly\nusing pretrained U-net model",
-            command=lambda: self.PredictRegions(
-                self.folderName,
-                self.picLen,
-                self.model,
-                self.saveFolderName,
-                int(self.mat_save.get()),
-                self.threshold,
-                False,
-                self.git_repo_base,
-                self.region_labels.get(),
-                self.olfactory_check.get(),
-                self.unet_select.get(),
-                self.plot_landmarks.get(),
-                self.align_once.get(),
-                self.region_labels.get(),
-            ),
+            command=lambda: self.EnterThread('predict_regions')
         )
         self.predictAllImButton.grid(
-            row=19, column=4, columnspan=5, padx=2, sticky=N + S + W + E
+            row=21, column=4, columnspan=5, padx=2, sticky=N + S + W + E
         )
         self.predictBehaviourButton = Button(
             self.root,
@@ -473,7 +542,7 @@ class Gui(object):
             ),
         )
         self.predictBehaviourButton.grid(
-            row=20, column=4, columnspan=5, padx=2, sticky=N + S + W + E
+            row=22, column=4, columnspan=5, padx=2, sticky=N + S + W + E
         )
 
         # Image controls
@@ -483,18 +552,18 @@ class Gui(object):
             text="->",
             command=lambda: self.ImageDisplay(1, self.folderName, 0),
         )
-        self.nextButton.grid(row=21, column=2, columnspan=2, sticky=E)
+        self.nextButton.grid(row=23, column=2, columnspan=2, sticky=E)
         self.previousButton = Button(
             self.root,
             text="<-",
             command=lambda: self.ImageDisplay(-1, self.folderName, 0),
         )
-        self.previousButton.grid(row=21, column=0, columnspan=2, sticky=W)
+        self.previousButton.grid(row=23, column=0, columnspan=2, sticky=W)
 
         self.statusBar = Label(
             self.root, textvariable=self.status_str, bd=1, relief=SUNKEN, anchor=W
         )
-        self.statusBar.grid(row=22, column=0, columnspan=9, sticky="we")
+        self.statusBar.grid(row=24, column=0, columnspan=9, sticky="we")
 
         # Bind right and left arrow keys to forward/backward controls
         self.root.bind("<Right>", self.forward)
@@ -506,6 +575,8 @@ class Gui(object):
             self.saveMatFileCheck.config(state="disabled")
             # self.regionLabelCheck.config(state='disabled')
             self.uNetCheck.config(state="disabled")
+            self.dlcCheck.config(state="disabled")
+            self.vxmCheck.config(state="disabled")
             self.olfactoryCheck.config(state="disabled")
             self.sensoryMapCheck.config(state="disabled")
             self.atlasToBrainCheck.config(state="disabled")
@@ -524,6 +595,33 @@ class Gui(object):
             self.landmarkTopRightCheck.config(state="disabled")
             self.landmarkBottomLeftCheck.config(state="disabled")
             self.landmarkBottomRightCheck.config(state="disabled")
+
+        if config_file:
+            self.ImageDisplay(1, self.folderName, 1)
+            self.predictAllImButton.config(state="normal")
+            self.predictDLCButton.config(state="normal")
+            self.saveMatFileCheck.config(state="normal")
+            # self.regionLabelCheck.config(state='normal')
+            self.uNetCheck.config(state="normal")
+            self.dlcCheck.config(state="normal")
+            self.vxmCheck.config(state="normal")
+            self.olfactoryCheck.config(state="normal")
+            self.atlasToBrainCheck.config(state="normal")
+            self.sensoryMapCheck.config(state="normal")
+            self.landmarkPlotCheck.config(state="normal")
+            self.alignOnceCheck.config(state="normal")
+            self.origLabelCheck.config(state="normal")
+
+            self.landmarkLeftCheck.config(state="normal")
+            self.landmarkRightCheck.config(state="normal")
+            self.landmarkBregmaCheck.config(state="normal")
+            self.landmarkLambdaCheck.config(state="normal")
+
+            self.landmarkTopLeftCheck.config(state="normal")
+            self.landmarkTopCentreCheck.config(state="normal")
+            self.landmarkTopRightCheck.config(state="normal")
+            self.landmarkBottomLeftCheck.config(state="normal")
+            self.landmarkBottomRightCheck.config(state="normal")
 
     def OpenFile(self, openOrSave):
         if openOrSave == 0:
@@ -557,6 +655,8 @@ class Gui(object):
                 self.saveMatFileCheck.config(state="normal")
                 # self.regionLabelCheck.config(state='normal')
                 self.uNetCheck.config(state="normal")
+                self.dlcCheck.config(state="normal")
+                self.vxmCheck.config(state="normal")
                 self.olfactoryCheck.config(state="normal")
                 self.atlasToBrainCheck.config(state="normal")
                 self.sensoryMapCheck.config(state="normal")
@@ -875,6 +975,56 @@ class Gui(object):
         if bottom_right:
             self.landmark_arr.append(8)
 
+    def EnterThread(self, command):
+        if command == 'predict_regions':
+            threading.Thread(target=
+            self.PredictRegions(
+                self.folderName,
+                self.picLen,
+                self.model,
+                self.saveFolderName,
+                int(self.mat_save.get()),
+                self.threshold,
+                False,
+                self.git_repo_base,
+                self.region_labels.get(),
+                self.olfactory_check.get(),
+                self.unet_select.get(),
+                self.plot_landmarks.get(),
+                self.align_once.get(),
+                self.region_labels.get(),
+            )).start()
+        elif command == 'predict_dlc':
+            threading.Thread(target=
+            self.PredictDLC(
+                self.config_path,
+                self.folderName,
+                self.saveFolderName,
+                False,
+                int(self.sensory_align.get()),
+                self.sensoryName,
+                os.path.join(self.model_top_dir, self.model),
+                self.picLen,
+                int(self.mat_save.get()),
+                self.threshold,
+                True,
+                self.haveMasks,
+                self.git_repo_base,
+                self.region_labels.get(),
+                self.unet_select.get(),
+                self.dlc_select.get(),
+                self.atlas_to_brain_align.get(),
+                self.olfactory_check.get(),
+                self.plot_landmarks.get(),
+                self.align_once.get(),
+                self.original_label.get(),
+                self.vxm_select.get(),
+                self.exist_transform.get(),
+                os.path.join(self.model_top_dir, "voxelmorph", self.vxm_model),
+                self.templateName,
+                self.flowName
+            )).start()
+
     def PredictRegions(
         self,
         input_file,
@@ -922,7 +1072,7 @@ class Gui(object):
             self.folderName = os.path.join(self.saveFolderName, "output_mask")
             self.haveMasks = True
         else:
-            self.folderName = self.saveFolderName
+            self.folderName = os.path.join(self.saveFolderName, "output_overlay")
         self.statusHandler("Processing complete!")
         self.ImageDisplay(1, self.folderName, 1)
 
@@ -943,11 +1093,13 @@ class Gui(object):
         git_repo_base,
         region_labels,
         use_unet,
+        use_dlc,
         atlas_to_brain_align,
         olfactory_check,
         plot_landmarks,
         align_once,
         original_label,
+        use_voxelmorph,
         exist_transform,
         voxelmorph_model,
         template_path,
@@ -955,10 +1107,11 @@ class Gui(object):
     ):
         self.statusHandler("Processing...")
         self.chooseLandmarks()
+        atlas_label_list = []
+        coords_input_file = ''
         if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
             pts = []
             pts2 = []
-            atlas_label_list = []
             predictRegion(
                 input_file,
                 num_images,
@@ -992,16 +1145,19 @@ class Gui(object):
             region_labels,
             self.landmark_arr,
             use_unet,
+            use_dlc,
             atlas_to_brain_align,
             model,
             olfactory_check,
             plot_landmarks,
             align_once,
             original_label,
+            use_voxelmorph,
             exist_transform,
             voxelmorph_model,
             template_path,
             flow_path,
+            coords_input_file,
         )
         saveFolderName = output
         if not atlas:
@@ -1020,14 +1176,22 @@ class Gui(object):
             model=model,
             region_labels=region_labels,
             use_unet=use_unet,
+            use_dlc=use_dlc,
             atlas_to_brain_align=atlas_to_brain_align,
             olfactory_check=olfactory_check,
             plot_landmarks=plot_landmarks,
             align_once=align_once,
+            atlas_label_list=atlas_label_list,
+            original_label=original_label,
+            use_voxelmorph=use_voxelmorph,
+            exist_transform=exist_transform,
+            voxelmorph_model=voxelmorph_model,
+            template_path=template_path,
+            flow_path=flow_path,
         )
         self.statusHandler("Processing complete!")
         self.ImageDisplay(1, self.folderName, 1)
 
 
-def gui(git_find):
-    Gui(git_find).root.mainloop()
+def gui(git_find, config_file):
+    Gui(git_find, config_file).root.mainloop()

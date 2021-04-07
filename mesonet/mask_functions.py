@@ -136,6 +136,7 @@ def atlas_to_mask(
     git_repo_base,
     olfactory_check,
     atlas_label,
+    use_dlc
 ):
     """
     Overlays the U-net mask and a smoothing mask for the cortical boundaries on the transformed brain atlas.
@@ -159,6 +160,7 @@ def atlas_to_mask(
     mask_warped = cv2.imread(mask_warped_path, cv2.IMREAD_GRAYSCALE)
     if use_unet:
         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
+        mask_input_orig = mask_input
         if olfactory_check:
             cnts_for_olfactory = cv2.findContours(
                 mask_input.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -168,6 +170,7 @@ def atlas_to_mask(
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:
             # FOR ALIGNING ATLAS TO BRAIN
+            mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
             mask_input = cv2.bitwise_and(atlas, mask_input)
             mask_input = cv2.bitwise_and(mask_input, mask_warped)
             if len(atlas_label) > 0:
@@ -178,14 +181,20 @@ def atlas_to_mask(
                 )[2:4]
                 for bulb in olfactory_bulbs:
                     cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
+                    cv2.fillPoly(mask_input_orig, pts=[bulb], color=[255, 255, 255])
                 if len(atlas_label) > 0:
-                    cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[0]], color=[300])
-                    cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[1]], color=[400])
-                    atlas_label[np.where(atlas_label == 300)] = 300
-                    atlas_label[np.where(atlas_label == 400)] = 400
+                    try:
+                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[0]], color=[300])
+                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[1]], color=[400])
+                        atlas_label[np.where(atlas_label == 300)] = 300
+                        atlas_label[np.where(atlas_label == 400)] = 400
+                    except:
+                        print('No olfactory bulb found!')
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
+            mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
+        io.imsave(os.path.join(mask_output_path, "{}_mask_no_atlas.png".format(n)), mask_input_orig)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
         if len(atlas_label) > 0:
@@ -235,6 +244,7 @@ def applyMask(
     atlas_pts,
     olfactory_check,
     use_unet,
+    use_dlc,
     plot_landmarks,
     align_once,
     atlas_label_list,
@@ -360,8 +370,8 @@ def applyMask(
                 git_repo_base,
                 olfactory_check,
                 [],
+                use_dlc
             )
-        bregma_x, bregma_y = bregma_list[i]
         new_data = []
         if len(tif_list) != 0 and atlas_to_brain_align:
             img = item
@@ -370,6 +380,11 @@ def applyMask(
             img = cv2.imread(item)
         if atlas_to_brain_align:
             img = cv2.resize(img, (512, 512))
+        if use_dlc:
+            bregma_x, bregma_y = bregma_list[i]
+        else:
+            bregma_x, bregma_y = [round(img.shape[0]/2), round(img.shape[1]/2)]
+            original_label = True
         mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
         # Get the region of the mask that is white
@@ -380,7 +395,8 @@ def applyMask(
         kernel = np.ones((3, 3), np.uint8)  # 3, 3
         mask_color = np.uint8(mask_color)
         thresh_atlas, atlas_bw = cv2.threshold(mask_color, 128, 255, 0)
-        atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=1)  # 1
+        if atlas_to_brain_align and use_dlc:
+            atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=3)  # 1
         io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:
@@ -486,6 +502,14 @@ def applyMask(
                     atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
                 cnts_orig = imutils.grab_contours(cnts_orig)
+            if not use_dlc:
+                #cnts_orig = cv2.findContours(
+                #    atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+                #)
+                cnts_orig, hierarchy = cv2.findContours(
+                    atlas_bw.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
+                )
+                # cnts_orig = imutils.grab_contours(cnts_orig)
             labels_cnts = []
             for (num_label, cnt_orig) in enumerate(cnts_orig):
                 labels_cnts.append(cnt_orig)
@@ -892,4 +916,7 @@ def applyMask(
         "Analysis complete! Check the outputs in the folders of {}.".format(save_path)
     )
     k.clear_session()
-    os.chdir("../..")
+    if dlc_pts:
+        os.chdir("../..")
+    else:
+        os.chdir(os.path.join(save_path, '..'))

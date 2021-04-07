@@ -13,6 +13,8 @@ from sys import platform
 import scipy.io as sio
 import cv2
 import numpy as np
+import neurite as ne
+import matplotlib.pyplot as plt
 
 
 def config_project(
@@ -26,21 +28,31 @@ def config_project(
     sensory_path="sensory",
     mat_save=True,
     use_unet=True,
+    use_dlc=True,
     atlas_to_brain_align=True,
     olfactory_check=True,
     plot_landmarks=True,
     align_once=False,
     original_label=False,
+    use_voxelmorph=True,
     exist_transform=False,
     voxelmorph_model="motif_model_atlas.h5",
     template_path="templates",
     flow_path="",
+    coords_input_file="",
     atlas_label_list=[],
     threshold=0.0001,
     model="models/unet_bundary.hdf5",
     region_labels=False,
     steps_per_epoch=300,
     epochs=60,
+    rotation_range=0.3,
+    width_shift_range=0.05,
+    height_shift_range=0.05,
+    shear_range=0.05,
+    zoom_range=0.05,
+    horizontal_flip=True,
+    fill_mode="nearest",
 ):
     """
     Generates a config file (mesonet_train_config.yaml or mesonet_test_config.yaml, depending on whether you are
@@ -102,8 +114,9 @@ def config_project(
     300 steps per epoch.
     :param epochs: During U-Net training, the number of epochs for which the model will run. Defaults to 60 epochs (set
     lower for online learning, e.g. if augmenting existing model).
-    :return config_file: The path to the config_file. If you run this function as config_file = config_project(...) then
-    you can directly get the config file path to be used later.
+    :param rotation_range, width_shift_range, height_shift_range, shear_range, zoom_range, horizontal_flip, fill_mode:
+    Keras image augmentation parameters for U-Net model training. See https://keras.io/api/preprocessing/image/ for
+    full documentation.
     """
 
     # git_repo_base = 'C:/Users/mind reader/Desktop/mesonet/mesonet'
@@ -132,16 +145,19 @@ def config_project(
             region_labels=region_labels,
             landmark_arr=[0, 1, 2, 3, 4, 5, 6, 7, 8],
             use_unet=use_unet,
+            use_dlc=use_dlc,
             atlas_to_brain_align=atlas_to_brain_align,
             olfactory_check=olfactory_check,
             plot_landmarks=plot_landmarks,
             align_once=align_once,
             atlas_label_list=atlas_label_list,
             original_label=original_label,
+            use_voxelmorph=use_voxelmorph,
             exist_transform=exist_transform,
             voxelmorph_model=voxelmorph_model,
             template_path=template_path,
-            flow_path=flow_path
+            flow_path=flow_path,
+            coords_input_file=coords_input_file
         )
     elif mode == "train":
         filename = "mesonet_train_config.yaml"
@@ -153,6 +169,13 @@ def config_project(
             steps_per_epoch=steps_per_epoch,
             epochs=epochs,
             bodyparts=["A", "B", "C", "D", "E", "F", "G", "H", "I"],
+            rotation_range=rotation_range,
+            width_shift_range=width_shift_range,
+            height_shift_range=height_shift_range,
+            shear_range=shear_range,
+            zoom_range=zoom_range,
+            horizontal_flip=horizontal_flip,
+            fill_mode=fill_mode,
         )
 
     if glob.glob(os.path.join(input_dir, "*.mat")) or glob.glob(
@@ -252,6 +275,7 @@ def convert_to_png(input_folder):
             mat = mat[
                 str(list({k: v for (k, v) in mat.items() if "__" not in k}.keys())[0])
             ]
+            mat = mat * 255
             cv2.imwrite(img_path, mat)
         print(".mat written to .png!")
     elif glob.glob(os.path.join(input_folder, "*.npy")):
@@ -267,4 +291,17 @@ def convert_to_png(input_folder):
                 )
                 cv2.imwrite(img_path_multi_idx, arr * 255)
         else:
+            npy = npy * 255
             cv2.imwrite(img_path, npy)
+
+
+def plot_flow(flow_dir, output_dir):
+    flow_files = glob.glob(os.path.join(flow_dir, "*.npy"))
+    if flow_files:
+        for flow_idx, flow_file in enumerate(flow_files):
+            print('Reading flow file {}'.format(flow_idx))
+            flow_np = np.load(flow_file)
+            ne.plot.flow([flow_np.squeeze()], width=5, show=False)
+            plt.savefig(os.path.join(output_dir, '{}_flow_img.png'.format(flow_idx)))
+    else:
+        print("No .npy flow files found in current directory!")

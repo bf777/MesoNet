@@ -8,7 +8,7 @@ from mesonet.utils import natural_sort_key, convert_to_png
 from mesonet.mask_functions import atlas_to_mask, applyMask
 
 # from mesonet.niftyreg_align import niftyreg_align
-from mesonet.voxelmorph_align import voxelmorph_align
+from mesonet.voxelmorph_align import voxelmorph_align, vxm_transform
 import numpy as np
 import pandas as pd
 import cv2
@@ -246,12 +246,14 @@ def atlasBrainMatch(
     region_labels,
     landmark_arr_orig,
     use_unet,
+    use_dlc,
     atlas_to_brain_align,
     model,
     olfactory_check,
     plot_landmarks,
     align_once,
     original_label,
+    use_voxelmorph,
     exist_transform,
     voxelmorph_model="motif_model_atlas.h5",
     template_path="templates",
@@ -326,9 +328,15 @@ def atlasBrainMatch(
             os.path.join(git_repo_base, "atlases/Atlas_workflow2_binary.png")
         )
     else:
-        im = cv2.imread(
-            os.path.join(git_repo_base, "atlases/Atlas_workflow1_binary.png")
-        )
+        if use_voxelmorph and not use_dlc:
+            im = cv2.imread(
+                os.path.join(git_repo_base, "atlases/Atlas_for_Voxelmorph_binary.png")
+            )
+            print('ATLAS FOR VXM BINARY')
+        else:
+            im = cv2.imread(
+                os.path.join(git_repo_base, "atlases/Atlas_workflow1_binary.png")
+            )
         im_left = cv2.imread(os.path.join(git_repo_base, "atlases/left_hemi.png"))
         ret, im_left = cv2.threshold(im_left, 5, 255, cv2.THRESH_BINARY_INV)
         im_right = cv2.imread(os.path.join(git_repo_base, "atlases/right_hemi.png"))
@@ -427,7 +435,10 @@ def atlasBrainMatch(
 
     bregma_index_list = []
     bregma_list = []
-    bregma_present = True
+    if use_dlc:
+        bregma_present = True
+    else:
+        bregma_present = False
 
     coords = pd.read_csv(coords_input)
     x_coord = coords.iloc[2:, 1::3]
@@ -510,6 +521,8 @@ def atlasBrainMatch(
         if atlas_to_brain_align:
             im = np.uint8(im)
             br = cv2.imread(br)
+            br_vxm = cv2.resize(br, (512, 512))
+            br_vxm = np.uint8(br_vxm)
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             if ".png" in br:
@@ -521,9 +534,14 @@ def atlasBrainMatch(
 
         if atlas_to_brain_align:
             # atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow1_smooth_binary.png")
-            atlas_mask_dir = os.path.join(
-                git_repo_base, "atlases/atlas_smooth2_binary.png"
-            )
+            if use_voxelmorph and not use_dlc:
+                atlas_mask_dir = os.path.join(
+                    git_repo_base, "atlases/Atlas_for_Voxelmorph_border.png"
+                )
+            else:
+                atlas_mask_dir = os.path.join(
+                    git_repo_base, "atlases/atlas_smooth2_binary.png"
+                )
             atlas_mask_dir_left = os.path.join(
                 git_repo_base, "atlases/left_hemisphere_smooth.png"
             )
@@ -563,256 +581,309 @@ def atlasBrainMatch(
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
 
         print("Performing first transformation of atlas {}...".format(n))
-        # First alignment of brain atlas using three cortical landmarks and standard affine transform
-        atlas_pts_for_input = np.array([atlas_pts[n][0 : len(dlc_pts[n])]]).astype(
-            "float32"
-        )
-        pts_for_input = np.array([dlc_pts[n]]).astype("float32")
 
-        if align_once:
-            align_val = 0
-        else:
-            align_val = n
-
-        if len(atlas_pts_for_input[0]) == 2:
-            atlas_pts_for_input = np.append(atlas_pts_for_input[0], [[0, 0]], axis=0)
-            pts_for_input = np.append(pts_for_input[0], [[0, 0]], axis=0)
-        if len(atlas_pts_for_input[0]) <= 2:
-            warp_coords = cv2.estimateAffinePartial2D(
-                atlas_pts_for_input, pts_for_input
-            )[0]
-            if atlas_to_brain_align:
-                atlas_warped_left = cv2.warpAffine(im_left, warp_coords, (512, 512))
-                atlas_warped_right = cv2.warpAffine(im_right, warp_coords, (512, 512))
-                atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
-                ret, atlas_warped = cv2.threshold(
-                    atlas_warped, 5, 255, cv2.THRESH_BINARY_INV
-                )
-                atlas_left_transform_path = os.path.join(
-                    output_mask_path, "{}_atlas_left_transform.png".format(str(n))
-                )
-                atlas_right_transform_path = os.path.join(
-                    output_mask_path, "{}_atlas_right_transform.png".format(str(n))
-                )
-                io.imsave(atlas_left_transform_path, atlas_warped_left)
-                io.imsave(atlas_right_transform_path, atlas_warped_right)
-            else:
-                atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(atlas_pts_for_input[0]) == 3:
-            warp_coords = cv2.getAffineTransform(atlas_pts_for_input, pts_for_input)
-            atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-        elif len(atlas_pts_for_input[0]) >= 4:
-            im_final_size = (512, 512)
-
-            left = acc_left_total.iloc[n, :].values.astype("float32").tolist()
-            right = acc_right_total.iloc[n, :].values.astype("float32").tolist()
-            left = np.argsort(left).tolist()
-            right = np.argsort(right).tolist()
-            right = [x + 1 for x in right]
-            if set([1, 3, 5, 7]).issubset(landmark_arr):
-                left = [1, 3, 5]
-                right = [3, 5, 7]
-            else:
-                left = [x for x in landmark_indices if x in range(0, 6)][0:2]
-                right = [x for x in landmark_indices if x in range(3, 9)][0:2]
-
-            try:
-                atlas_pts_left = np.array(
-                    [
-                        atlas_pts[align_val][left[0]],
-                        atlas_pts[align_val][left[1]],
-                        atlas_pts[align_val][left[2]],
-                    ],
-                    dtype=np.float32,
-                )
-                atlas_pts_right = np.array(
-                    [
-                        atlas_pts[align_val][right[0]],
-                        atlas_pts[align_val][right[1]],
-                        atlas_pts[align_val][right[2]],
-                    ],
-                    dtype=np.float32,
-                )
-                dlc_pts_left = np.array(
-                    [
-                        dlc_pts[align_val][left[0]],
-                        dlc_pts[align_val][left[1]],
-                        dlc_pts[align_val][left[2]],
-                    ],
-                    dtype=np.float32,
-                )
-                dlc_pts_right = np.array(
-                    [
-                        dlc_pts[align_val][right[0]],
-                        dlc_pts[align_val][right[1]],
-                        dlc_pts[align_val][right[2]],
-                    ],
-                    dtype=np.float32,
-                )
-
-            except:
-                atlas_pts_left = np.array(
-                    [
-                        atlas_pts[align_val][0],
-                        atlas_pts[align_val][2],
-                        atlas_pts[align_val][3],
-                    ],
-                    dtype=np.float32,
-                )
-                atlas_pts_right = np.array(
-                    [
-                        atlas_pts[align_val][1],
-                        atlas_pts[align_val][2],
-                        atlas_pts[align_val][3],
-                    ],
-                    dtype=np.float32,
-                )
-                dlc_pts_left = np.array(
-                    [
-                        dlc_pts[align_val][0],
-                        dlc_pts[align_val][2],
-                        dlc_pts[align_val][3],
-                    ],
-                    dtype=np.float32,
-                )
-                dlc_pts_right = np.array(
-                    [
-                        dlc_pts[align_val][1],
-                        dlc_pts[align_val][2],
-                        dlc_pts[align_val][3],
-                    ],
-                    dtype=np.float32,
-                )
-
-            warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
-            warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
-            if atlas_to_brain_align:
-                atlas_warped_left = cv2.warpAffine(
-                    im_left, warp_coords_left, im_final_size
-                )
-                atlas_warped_right = cv2.warpAffine(
-                    im_right, warp_coords_right, im_final_size
-                )
-                atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
-                ret, atlas_warped = cv2.threshold(
-                    atlas_warped, 5, 255, cv2.THRESH_BINARY_INV
-                )
-                if not original_label:
-                    atlas_label_left = cv2.warpAffine(
-                        atlas_label_mask_left, warp_coords_left, im_final_size
-                    )
-                    atlas_label_right = cv2.warpAffine(
-                        atlas_label_mask_right, warp_coords_right, im_final_size
-                    )
-                    atlas_label = cv2.bitwise_or(atlas_label_left, atlas_label_right)
-
-            else:
-                pts_np = np.array(
-                    [
-                        dlc_pts[align_val][0],
-                        dlc_pts[align_val][1],
-                        dlc_pts[align_val][2],
-                    ],
-                    dtype=np.float32,
-                )
-                atlas_pts_np = np.array(
-                    [
-                        atlas_pts[align_val][0],
-                        atlas_pts[align_val][1],
-                        atlas_pts[align_val][2],
-                    ],
-                    dtype=np.float32,
-                )
-                warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
-                atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-                # try:
-                #    atlas_warped = niftyreg_align(git_repo_base, atlas_warped, output_mask_path, n)
-                # except:
-                #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs. Continuing...".format(str(n)))
-
-        if atlas_to_brain_align:
-            if len(atlas_pts_for_input[0]) == 2:
-                atlas_mask_left_warped = cv2.warpAffine(
-                    atlas_mask_left, warp_coords, (512, 512)
-                )
-                atlas_mask_right_warped = cv2.warpAffine(
-                    atlas_mask_right, warp_coords, (512, 512)
-                )
-                atlas_mask_warped = cv2.bitwise_or(
-                    atlas_mask_left_warped, atlas_mask_right_warped
-                )
-            if len(atlas_pts_for_input[0]) == 3:
-                atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
-            if len(atlas_pts_for_input[0]) >= 4:
-                atlas_mask_left_warped = cv2.warpAffine(
-                    atlas_mask_left, warp_coords_left, (512, 512)
-                )
-                atlas_mask_right_warped = cv2.warpAffine(
-                    atlas_mask_right, warp_coords_right, (512, 512)
-                )
-                atlas_mask_warped = cv2.bitwise_or(
-                    atlas_mask_left_warped, atlas_mask_right_warped
-                )
-            atlas_mask_warped = np.uint8(atlas_mask_warped)
-
-        # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
-        print("Performing second transformation of atlas {}...".format(n))
-        dst = atlas_warped
         mask_warped_path = os.path.join(
             output_mask_path, "{}_mask_warped.png".format(str(n))
         )
+        if use_dlc:
+            # First alignment of brain atlas using three cortical landmarks and standard affine transform
+            atlas_pts_for_input = np.array([atlas_pts[n][0 : len(dlc_pts[n])]]).astype(
+                "float32"
+            )
+            pts_for_input = np.array([dlc_pts[n]]).astype("float32")
 
-        # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
-        # sensory activity
-        if sensory_match:
-            # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
+            if align_once:
+                align_val = 0
+            else:
+                align_val = n
+
+            if len(atlas_pts_for_input[0]) == 2:
+                atlas_pts_for_input = np.append(atlas_pts_for_input[0], [[0, 0]], axis=0)
+                pts_for_input = np.append(pts_for_input[0], [[0, 0]], axis=0)
+            if len(atlas_pts_for_input[0]) <= 2:
+                warp_coords = cv2.estimateAffinePartial2D(
+                    atlas_pts_for_input, pts_for_input
+                )[0]
+                if atlas_to_brain_align:
+                    atlas_warped_left = cv2.warpAffine(im_left, warp_coords, (512, 512))
+                    atlas_warped_right = cv2.warpAffine(im_right, warp_coords, (512, 512))
+                    atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
+                    ret, atlas_warped = cv2.threshold(
+                        atlas_warped, 5, 255, cv2.THRESH_BINARY_INV
+                    )
+                    atlas_left_transform_path = os.path.join(
+                        output_mask_path, "{}_atlas_left_transform.png".format(str(n))
+                    )
+                    atlas_right_transform_path = os.path.join(
+                        output_mask_path, "{}_atlas_right_transform.png".format(str(n))
+                    )
+                    io.imsave(atlas_left_transform_path, atlas_warped_left)
+                    io.imsave(atlas_right_transform_path, atlas_warped_right)
+                else:
+                    atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+            elif len(atlas_pts_for_input[0]) == 3:
+                warp_coords = cv2.getAffineTransform(atlas_pts_for_input, pts_for_input)
+                atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+            elif len(atlas_pts_for_input[0]) >= 4:
+                im_final_size = (512, 512)
+
+                left = acc_left_total.iloc[n, :].values.astype("float32").tolist()
+                right = acc_right_total.iloc[n, :].values.astype("float32").tolist()
+                left = np.argsort(left).tolist()
+                right = np.argsort(right).tolist()
+                right = [x + 1 for x in right]
+                if set([1, 3, 5, 7]).issubset(landmark_arr):
+                    left = [1, 3, 5]
+                    right = [3, 5, 7]
+                else:
+                    left = [x for x in landmark_indices if x in range(0, 6)][0:2]
+                    right = [x for x in landmark_indices if x in range(3, 9)][0:2]
+
+                try:
+                    atlas_pts_left = np.array(
+                        [
+                            atlas_pts[align_val][left[0]],
+                            atlas_pts[align_val][left[1]],
+                            atlas_pts[align_val][left[2]],
+                        ],
+                        dtype=np.float32,
+                    )
+                    atlas_pts_right = np.array(
+                        [
+                            atlas_pts[align_val][right[0]],
+                            atlas_pts[align_val][right[1]],
+                            atlas_pts[align_val][right[2]],
+                        ],
+                        dtype=np.float32,
+                    )
+                    dlc_pts_left = np.array(
+                        [
+                            dlc_pts[align_val][left[0]],
+                            dlc_pts[align_val][left[1]],
+                            dlc_pts[align_val][left[2]],
+                        ],
+                        dtype=np.float32,
+                    )
+                    dlc_pts_right = np.array(
+                        [
+                            dlc_pts[align_val][right[0]],
+                            dlc_pts[align_val][right[1]],
+                            dlc_pts[align_val][right[2]],
+                        ],
+                        dtype=np.float32,
+                    )
+
+                except:
+                    atlas_pts_left = np.array(
+                        [
+                            atlas_pts[align_val][0],
+                            atlas_pts[align_val][2],
+                            atlas_pts[align_val][3],
+                        ],
+                        dtype=np.float32,
+                    )
+                    atlas_pts_right = np.array(
+                        [
+                            atlas_pts[align_val][1],
+                            atlas_pts[align_val][2],
+                            atlas_pts[align_val][3],
+                        ],
+                        dtype=np.float32,
+                    )
+                    dlc_pts_left = np.array(
+                        [
+                            dlc_pts[align_val][0],
+                            dlc_pts[align_val][2],
+                            dlc_pts[align_val][3],
+                        ],
+                        dtype=np.float32,
+                    )
+                    dlc_pts_right = np.array(
+                        [
+                            dlc_pts[align_val][1],
+                            dlc_pts[align_val][2],
+                            dlc_pts[align_val][3],
+                        ],
+                        dtype=np.float32,
+                    )
+
+                warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
+                warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
+                if atlas_to_brain_align:
+                    atlas_warped_left = cv2.warpAffine(
+                        im_left, warp_coords_left, im_final_size
+                    )
+                    atlas_warped_right = cv2.warpAffine(
+                        im_right, warp_coords_right, im_final_size
+                    )
+                    atlas_warped = cv2.bitwise_or(atlas_warped_left, atlas_warped_right)
+                    ret, atlas_warped = cv2.threshold(
+                        atlas_warped, 5, 255, cv2.THRESH_BINARY_INV
+                    )
+                    if not original_label:
+                        atlas_label_left = cv2.warpAffine(
+                            atlas_label_mask_left, warp_coords_left, im_final_size
+                        )
+                        atlas_label_right = cv2.warpAffine(
+                            atlas_label_mask_right, warp_coords_right, im_final_size
+                        )
+                        atlas_label = cv2.bitwise_or(atlas_label_left, atlas_label_right)
+
+                else:
+                    pts_np = np.array(
+                        [
+                            dlc_pts[align_val][0],
+                            dlc_pts[align_val][1],
+                            dlc_pts[align_val][2],
+                        ],
+                        dtype=np.float32,
+                    )
+                    atlas_pts_np = np.array(
+                        [
+                            atlas_pts[align_val][0],
+                            atlas_pts[align_val][1],
+                            atlas_pts[align_val][2],
+                        ],
+                        dtype=np.float32,
+                    )
+                    warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
+                    atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+                    template = cv2.warpAffine(template, warp_coords, (512, 512))
+                    # try:
+                    #    atlas_warped = niftyreg_align(git_repo_base, atlas_warped, output_mask_path, n)
+                    # except:
+                    #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs. Continuing...".format(str(n)))
+
             if atlas_to_brain_align:
-                dst = getMaskContour(
-                    mask_dir,
-                    atlas_warped,
-                    sensory_peak_pts[align_val],
-                    sensory_atlas_pts[align_val],
-                    cwd,
-                    align_val,
-                    False,
-                )
-                atlas_mask_warped = getMaskContour(
-                    mask_dir,
-                    atlas_mask_warped,
-                    sensory_peak_pts[align_val],
-                    sensory_atlas_pts[align_val],
-                    cwd,
-                    align_val,
-                    False,
-                )
-                atlas_mask_warped = cv2.resize(
-                    atlas_mask_warped, (im.shape[0], im.shape[1])
+                if len(atlas_pts_for_input[0]) == 2:
+                    atlas_mask_left_warped = cv2.warpAffine(
+                        atlas_mask_left, warp_coords, (512, 512)
+                    )
+                    atlas_mask_right_warped = cv2.warpAffine(
+                        atlas_mask_right, warp_coords, (512, 512)
+                    )
+                    atlas_mask_warped = cv2.bitwise_or(
+                        atlas_mask_left_warped, atlas_mask_right_warped
+                    )
+                if len(atlas_pts_for_input[0]) == 3:
+                    atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+                if len(atlas_pts_for_input[0]) >= 4:
+                    atlas_mask_left_warped = cv2.warpAffine(
+                        atlas_mask_left, warp_coords_left, (512, 512)
+                    )
+                    atlas_mask_right_warped = cv2.warpAffine(
+                        atlas_mask_right, warp_coords_right, (512, 512)
+                    )
+                    atlas_mask_warped = cv2.bitwise_or(
+                        atlas_mask_left_warped, atlas_mask_right_warped
+                    )
+                atlas_mask_warped = np.uint8(atlas_mask_warped)
+
+            # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
+            print("Performing second transformation of atlas {}...".format(n))
+            dst = atlas_warped
+
+            # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
+            # sensory activity
+            if sensory_match:
+                # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
+                if atlas_to_brain_align:
+                    dst = getMaskContour(
+                        mask_dir,
+                        atlas_warped,
+                        sensory_peak_pts[align_val],
+                        sensory_atlas_pts[align_val],
+                        cwd,
+                        align_val,
+                        False,
+                    )
+                    atlas_mask_warped = getMaskContour(
+                        mask_dir,
+                        atlas_mask_warped,
+                        sensory_peak_pts[align_val],
+                        sensory_atlas_pts[align_val],
+                        cwd,
+                        align_val,
+                        False,
+                    )
+                    atlas_mask_warped = cv2.resize(
+                        atlas_mask_warped, (im.shape[0], im.shape[1])
+                    )
+                else:
+                    dst = atlas_warped
+        else:
+            # If we're not using DeepLabCut...
+            if atlas_to_brain_align and not use_voxelmorph:
+                dst = cv2.bitwise_or(im_left, im_right)
+                ret, dst = cv2.threshold(
+                    dst, 5, 255, cv2.THRESH_BINARY_INV
                 )
             else:
-                dst = atlas_warped
+                dst = im
+            dst = np.uint8(dst)
 
         voxelmorph_model_path = os.path.join(
             git_repo_base, "models", "voxelmorph", voxelmorph_model
-        )
-        dst, flow = voxelmorph_align(
-            voxelmorph_model_path, dst, template, exist_transform, flow_path
         )
 
         atlas_first_transform_path = os.path.join(
             output_mask_path, "{}_atlas_first_transform.png".format(str(n))
         )
-        io.imsave(atlas_first_transform_path, dst)
-        if not exist_transform:
-            flow_path = os.path.join(output_mask_path, "{}_flow.npy".format(str(n)))
-            np.save(flow_path, flow)
 
-        if atlas_to_brain_align:
-            io.imsave(mask_warped_path, atlas_mask_warped)
+        if use_voxelmorph:
+            if atlas_to_brain_align:
+                _, flow = voxelmorph_align(
+                    voxelmorph_model_path, br_vxm, template, exist_transform, flow_path
+                )
+            else:
+                dst, flow = voxelmorph_align(
+                    voxelmorph_model_path, dst, template, exist_transform, flow_path
+                )
+                # dst = dst * 255
+                # ret, dst = cv2.threshold(
+                #     dst, 5, 255, cv2.THRESH_BINARY_INV
+                # )
+            flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n)))
+            np.save(flow_path_after, flow)
+            if not exist_transform:
+                if atlas_to_brain_align:
+                    dst_gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
+                    dst = vxm_transform(dst_gray, flow_path_after)
+                    ret, dst = cv2.threshold(
+                        dst, 5, 255, cv2.THRESH_BINARY
+                    )
+                    dst = np.uint8(dst)
+        io.imsave(atlas_first_transform_path, dst)
+
+        if use_dlc:
+            if atlas_to_brain_align:
+                io.imsave(mask_warped_path, atlas_mask_warped)
+            else:
+                io.imsave(mask_warped_path, atlas_mask)
         else:
-            io.imsave(mask_warped_path, atlas_mask)
+            io.imsave(mask_warped_path, dst)
+            if atlas_to_brain_align:
+                if use_voxelmorph:
+                    atlas_mask_warped = atlas_mask
+                else:
+                    atlas_mask_warped = cv2.bitwise_or(
+                        atlas_mask_left, atlas_mask_right
+                    )
+                atlas_mask_warped = cv2.cvtColor(atlas_mask_warped, cv2.COLOR_BGR2GRAY)
+                atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
+                ret, atlas_mask_warped = cv2.threshold(
+                    atlas_mask_warped, 5, 255, cv2.THRESH_BINARY
+                )
+                atlas_mask_warped = np.uint8(atlas_mask_warped)
+                original_label = True
+            else:
+                atlas_mask_warped = atlas_mask
+                atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
+            io.imsave(mask_warped_path, atlas_mask_warped)
         # Resize images back to 512x512
         dst = cv2.resize(dst, (im.shape[0], im.shape[1]))
         atlas_path = os.path.join(output_mask_path, "{}_atlas.png".format(str(n)))
+
         if atlas_to_brain_align:
             io.imsave(atlas_path, dst)
         else:
@@ -821,6 +892,7 @@ def atlasBrainMatch(
             )
             io.imsave(brain_warped_path, dst)
             io.imsave(atlas_path, atlas)
+
         if atlas_to_brain_align:
             if original_label:
                 atlas_label = []
@@ -835,8 +907,11 @@ def atlasBrainMatch(
                 git_repo_base,
                 olfactory_check,
                 atlas_label,
+                use_dlc
             )
             atlas_label_list.append(atlas_label)
+        elif not use_dlc:
+            io.imsave(os.path.join(output_mask_path, "{}.png".format(n)), dst)
         if bregma_present:
             bregma_val = int(bregma_index_list[n])
             bregma_list.append(dlc_pts[n][bregma_val])
@@ -857,6 +932,7 @@ def atlasBrainMatch(
         atlas_pts,
         olfactory_check,
         use_unet,
+        use_dlc,
         plot_landmarks,
         align_once,
         atlas_label_list,

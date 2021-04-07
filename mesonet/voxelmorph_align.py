@@ -96,7 +96,8 @@ def vxm_transform(x_data, flow_path):
     results = vxm.networks.Transform(
         vol_size, interp_method="linear", nb_feats=x_data.shape[-1]
     ).predict([x_data, flow_data])
-    return results
+    output_img = results[0, :, :, 0]
+    return output_img
 
 
 def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path):
@@ -113,10 +114,10 @@ def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path)
         flow_img = results[1]
     else:
         print("using existing transform")
-        results = vxm_transform(img_path, flow_path)
+        output_img = vxm_transform(img_path, flow_path)
         # Saves output mask
-        print(results.shape)
-        output_img = results[0, :, :, 0]
+        # print(results.shape)
+        # output_img = results[0, :, :, 0]
         # Saves flow image to flow
         flow_img = ""
 
