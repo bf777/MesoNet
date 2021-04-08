@@ -396,7 +396,7 @@ def applyMask(
         mask_color = np.uint8(mask_color)
         thresh_atlas, atlas_bw = cv2.threshold(mask_color, 128, 255, 0)
         if atlas_to_brain_align and use_dlc:
-            atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=3)  # 1
+            atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=1)  # 1
         io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:

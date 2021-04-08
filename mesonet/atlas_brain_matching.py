@@ -786,6 +786,7 @@ def atlasBrainMatch(
             # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
             # sensory activity
             if sensory_match:
+                original_label = True
                 # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
                 if atlas_to_brain_align:
                     dst = getMaskContour(
