@@ -332,7 +332,6 @@ def atlasBrainMatch(
             im = cv2.imread(
                 os.path.join(git_repo_base, "atlases/Atlas_for_Voxelmorph_binary.png")
             )
-            print('ATLAS FOR VXM BINARY')
         else:
             im = cv2.imread(
                 os.path.join(git_repo_base, "atlases/Atlas_workflow1_binary.png")

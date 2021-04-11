@@ -28,7 +28,6 @@ def vxm_data_generator(x_data, template, batch_size=1):
     # preliminary sizing
     if batch_size == 1:
         x_data = rgb2gray(x_data)
-        print(template.shape)
         template = rgb2gray(template)
         x_data = np.expand_dims(x_data, axis=0)
         template = np.expand_dims(template, axis=0)
@@ -68,7 +67,6 @@ def init_vxm_model(img_path, model_path):
 
     # Since our input is a 2D image, we can take the shape from the first two dimensions in .shape
     inshape = img_path.shape[0:2]
-    print(inshape)
     vxm_model = vxm.networks.VxmDense(inshape, nb_features, int_steps=0)
     losses = [vxm.losses.MSE().loss, vxm.losses.Grad("l2").loss]
     lambda_param = 0.05
@@ -89,9 +87,6 @@ def vxm_transform(x_data, flow_path):
     x_data = x_data[..., np.newaxis]
 
     vol_size = x_data.shape[1:-1]
-
-    print(x_data.shape)
-    print(flow_data.shape)
 
     results = vxm.networks.Transform(
         vol_size, interp_method="linear", nb_feats=x_data.shape[-1]
@@ -115,9 +110,6 @@ def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path)
     else:
         print("using existing transform")
         output_img = vxm_transform(img_path, flow_path)
-        # Saves output mask
-        # print(results.shape)
-        # output_img = results[0, :, :, 0]
         # Saves flow image to flow
         flow_img = ""
 

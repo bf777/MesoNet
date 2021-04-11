@@ -73,6 +73,7 @@ def DLCPredict(
     Mouse Brain Atlas.
     :param landmark_arr: A list of numbers indicating which landmarks should be used by the model.
     :param use_unet: Choose whether or not to define the borders of the cortex using a U-net model.
+    :param use_dlc: Choose whether or not to try and register the atlas and brain image using a DeepLabCut model.
     :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
     to the atlas.
     :param model: The name of the U-net model (for passthrough to mask_functions.py)
@@ -85,6 +86,8 @@ def DLCPredict(
     regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
     approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
     unique number).
+    :param use_voxelmorph: Choose whether or not to apply a local deformation registration for image registration,
+    using a voxelmorph model.
     :param exist_transform: if True, uses an existing voxelmorph transformation field for all data instead of predicting
     a new transformation.
     :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,

@@ -82,6 +82,7 @@ def config_project(
     be larger (more like the brain atlas).
     :param olfactory_check: If True, draws olfactory bulb contours on the brain image.
     :param use_unet: Choose whether or not to identify the borders of the cortex using a U-net model.
+    :param use_dlc: Choose whether or not to try and register the atlas and brain image using a DeepLabCut model.
     :param atlas_to_brain_align: If True, registers the atlas to each brain image. If False, registers each brain image
     to the atlas.
     :param plot_landmarks: If True, plots DeepLabCut landmarks (large circles) and original alignment landmarks (small
@@ -92,6 +93,8 @@ def config_project(
     regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
     approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
     unique number).
+    :param use_voxelmorph: Choose whether or not to apply a local deformation registration for image registration,
+    using a voxelmorph model.
     :param exist_transform: if True, uses an existing voxelmorph transformation field for all data instead of predicting
     a new transformation.
     :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,
@@ -100,6 +103,8 @@ def config_project(
     voxelmorph.
     :param flow_path: the path to a voxelmorph transformation field that will be used to transform all data instead of
     predicting a new transformation if exist_transform is True.
+    :param coords_input_file: The path to a file with DeepLabCut coordinates based on which a DeepLabCut transformation
+    should be carried out.
     :param atlas_label_list: A list of aligned atlases in which each brain region is filled with a unique numeric label.
     This allows for consistent identification of brain regions across images. If original_label is True, this is an
     empty list.
