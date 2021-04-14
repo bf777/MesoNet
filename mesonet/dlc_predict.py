@@ -185,6 +185,7 @@ def DLCPredict(
 
             cap.release()
             cv2.destroyAllWindows()
+            cv2.waitKey(1)
         else:
             coords_input = coords_input_file
 
