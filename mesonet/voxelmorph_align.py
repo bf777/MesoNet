@@ -40,10 +40,10 @@ def vxm_data_generator(x_data, template, batch_size=1):
     while True:
         # prepare inputs:
         # images need to be of the size [batch_size, H, W, 1]
-        idx1 = np.random.randint(0, x_data.shape[0], size=batch_size)
-        moving_images = x_data[idx1, ..., np.newaxis]
-        idx2 = np.random.randint(0, template.shape[0], size=batch_size)
-        fixed_images = template[idx2, ..., np.newaxis]
+        idx1 = np.random.randint(0, template.shape[0], size=batch_size)
+        moving_images = template[idx1, ..., np.newaxis]
+        idx2 = np.random.randint(0, x_data.shape[0], size=batch_size)
+        fixed_images = x_data[idx2, ..., np.newaxis]
         inputs = [moving_images, fixed_images]
 
         # prepare outputs (the 'true' moved image):
