@@ -1,10 +1,12 @@
 # MesoNet
-MesoNet is a comprehensive Python toolbox for identifying, classifying, and exporting brain regions from mouse brain 
-images.
+MesoNet is a comprehensive Python toolbox for automated registration and segmentation of mesoscale mouse brain images.
 You can use it to:
-- Identify and classify brain regions based on an overlaid brain atlas with skull landmarks
-- Identify and classify brain regions based on a functional image of the brain, with specific points of neural activation
+- Automatically identify cortical landmarks
+- Register a brain atlas to your mesoscale calcium activity data (or vice versa)
+- Segment brain data based on a brain atlas
 - Use one of our machine learning  models (or train your own) to identify and classify brain regions without using any landmarks!
+
+We developed atlas-to-brain and brain-to-atlas approaches to make the software flexible, easy to use and robust.
 
 We offer an easy to use GUI, as well as a powerful command line interface (CLI) allowing you to integrate the toolbox
 with your own neural imaging workflow.
