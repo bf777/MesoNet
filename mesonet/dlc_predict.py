@@ -183,9 +183,9 @@ def DLCPredict(
                 cv2.imwrite(os.path.join(video_output_path, "{}.png".format(str(i))), frame)
                 i += 1
 
-            cap.release()
-            cv2.destroyAllWindows()
-            cv2.waitKey(1)
+            # cap.release()
+            # cv2.destroyAllWindows()
+            # cv2.waitKey(1)
         else:
             coords_input = coords_input_file
 
