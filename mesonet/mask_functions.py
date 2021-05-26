@@ -209,11 +209,11 @@ def atlas_to_mask(
             )
             cnts_for_olfactory_left, hierarchy = cv2.findContours(
                 olfactory_left, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-            )
+            )[-2:]
             olfactory_left_cnt = min(cnts_for_olfactory_left, key=cv2.contourArea)
             cnts_for_olfactory_right, hierarchy = cv2.findContours(
                 olfactory_right, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-            )
+            )[-2:]
             olfactory_right_cnt = min(cnts_for_olfactory_right, key=cv2.contourArea)
             cv2.fillPoly(mask_input, pts=[olfactory_left_cnt], color=[255, 255, 255])
             cv2.fillPoly(mask_input, pts=[olfactory_right_cnt], color=[255, 255, 255])
@@ -481,7 +481,7 @@ def applyMask(
                         )
                         cnt_for_idx, hierarchy = cv2.findContours(
                             region.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-                        )
+                        )[-2:]
                         if len(cnt_for_idx) >= 1:
                             cnt_for_idx = cnt_for_idx[0]
                     else:
@@ -503,12 +503,12 @@ def applyMask(
                 )
                 cnts_orig = imutils.grab_contours(cnts_orig)
             if not use_dlc:
-                #cnts_orig = cv2.findContours(
+                # cnts_orig = cv2.findContours(
                 #    atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 #)
                 cnts_orig, hierarchy = cv2.findContours(
                     atlas_bw.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-                )
+                )[-2:]
                 # cnts_orig = imutils.grab_contours(cnts_orig)
             labels_cnts = []
             for (num_label, cnt_orig) in enumerate(cnts_orig):

@@ -127,7 +127,7 @@ def atlas_from_mat(input_file, mat_cnt_list):
         io.imsave("atlas_unresized_test.png", atlas_resize)
         roi_cnt, hierarchy = cv2.findContours(
             atlas_resize, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-        )
+        )[-2:]
         for val in roi_cnt:
             c_to_save = max(val, key=cv2.contourArea)
             mat_cnt_list.append(c_to_save)
@@ -173,7 +173,7 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
     atlas_to_warp = atlas_img
     mask = np.uint8(mask)
-    cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)[-2:]
     for cnt in cnts:
         cnt = cnt[:, 0, :]
         cnt = np.asarray(cnt).astype("float32")
@@ -371,7 +371,7 @@ def atlasBrainMatch(
     # detect circles in the image
     circles, hierarchy = cv2.findContours(
         coord_circles_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-    )
+    )[-2:]
     # ensure at least some circles were found
     if circles is not None:
         # convert the (x, y) coordinates and radius of the circles to integers
