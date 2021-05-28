@@ -906,8 +906,7 @@ def atlasBrainMatch(
                 atlas_to_brain_align,
                 git_repo_base,
                 olfactory_check,
-                atlas_label,
-                use_dlc
+                atlas_label
             )
             atlas_label_list.append(atlas_label)
         elif not use_dlc:

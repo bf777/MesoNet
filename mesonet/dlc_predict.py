@@ -46,6 +46,7 @@ def DLCPredict(
     """
     Takes a directory of brain images and predicts cortical landmark locations (left and right suture, bregma, and
     lambda) using a DeepLabCut model.
+
     :param config: Select the config file for the DeepLabCut model to be used for landmark estimation.
     :param input_file: The folder containing the brain images to be analyzed.
     :param output: The folder to which we save the output brain image, labelled with the predicted locations of each
@@ -219,6 +220,7 @@ def DLCPredict(
 def DLCPredictBehavior(config, input_file, output):
     """
     Takes a video of animal behaviour and predicts body movements based on a supplied DeepLabCut body movement model.
+
     :param config: The path to the DeepLabCut configuration file.
     :param input_file: The folder containing the behavioural images to be analyzed.
     :param output: The folder to which we save the predicted body movements.
@@ -299,12 +301,25 @@ def DLCPrep(project_name, your_name, img_path, output_dir_base, copy_videos_bool
 
 
 def DLCLabel(config_path):
+    """
+    Utility to facilitate labelling DeepLabCut frames from the MesoNet GUI.
+
+    :param config_path: (required) The path to a DeepLabCut configuration file (.yaml).
+    """
     deeplabcut.extract_frames(config_path, crop=False)
     deeplabcut.label_frames(config_path)
     deeplabcut.check_labels(config_path)
 
 
 def DLCTrain(config_path, displayiters, saveiters, maxiters):
+    """
+    Utility to facilitate training a DeepLabCut model from the MesoNet GUI.
+
+    :param config_path: (required) The path to a DeepLabCut configuration file (.yaml).
+    :param displayiters: (required) The interval between which intervals should be shown.
+    :param saveiters: (required) The interval after which the model should be saved.
+    :param maxiters: (required) The number of iterations after which the model should finish training.
+    """
     deeplabcut.create_training_dataset(config_path)
     deeplabcut.train_network(
         config_path, displayiters=displayiters, saveiters=saveiters, maxiters=maxiters
@@ -312,6 +327,12 @@ def DLCTrain(config_path, displayiters, saveiters, maxiters):
 
 
 def DLC_edit_bodyparts(config_path, new_bodyparts):
+    """
+    Utility to facilitate changing the names and number of bodyparts in a DeepLabCut model from the MesoNet GUI.
+
+    :param config_path: (required) The path to a DeepLabCut configuration file (.yaml).
+    :param new_bodyparts: (required) A list of new bodypart names to write
+    """
     dlc_cfg = read_config(config_path)
     dlc_cfg["bodyparts"] = new_bodyparts
     write_config(config_path, dlc_cfg)
@@ -320,6 +341,7 @@ def DLC_edit_bodyparts(config_path, new_bodyparts):
 def predict_dlc(config_file):
     """
     Loads parameters into DLCPredict from config file.
+
     :param config_file: The full path to a MesoNet config file (generated using mesonet.config_project())
     """
     cwd = os.getcwd()

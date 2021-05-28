@@ -47,7 +47,7 @@ def testGenerator(
     :param num_image: number of input images
     :param target_size: target image size as defined in the Keras model
     :param flag_multi_class: flag the input images as having multiple classes
-    :param as_gray: if input image is grayscale, process data input accordingly
+    :param as_gray: If input image is grayscale, process data input accordingly
     """
     suff = "png"
     img_list = glob.glob(os.path.join(test_path, "*png"))
@@ -102,7 +102,7 @@ def saveResult(save_path, npyfile, flag_multi_class=False, num_class=2):
     :param save_path: path to overall folder for saving images
     :param npyfile: results file output after model has made predictions
     :param flag_multi_class: flag the output images as having multiple classes
-    :param num_class: if flag_multi_class is True, decide how many classes to categorize each brain image into.
+    :param num_class: If flag_multi_class is True, decide how many classes to categorize each brain image into.
     """
     for i, item in enumerate(npyfile):
         img = (
@@ -119,7 +119,7 @@ def returnResult(save_path, npyfile):
     :param save_path: path to overall folder for saving images
     :param npyfile: results file output after model has made predictions
     :param flag_multi_class: flag the output images as having multiple classes
-    :param num_class: if flag_multi_class is True, decide how many classes to categorize each brain image into.
+    :param num_class: If flag_multi_class is True, decide how many classes to categorize each brain image into.
     """
     img = npyfile[0][:, :, 0]
     return img
@@ -135,8 +135,7 @@ def atlas_to_mask(
     atlas_to_brain_align,
     git_repo_base,
     olfactory_check,
-    atlas_label,
-    use_dlc
+    atlas_label
 ):
     """
     Overlays the U-net mask and a smoothing mask for the cortical boundaries on the transformed brain atlas.
@@ -276,14 +275,14 @@ def applyMask(
     :param atlas_label_list: A list of aligned atlases in which each brain region is filled with a unique numeric label.
     This allows for consistent identification of brain regions across images. If original_label is True, this is an
     empty list.
-    :param align_once: if True, carries out all alignments based on the alignment of the first atlas and brain. This can
+    :param align_once: If True, carries out all alignments based on the alignment of the first atlas and brain. This can
     save time if you have many frames of the same brain with a fixed camera position.
     :param region_labels: choose whether to assign a name to each region based on an existing brain atlas (not currently
     implemented).
-    :param original_label: if True, uses a brain region labelling approach that attempts to automatically sort brain
+    :param original_label: If True, uses a brain region labelling approach that attempts to automatically sort brain
     regions in a consistent order (left to right by hemisphere, then top to bottom for vertically aligned regions). This
-    approach may be more flexible if you're using a custom brain atlas (i.e. not one in which region is filled with a
-    unique number).
+    approach may be more flexible if you're using a custom brain atlas (i.e. not one in which each region is filled with
+    a unique number).
     """
 
     tif_list = glob.glob(os.path.join(image_path, "*tif"))

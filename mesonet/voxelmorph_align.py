@@ -59,6 +59,13 @@ def vxm_data_generator(x_data, template, batch_size=1):
 
 
 def init_vxm_model(img_path, model_path):
+    """
+    Initializes a VoxelMorph model to be applied.
+
+    :param img_path: (required) The path to the image to be aligned using VoxelMorph.
+    :param model_path: (required) The path to the VoxelMorph model to be used.
+    :return:
+    """
     # configure unet features
     nb_features = [
         [32, 32, 32, 32],  # encoder features
@@ -77,6 +84,15 @@ def init_vxm_model(img_path, model_path):
 
 
 def vxm_transform(x_data, flow_path):
+    """
+    Carried out a VoxelMorph transformation.
+
+    :param x_data: (required) The image data to be transformed.
+    :param flow_path: (required) If we already have a deformation field that we want
+    to apply to all data, use the deformation field specified at this path.
+    :return:
+    """
+
     # If we already have a deformation field that we want to apply to all data,
     # use this deformation field instead of computing a new one.
 
@@ -96,6 +112,16 @@ def vxm_transform(x_data, flow_path):
 
 
 def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path):
+    """
+    Carries out a VoxelMorph alignment procedure, and returns the output image and corresponding flow field.
+
+    :param model_path:
+    :param img_path:
+    :param template:
+    :param exist_transform:
+    :param flow_path:
+    :return:
+    """
     if not exist_transform:
         vxm_model = init_vxm_model(img_path, model_path)
         val_generator = vxm_data_generator(img_path, template)
