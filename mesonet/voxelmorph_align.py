@@ -115,11 +115,15 @@ def voxelmorph_align(model_path, img_path, template, exist_transform, flow_path)
     """
     Carries out a VoxelMorph alignment procedure, and returns the output image and corresponding flow field.
 
-    :param model_path:
-    :param img_path:
-    :param template:
-    :param exist_transform:
-    :param flow_path:
+    :param model_path: (required) The path to a VoxelMorph model to use. By default, this is in the MesoNet repository >
+    mesonet/models/voxelmorph.
+    :param img_path: (required) The path to an image to be aligned using VoxelMorph.
+    :param template: (required) The path to a VoxelMorph template image to which the input image will be aligned,
+    creating the transformation to be applied to the output image.
+    :param exist_transform: (required) If True, uses an existing VoxelMorph flow field (the .npy file saved alongside
+    each VoxelMorph transformed image) to carry out the transformations (instead of computing a new flow field).
+    :param flow_path: (required) The path to the directory to which the VoxelMorph flow field from the current
+    transformation should be saved.
     :return:
     """
     if not exist_transform:

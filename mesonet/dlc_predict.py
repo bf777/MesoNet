@@ -93,7 +93,7 @@ def DLCPredict(
     a new transformation.
     :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,
     generated using voxelmorph and containing weights for a voxelmorph local deformation model.
-    :param template_path: the path to a template atlas (.npy or .mat( to which the brain image will be aligned in
+    :param template_path: the path to a template atlas (.npy or .mat) to which the brain image will be aligned in
     voxelmorph.
     :param flow_path: the path to a voxelmorph transformation field that will be used to transform all data instead of
     predicting a new transformation if exist_transform is True.
