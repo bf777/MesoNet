@@ -256,7 +256,8 @@ def atlasBrainMatch(
     use_voxelmorph,
     exist_transform,
     voxelmorph_model="motif_model_atlas.h5",
-    template_path="templates",
+    vxm_template_path="templates",
+    dlc_template_path="dlc_templates",
     flow_path="",
 ):
     """
@@ -294,7 +295,7 @@ def atlasBrainMatch(
     a new transformation.
     :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,
     generated using voxelmorph and containing weights for a voxelmorph local deformation model.
-    :param template_path: the path to a template atlas (.npy or .mat( to which the brain image will be aligned in
+    :param vxm_template_path: the path to a template atlas (.npy or .mat( to which the brain image will be aligned in
     voxelmorph.
     :param flow_path: the path to a voxelmorph transformation field that will be used to transform all data instead of
     predicting a new transformation if exist_transform is True.
@@ -305,13 +306,25 @@ def atlasBrainMatch(
     peak_arr = []
     atlas_label_list = []
 
-    # Prepare template for voxelmorph
-    convert_to_png(template_path)
-    template = cv2.imread(
-        glob.glob(os.path.join(git_repo_base, "atlases", template_path, "*.png"))[0]
+    voxelmorph_model_path = os.path.join(
+        git_repo_base, "models", "voxelmorph", voxelmorph_model
     )
-    template = np.uint8(template)
-    template = cv2.resize(template, (512, 512))
+
+    # Prepare template for VoxelMorph
+    convert_to_png(vxm_template_path)
+    vxm_template = cv2.imread(
+        glob.glob(os.path.join(git_repo_base, "atlases", vxm_template_path, "*.png"))[0]
+    )
+    vxm_template = np.uint8(vxm_template)
+    vxm_template = cv2.resize(vxm_template, (512, 512))
+
+    # Prepare template for DeepLabCut + VoxelMorph
+    convert_to_png(dlc_template_path)
+    dlc_template = cv2.imread(
+        glob.glob(os.path.join(git_repo_base, "atlases", dlc_template_path, "*.png"))[0]
+    )
+    dlc_template = np.uint8(dlc_template)
+    dlc_template = cv2.resize(dlc_template, (512, 512))
 
     # Prepare output folder
     cwd = os.getcwd()
@@ -514,6 +527,8 @@ def atlasBrainMatch(
             np.asarray(sensory_peak_pts).astype("float32"),
             np.asarray(sensory_atlas_pts).astype("float32"),
         )
+
+    dst_list = []
 
     for (n, br) in enumerate(brain_img_arr):
         align_val = n
@@ -747,11 +762,11 @@ def atlasBrainMatch(
                     )
                     warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
                     atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-                    template = cv2.warpAffine(template, warp_coords, (512, 512))
+                    vxm_template = cv2.warpAffine(vxm_template, warp_coords, (512, 512))
                     # try:
                     #    atlas_warped = niftyreg_align(git_repo_base, atlas_warped, output_mask_path, n)
                     # except:
-                    #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs. Continuing...".format(str(n)))
+                    #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs.".format(str(n)))
 
             if atlas_to_brain_align:
                 if len(atlas_pts_for_input[0]) == 2:
@@ -782,8 +797,8 @@ def atlasBrainMatch(
             print("Performing second transformation of atlas {}...".format(n))
             dst = atlas_warped
 
-            # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to four peaks of
-            # sensory activity
+            # If a sensory map of the brain is provided, do a third alignment of the brain atlas using up to
+            # four peaks of sensory activity
             if sensory_match:
                 original_label = True
                 # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
@@ -822,37 +837,29 @@ def atlasBrainMatch(
                 dst = im
             dst = np.uint8(dst)
 
-        voxelmorph_model_path = os.path.join(
-            git_repo_base, "models", "voxelmorph", voxelmorph_model
-        )
-
         atlas_first_transform_path = os.path.join(
             output_mask_path, "{}_atlas_first_transform.png".format(str(n))
         )
 
-        if use_voxelmorph:
-            if atlas_to_brain_align:
-                _, flow = voxelmorph_align(
-                    voxelmorph_model_path, br_vxm, template, exist_transform, flow_path
-                )
-            else:
-                dst, flow = voxelmorph_align(
-                    voxelmorph_model_path, dst, template, exist_transform, flow_path
-                )
-                # dst = dst * 255
-                # ret, dst = cv2.threshold(
-                #     dst, 5, 255, cv2.THRESH_BINARY_INV
-                # )
-            flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n)))
-            np.save(flow_path_after, flow)
-            if not exist_transform:
-                if atlas_to_brain_align:
-                    dst_gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
-                    dst = vxm_transform(dst_gray, flow_path_after)
-                    ret, dst = cv2.threshold(
-                        dst, 5, 255, cv2.THRESH_BINARY
-                    )
-                    dst = np.uint8(dst)
+        # if use_voxelmorph:
+        #     if atlas_to_brain_align:
+        #         _, flow = voxelmorph_align(
+        #             voxelmorph_model_path, br_vxm, vxm_template, exist_transform, flow_path
+        #         )
+        #     else:
+        #         dst, flow = voxelmorph_align(
+        #             voxelmorph_model_path, dst, vxm_template, exist_transform, flow_path
+        #         )
+        #     flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n)))
+        #     np.save(flow_path_after, flow)
+        #     if not exist_transform:
+        #         if atlas_to_brain_align:
+        #             dst_gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
+        #             dst = vxm_transform(dst_gray, flow_path_after)
+        #             ret, dst = cv2.threshold(
+        #                 dst, 5, 255, cv2.THRESH_BINARY
+        #             )
+        #             dst = np.uint8(dst)
         io.imsave(atlas_first_transform_path, dst)
 
         if use_dlc:
@@ -890,6 +897,7 @@ def atlasBrainMatch(
             brain_warped_path = os.path.join(
                 output_mask_path, "{}_brain_warp.png".format(str(n))
             )
+            dst_list.append(dst)
             io.imsave(brain_warped_path, dst)
             io.imsave(atlas_path, atlas)
 
@@ -915,7 +923,28 @@ def atlasBrainMatch(
             bregma_val = int(bregma_index_list[n])
             bregma_list.append(dlc_pts[n][bregma_val])
 
-    # Converts the transformed brain atlas into a segmentation method for the original brain image
+    # Carries out VoxelMorph on each motif-based functional map (MBFM) that has been aligned to a raw brain image
+    if not atlas_to_brain_align and use_dlc and use_voxelmorph and align_once:
+        for n_post, dst_post in enumerate(dst_list):
+            dst_post, flow = voxelmorph_align(
+                voxelmorph_model_path, dst_post, vxm_template, exist_transform, flow_path
+            )
+            flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n_post)))
+            np.save(flow_path_after, flow)
+
+            atlas_first_transform_path_post = os.path.join(
+                output_mask_path, "{}_atlas_first_transform.png".format(str(n_post))
+            )
+
+            io.imsave(atlas_first_transform_path_post, dst_post)
+            brain_warped_path = os.path.join(
+                output_mask_path, "{}_brain_warp.png".format(str(n_post))
+            )
+            dst_list.append(dst_post)
+            io.imsave(brain_warped_path, dst_post)
+
+
+    # Converts the transformed brain atlas into a segmentation template for the original brain image
     applyMask(
         brain_img_dir,
         output_mask_path,
