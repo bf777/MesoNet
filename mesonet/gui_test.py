@@ -314,7 +314,7 @@ class Gui(object):
 
         self.olfactoryCheck = Checkbutton(
             self.root,
-            text="Draw olfactory bulbs (uncheck if no olfactory bulb visible "
+            text="Draw olfactory bulbs\n(uncheck if no olfactory bulb visible "
             "in all images)",
             variable=self.olfactory_check,
             onvalue=True,
@@ -370,7 +370,7 @@ class Gui(object):
 
         self.origLabelCheck = Checkbutton(
             self.root,
-            text="Use old label consistency method (less consistent)",
+            text="Use old label consistency method\n(less consistent)",
             variable=self.original_label,
             onvalue=True,
             offvalue=False,
@@ -569,6 +569,67 @@ class Gui(object):
         self.root.bind("<Right>", self.forward)
         self.root.bind("<Left>", self.backward)
 
+        # Buttons to run pre-defined pipelines
+        # Label
+        self.pipelinesLabel = Label(
+            self.root,
+            text="Quick Start: Automated pipelines"
+        )
+
+        self.pipelinesLabel.grid(
+            row=0, column=9, columnspan=1, padx=2, sticky=N + S + W + E
+        )
+
+        # 1. Atlas-to-brain
+        self.atlasToBrainButton = Button(
+            self.root,
+            text="1 - Atlas to brain",
+            command=lambda: self.EnterThread('atlas_to_brain')
+        )
+        self.atlasToBrainButton.grid(
+            row=1, column=9, columnspan=1, padx=2, sticky=N + S + W + E
+        )
+
+        # 2. Brain-to-atlas
+        self.brainToAtlasButton = Button(
+            self.root,
+            text="2 - Brain to atlas",
+            command=lambda: self.EnterThread('brain_to_atlas')
+        )
+        self.brainToAtlasButton.grid(
+            row=2, column=9, columnspan=1, padx=2, sticky=N + S + W + E
+        )
+
+        # 3. Atlas-to-brain + sensory maps
+        self.atlasToBrainSensoryButton = Button(
+            self.root,
+            text="3 - Atlas to brain +\nsensory maps",
+            command=lambda: self.EnterThread('atlas_to_brain_sensory')
+        )
+        self.atlasToBrainSensoryButton.grid(
+            row=3, column=9, columnspan=1, padx=2, sticky=N + S + W + E
+        )
+
+        # 4. Motif-based functional maps (MBFMs) + U-Net
+        self.MBFMUNetButton = Button(
+            self.root,
+            text="4 - Motif-based functional maps (MBFMs) +\nU-Net",
+            command=lambda: self.EnterThread('MBFM_U_Net')
+        )
+        self.MBFMUNetButton.grid(
+            row=4, column=9, columnspan=1, padx=2, sticky=N + S + W + E
+        )
+
+        # 5. Motif-based functional maps (MBFMs) + Brain-to-atlas + VoxelMorph
+        self.MBFMBrainToAtlasVxmButton = Button(
+            self.root,
+            text="5 - Motif-based functional maps (MBFMs) +\nBrain-to-atlas + VoxelMorph",
+            command=lambda: self.EnterThread('MBFM_brain_to_atlas_vxm')
+        )
+        self.MBFMBrainToAtlasVxmButton.grid(
+            row=5, column=9, columnspan=1, padx=2, sticky=N + S + W + E
+        )
+
         if self.saveFolderName == "" or self.imgDisplayed == 0:
             self.predictAllImButton.config(state="disabled")
             self.predictDLCButton.config(state="disabled")
@@ -595,6 +656,12 @@ class Gui(object):
             self.landmarkTopRightCheck.config(state="disabled")
             self.landmarkBottomLeftCheck.config(state="disabled")
             self.landmarkBottomRightCheck.config(state="disabled")
+
+            self.atlasToBrainButton.config(state="disabled")
+            self.brainToAtlasButton.config(state="disabled")
+            self.atlasToBrainSensoryButton.config(state="disabled")
+            self.MBFMUNetButton.config(state="disabled")
+            self.MBFMBrainToAtlasVxmButton.config(state="disabled")
 
         if config_file:
             self.ImageDisplay(1, self.folderName, 1)
@@ -639,7 +706,8 @@ class Gui(object):
                     'Please select a folder to save your images to at "Save Folder".'
                 )
             except:
-                self.folderName_str.set(self.cwd)
+                if self.folderName_str.get != newFolderName:
+                    self.folderName_str.set(self.cwd)
                 img_path_err = "No image file selected!"
                 self.statusHandler(img_path_err)
         elif openOrSave == 1:
@@ -675,12 +743,19 @@ class Gui(object):
                 self.landmarkBottomLeftCheck.config(state="normal")
                 self.landmarkBottomRightCheck.config(state="normal")
 
+                self.atlasToBrainButton.config(state="normal")
+                self.brainToAtlasButton.config(state="normal")
+                self.atlasToBrainSensoryButton.config(state="normal")
+                self.MBFMUNetButton.config(state="normal")
+                self.MBFMBrainToAtlasVxmButton.config(state="normal")
+
                 self.statusHandler(
                     "Save folder selected! Choose an option on the right to begin your analysis."
                 )
             except:
-                self.saveFolderName_str.set(self.cwd)
-                save_path_err = "No save file selected!"
+                if self.saveFolderName_str.get != newSaveFolderName:
+                    self.saveFolderName_str.set(self.cwd)
+                    save_path_err = "No save file selected!"
                 print(save_path_err)
                 self.statusHandler(save_path_err)
         elif openOrSave == 2:
@@ -693,7 +768,8 @@ class Gui(object):
                 self.sensoryName = newSensoryName
                 self.root.update()
             except:
-                self.sensoryName_str.set(self.cwd)
+                if self.sensoryName_str.get != newSensoryName:
+                    self.sensoryName_str.set(self.cwd)
                 sensory_path_err = "No sensory image file selected!"
                 print(sensory_path_err)
                 self.statusHandler(sensory_path_err)
@@ -1003,7 +1079,7 @@ class Gui(object):
                 False,
                 int(self.sensory_align.get()),
                 self.sensoryName,
-                os.path.join(self.model_top_dir, self.model),
+                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
                 self.picLen,
                 int(self.mat_save.get()),
                 self.threshold,
@@ -1021,6 +1097,145 @@ class Gui(object):
                 self.vxm_select.get(),
                 self.exist_transform.get(),
                 os.path.join(self.model_top_dir, "voxelmorph", self.vxm_model),
+                self.templateName,
+                self.flowName
+            )).start()
+        elif command == 'atlas_to_brain':
+            threading.Thread(target=
+            self.PredictDLC(
+                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.folderName,
+                self.saveFolderName,
+                False,
+                0,
+                '',
+                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
+                self.picLen,
+                True,
+                self.threshold,
+                True,
+                False,
+                self.git_repo_base,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                '',
+                '',
+                ''
+            )).start()
+        elif command == 'brain_to_atlas':
+            threading.Thread(target=
+            self.PredictDLC(
+                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.folderName,
+                self.saveFolderName,
+                False,
+                0,
+                '',
+                'DongshengXiao_brain_bundary.hdf5',
+                self.picLen,
+                True,
+                self.threshold,
+                True,
+                False,
+                self.git_repo_base,
+                False,
+                False,
+                True,
+                False,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                '',
+                '',
+                ''
+            )).start()
+        elif command == 'atlas_to_brain_sensory':
+            threading.Thread(target=
+            self.PredictDLC(
+                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.folderName,
+                self.saveFolderName,
+                False,
+                1,
+                self.sensoryName,
+                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
+                self.picLen,
+                True,
+                self.threshold,
+                True,
+                False,
+                self.git_repo_base,
+                False,
+                True,
+                True,
+                True,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                '',
+                '',
+                ''
+            )).start()
+        elif command == 'MBFM_U_Net':
+            threading.Thread(target=
+            self.PredictRegions(
+                self.folderName,
+                self.picLen,
+                os.path.join(self.model_top_dir, 'DongshengXiao_unet_motif_based_functional_atlas.hdf5'),
+                self.saveFolderName,
+                True,
+                self.threshold,
+                False,
+                self.git_repo_base,
+                False,
+                True,
+                True,
+                False,
+                False,
+                False,
+            )).start()
+        elif command == 'MBFM_brain_to_atlas_vxm':
+            threading.Thread(target=
+            self.PredictDLC(
+                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.folderName,
+                self.saveFolderName,
+                False,
+                0,
+                '',
+                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
+                self.picLen,
+                True,
+                self.threshold,
+                True,
+                False,
+                self.git_repo_base,
+                False,
+                False,
+                True,
+                False,
+                True,
+                True,
+                True,
+                False,
+                True,
+                False,
+                os.path.join(self.model_top_dir, "voxelmorph",
+                             "VoxelMorph_Motif_based_functional_map_model_transformed1000.h5"),
                 self.templateName,
                 self.flowName
             )).start()

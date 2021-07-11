@@ -287,7 +287,10 @@ def applyMask(
 
     tif_list = glob.glob(os.path.join(image_path, "*tif"))
     if atlas_to_brain_align:
-        image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
+        if use_dlc and align_once:
+            image_name_arr = glob.glob(os.path.join(mask_path, "*_brain_warp.png"))
+        else:
+            image_name_arr = glob.glob(os.path.join(image_path, "*.png"))
         image_name_arr.sort(key=natural_sort_key)
         if tif_list:
             tif_stack = imageio.mimread(os.path.join(image_path, tif_list[0]))
@@ -368,8 +371,7 @@ def applyMask(
                 atlas_to_brain_align,
                 git_repo_base,
                 olfactory_check,
-                [],
-                use_dlc
+                []
             )
         new_data = []
         if len(tif_list) != 0 and atlas_to_brain_align:
@@ -394,9 +396,9 @@ def applyMask(
         kernel = np.ones((3, 3), np.uint8)  # 3, 3
         mask_color = np.uint8(mask_color)
         thresh_atlas, atlas_bw = cv2.threshold(mask_color, 128, 255, 0)
-        if atlas_to_brain_align and use_dlc:
-            atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=1)  # 1
-        io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
+        # if atlas_to_brain_align and use_dlc:
+        #    atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=1)  # 1
+        # io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:
             watershed_run_rule = i == 0
