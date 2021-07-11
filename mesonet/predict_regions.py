@@ -134,7 +134,7 @@ def predict_regions(config_file):
     output = cfg["output"]
     mat_save = cfg["mat_save"]
     threshold = cfg["threshold"]
-    mask_generate = True
+    mask_generate = cfg["mask_generate"]
     git_repo_base = cfg["git_repo_base"]
     region_labels = cfg["region_labels"]
     atlas_to_brain_align = cfg["atlas_to_brain_align"]

@@ -26,6 +26,7 @@ def config_project(
     atlas=False,
     sensory_match=False,
     sensory_path="sensory",
+    mask_generate=True,
     mat_save=True,
     use_unet=True,
     use_dlc=True,
@@ -74,6 +75,8 @@ def config_project(
     :param sensory_path: (default = 'sensory') If sensory_match is True, this should be set to the path to a folder containing sensory maps
     for each brain image. For each brain, put your sensory maps in a folder with the same name as the brain image (0, 1,
     2, ...).
+    :param mask_generate: (default = True) If mask_generate is True, running the function predict_regions will only
+    generate U-Net based masks without an atlas-to-brain alignment.
     :param mat_save: (default = True) Choose whether or not to export each predicted cortical region, each region's centrepoint, and the
     overall region of the brain to a .mat file (True = output .mat files, False = don't output .mat files).
     :param threshold: (default = True) Adjusts the sensitivity of the algorithm used to define individual brain regions from the brain
@@ -150,6 +153,7 @@ def config_project(
             sensory_path=sensory_path,
             mat_save=mat_save,
             threshold=threshold,
+            mask_generate=mask_generate,
             num_images=num_images,
             model=model,
             git_repo_base=git_repo_base,
