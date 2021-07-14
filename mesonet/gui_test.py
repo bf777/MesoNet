@@ -961,6 +961,7 @@ class Gui(object):
         elif glob.glob(os.path.join(folderName, "*.png")):
             file_list = glob.glob(os.path.join(folderName, "*.png"))
             file_list.sort(key=natural_sort_key)
+            print(file_list)
         elif glob.glob(os.path.join(folderName, "*.tif")):
             is_tif = True
             tif_list = glob.glob(os.path.join(folderName, "*.tif"))
@@ -1150,7 +1151,7 @@ class Gui(object):
                 False,
                 True,
                 False,
-                True,
+                False,
                 True,
                 False,
                 False,
@@ -1228,7 +1229,7 @@ class Gui(object):
                 False,
                 True,
                 False,
-                True,
+                False,
                 True,
                 True,
                 False,
