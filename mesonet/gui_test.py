@@ -613,7 +613,7 @@ class Gui(object):
         # 4. Motif-based functional maps (MBFMs) + U-Net
         self.MBFMUNetButton = Button(
             self.root,
-            text="4 - Motif-based functional maps (MBFMs) +\nU-Net",
+            text="4 - Motif-based functional maps (MBFMs) +\nMBFM-U-Net",
             command=lambda: self.EnterThread('MBFM_U_Net')
         )
         self.MBFMUNetButton.grid(
