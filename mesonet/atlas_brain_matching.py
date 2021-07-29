@@ -22,6 +22,7 @@ import imageio
 import os
 import fnmatch
 import glob
+from PIL import Image
 
 
 def find_peaks(img):
@@ -563,39 +564,40 @@ def atlasBrainMatch(
                 atlas_mask_dir = os.path.join(
                     git_repo_base, "atlases/atlas_smooth2_binary.png"
                 )
-            atlas_mask_dir_left = os.path.join(
-                git_repo_base, "atlases/left_hemisphere_smooth.png"
-            )
-            atlas_mask_dir_right = os.path.join(
-                git_repo_base, "atlases/right_hemisphere_smooth.png"
-            )
-            atlas_label_mask_dir = os.path.join(
-                git_repo_base, "atlases/diff_colour_regions/Common_atlas.mat"
-            )
-            atlas_label_mask_dir_left = os.path.join(
-                git_repo_base, "atlases/diff_colour_regions/atlas_left_hemisphere.csv"
-            )
-            atlas_label_mask_dir_right = os.path.join(
-                git_repo_base, "atlases/diff_colour_regions/atlas_right_hemisphere.csv"
-            )
-            # atlas_label_mask_left = atlas_from_mat(atlas_label_mask_dir_left, [])
-            # atlas_label_mask_right = atlas_from_mat(atlas_label_mask_dir_right, [])
-            atlas_label_mask_left = np.genfromtxt(
-                atlas_label_mask_dir_left, delimiter=","
-            )
-            atlas_label_mask_right = np.genfromtxt(
-                atlas_label_mask_dir_right, delimiter=","
-            )
-            atlas_mask_left = cv2.imread(atlas_mask_dir_left, cv2.IMREAD_UNCHANGED)
-            atlas_mask_left = cv2.resize(atlas_mask_left, (im.shape[0], im.shape[1]))
-            atlas_mask_left = np.uint8(atlas_mask_left)
-            atlas_mask_right = cv2.imread(atlas_mask_dir_right, cv2.IMREAD_UNCHANGED)
-            atlas_mask_right = cv2.resize(atlas_mask_right, (im.shape[0], im.shape[1]))
-            atlas_mask_right = np.uint8(atlas_mask_right)
         else:
             atlas_mask_dir = os.path.join(
                 git_repo_base, "atlases/atlas_smooth2_binary.png"
             )
+        atlas_mask_dir_left = os.path.join(
+            git_repo_base, "atlases/left_hemisphere_smooth.png"
+        )
+        atlas_mask_dir_right = os.path.join(
+            git_repo_base, "atlases/right_hemisphere_smooth.png"
+        )
+        atlas_label_mask_dir = os.path.join(
+            git_repo_base, "atlases/diff_colour_regions/Common_atlas.mat"
+        )
+        atlas_label_mask_dir_left = os.path.join(
+            git_repo_base, "atlases/diff_colour_regions/atlas_left_hemisphere.csv"
+        )
+        atlas_label_mask_dir_right = os.path.join(
+            git_repo_base, "atlases/diff_colour_regions/atlas_right_hemisphere.csv"
+        )
+        # atlas_label_mask_left = atlas_from_mat(atlas_label_mask_dir_left, [])
+        # atlas_label_mask_right = atlas_from_mat(atlas_label_mask_dir_right, [])
+        atlas_label_mask_left = np.genfromtxt(
+            atlas_label_mask_dir_left, delimiter=","
+        )
+        atlas_label_mask_right = np.genfromtxt(
+            atlas_label_mask_dir_right, delimiter=","
+        )
+        atlas_mask_left = cv2.imread(atlas_mask_dir_left, cv2.IMREAD_UNCHANGED)
+        atlas_mask_left = cv2.resize(atlas_mask_left, (im.shape[0], im.shape[1]))
+        atlas_mask_left = np.uint8(atlas_mask_left)
+        atlas_mask_right = cv2.imread(atlas_mask_dir_right, cv2.IMREAD_UNCHANGED)
+        atlas_mask_right = cv2.resize(atlas_mask_right, (im.shape[0], im.shape[1]))
+        atlas_mask_right = np.uint8(atlas_mask_right)
+
         atlas_mask = cv2.imread(atlas_mask_dir, cv2.IMREAD_UNCHANGED)
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         atlas_mask = np.uint8(atlas_mask)
@@ -605,6 +607,15 @@ def atlasBrainMatch(
 
         mask_warped_path = os.path.join(
             output_mask_path, "{}_mask_warped.png".format(str(n))
+        )
+        mask_warped_path_alt_left = os.path.join(
+            output_mask_path, "{}_mask_warped_left.png".format(str(n))
+        )
+        mask_warped_path_alt_right = os.path.join(
+            output_mask_path, "{}_mask_warped_right.png".format(str(n))
+        )
+        brain_to_atlas_mask_path = os.path.join(
+            output_mask_path, "{}_brain_to_atlas_mask.png".format(str(n))
         )
         if use_dlc:
             # First alignment of brain atlas using three cortical landmarks and standard affine transform
@@ -730,6 +741,8 @@ def atlasBrainMatch(
 
                 warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
                 warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
+                warp_coords_brain_atlas_left = cv2.getAffineTransform(dlc_pts_left, atlas_pts_left)
+                warp_coords_brain_atlas_right = cv2.getAffineTransform(dlc_pts_right, atlas_pts_right)
                 if atlas_to_brain_align:
                     atlas_warped_left = cv2.warpAffine(
                         im_left, warp_coords_left, im_final_size
@@ -776,30 +789,70 @@ def atlasBrainMatch(
                     # except:
                     #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs.".format(str(n)))
 
-            if atlas_to_brain_align:
-                if len(atlas_pts_for_input[0]) == 2:
-                    atlas_mask_left_warped = cv2.warpAffine(
-                        atlas_mask_left, warp_coords, (512, 512)
-                    )
-                    atlas_mask_right_warped = cv2.warpAffine(
-                        atlas_mask_right, warp_coords, (512, 512)
-                    )
-                    atlas_mask_warped = cv2.bitwise_or(
-                        atlas_mask_left_warped, atlas_mask_right_warped
-                    )
-                if len(atlas_pts_for_input[0]) == 3:
-                    atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
-                if len(atlas_pts_for_input[0]) >= 4:
-                    atlas_mask_left_warped = cv2.warpAffine(
-                        atlas_mask_left, warp_coords_left, (512, 512)
-                    )
-                    atlas_mask_right_warped = cv2.warpAffine(
-                        atlas_mask_right, warp_coords_right, (512, 512)
-                    )
-                    atlas_mask_warped = cv2.bitwise_or(
-                        atlas_mask_left_warped, atlas_mask_right_warped
-                    )
-                atlas_mask_warped = np.uint8(atlas_mask_warped)
+            # if atlas_to_brain_align:
+            if len(atlas_pts_for_input[0]) == 2:
+                atlas_mask_left_warped = cv2.warpAffine(
+                    atlas_mask_left, warp_coords, (512, 512)
+                )
+                atlas_mask_right_warped = cv2.warpAffine(
+                    atlas_mask_right, warp_coords, (512, 512)
+                )
+                atlas_mask_warped = cv2.bitwise_or(
+                    atlas_mask_left_warped, atlas_mask_right_warped
+                )
+            if len(atlas_pts_for_input[0]) == 3:
+                atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+            if len(atlas_pts_for_input[0]) >= 4:
+                atlas_mask_left_warped = cv2.warpAffine(
+                    atlas_mask_left, warp_coords_left, (512, 512)
+                )
+                atlas_mask_right_warped = cv2.warpAffine(
+                    atlas_mask_right, warp_coords_right, (512, 512)
+                )
+                atlas_mask_warped = cv2.bitwise_or(
+                    atlas_mask_left_warped, atlas_mask_right_warped
+                )
+            atlas_mask_warped = np.uint8(atlas_mask_warped)
+            io.imsave(mask_warped_path_alt_left, atlas_mask_left_warped)
+            io.imsave(mask_warped_path_alt_right, atlas_mask_right_warped)
+            # brain_to_atlas_mask = cv2.bitwise_or(
+            #     atlas_mask_warped, im
+            # )
+            # io.imsave(brain_to_atlas_mask_path, brain_to_atlas_mask)
+            hemispheres = ['left', 'right']
+            for hemisphere in hemispheres:
+                new_data = []
+                if hemisphere == 'left':
+                    mask_path = mask_warped_path_alt_left
+                else:
+                    mask_path = mask_warped_path_alt_right
+                img_edited = Image.open(mask_path)
+                # Generates a transparent version of the brain atlas.
+                img_rgba = img_edited.convert("RGBA")
+                data = img_rgba.getdata()
+                for pixel in data:
+                    if pixel[0] == 255 and pixel[1] == 255 and pixel[2] == 255:
+                        new_data.append((pixel[0], pixel[1], pixel[2], 0))
+                    else:
+                        new_data.append(pixel)
+                img_rgba.putdata(new_data)
+                img_rgba.save(os.path.join(output_mask_path, "{}_brain_atlas_mask_transparent_{}.png".format(n, hemisphere)))
+                img_transparent = cv2.imread(
+                    os.path.join(output_mask_path, "{}_brain_atlas_mask_transparent_{}.png".format(n, hemisphere))
+                )
+                brain_atlas_transparent = cv2.bitwise_and(im, img_transparent)
+
+                io.imsave(os.path.join(output_mask_path, "{}_brain_atlas_transparent_{}.png".format(n, hemisphere)),
+                          brain_atlas_transparent)
+                if hemisphere == 'left':
+                    brain_to_atlas_warped_left = cv2.warpAffine(brain_atlas_transparent, warp_coords_brain_atlas_left, (512, 512))
+                else:
+                    brain_to_atlas_warped_right = cv2.warpAffine(brain_atlas_transparent, warp_coords_brain_atlas_right, (512, 512))
+            brain_to_atlas_mask = cv2.bitwise_or(
+                brain_to_atlas_warped_left, brain_to_atlas_warped_right
+            )
+            io.imsave(brain_to_atlas_mask_path, brain_to_atlas_mask)
+
 
             # Second alignment of brain atlas using cortical landmarks and piecewise affine transform
             print("Performing second transformation of atlas {}...".format(n))
@@ -808,7 +861,10 @@ def atlasBrainMatch(
                 output_mask_path, "{}_atlas_first_transform.png".format(str(n))
             )
 
-            dst = atlas_warped
+            if atlas_to_brain_align:
+                dst = atlas_warped
+            else:
+                dst = brain_to_atlas_mask
 
             io.imsave(atlas_first_transform_path, dst)
 
@@ -881,23 +937,23 @@ def atlasBrainMatch(
                 io.imsave(mask_warped_path, atlas_mask)
         else:
             io.imsave(mask_warped_path, dst)
-            if atlas_to_brain_align:
-                if use_voxelmorph:
-                    atlas_mask_warped = atlas_mask
-                else:
-                    atlas_mask_warped = cv2.bitwise_or(
-                        atlas_mask_left, atlas_mask_right
-                    )
-                atlas_mask_warped = cv2.cvtColor(atlas_mask_warped, cv2.COLOR_BGR2GRAY)
-                #
-                # atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
-                ret, atlas_mask_warped = cv2.threshold(
-                    atlas_mask_warped, 5, 255, cv2.THRESH_BINARY
-                )
-                atlas_mask_warped = np.uint8(atlas_mask_warped)
-                original_label = True
-            else:
+            # if atlas_to_brain_align:
+            if use_voxelmorph:
                 atlas_mask_warped = atlas_mask
+            else:
+                atlas_mask_warped = cv2.bitwise_or(
+                    atlas_mask_left, atlas_mask_right
+                )
+            atlas_mask_warped = cv2.cvtColor(atlas_mask_warped, cv2.COLOR_BGR2GRAY)
+            #
+            # atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
+            ret, atlas_mask_warped = cv2.threshold(
+                atlas_mask_warped, 5, 255, cv2.THRESH_BINARY
+            )
+            atlas_mask_warped = np.uint8(atlas_mask_warped)
+            original_label = True
+            # else:
+                # atlas_mask_warped = atlas_mask
                 #
                 # atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
             io.imsave(mask_warped_path, atlas_mask_warped)

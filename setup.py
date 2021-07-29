@@ -11,7 +11,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='mesonet',
-    version='1.0.3',
+    version='1.0.4',
     author="Brandon Forys",
     author_email="brandon.forys@alumni.ubc.ca",
     description="An automatic brain region identification and segmentation toolbox.",
