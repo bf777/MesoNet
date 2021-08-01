@@ -821,6 +821,24 @@ def atlasBrainMatch(
             # io.imsave(brain_to_atlas_mask_path, brain_to_atlas_mask)
             hemispheres = ['left', 'right']
             for hemisphere in hemispheres:
+                if olfactory_check:
+                    cnts_for_olfactory = cv2.findContours(
+                        im.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+                    )
+                    cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
+                    olfactory_bulbs = sorted(
+                        cnts_for_olfactory, key=cv2.contourArea, reverse=True
+                    )[2:4]
+                    for bulb in olfactory_bulbs:
+                        cv2.fillPoly(im, pts=[bulb], color=[255, 255, 255])
+                    if len(atlas_label) > 0:
+                        try:
+                            cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[0]], color=[300])
+                            cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[1]], color=[400])
+                            atlas_label[np.where(atlas_label == 300)] = 300
+                            atlas_label[np.where(atlas_label == 400)] = 400
+                        except:
+                            print('No olfactory bulb found!')
                 new_data = []
                 if hemisphere == 'left':
                     mask_path = mask_warped_path_alt_left
@@ -961,6 +979,15 @@ def atlasBrainMatch(
         dst = cv2.resize(dst, (im.shape[0], im.shape[1]))
         atlas_path = os.path.join(output_mask_path, "{}_atlas.png".format(str(n)))
 
+        vxm_template_output_path = os.path.join(
+            output_mask_path, "{}_vxm_template.png".format(str(n))
+        )
+
+        dst_list.append(dst)
+        if use_voxelmorph:
+            vxm_template_list.append(vxm_template)
+            io.imsave(vxm_template_output_path, vxm_template_list[n])
+
         if atlas_to_brain_align:
             io.imsave(atlas_path, dst)
             br_list.append(br)
@@ -968,13 +995,6 @@ def atlasBrainMatch(
             brain_warped_path = os.path.join(
                 output_mask_path, "{}_brain_warp.png".format(str(n))
             )
-            vxm_template_output_path = os.path.join(
-                output_mask_path, "{}_vxm_template.png".format(str(n))
-            )
-            dst_list.append(dst)
-            if use_voxelmorph:
-                vxm_template_list.append(vxm_template)
-                io.imsave(vxm_template_output_path, vxm_template_list[n])
             io.imsave(brain_warped_path, dst)
             io.imsave(atlas_path, atlas)
 
@@ -1001,7 +1021,8 @@ def atlasBrainMatch(
             bregma_list.append(dlc_pts[n][bregma_val])
 
     # Carries out VoxelMorph on each motif-based functional map (MBFM) that has been aligned to a raw brain image
-    if use_dlc and use_voxelmorph and align_once:
+    # if use_dlc and use_voxelmorph and align_once:
+    if use_voxelmorph:
         for (n_post, dst_post), vxm_template_post in zip(enumerate(dst_list), vxm_template_list):
             _, flow_post = voxelmorph_align(
                voxelmorph_model_path, dst_post, vxm_template_post, exist_transform, flow_path

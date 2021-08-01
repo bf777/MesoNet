@@ -66,9 +66,12 @@ def testGenerator(
             if atlas_to_brain_align:
                 img = io.imread(os.path.join(test_path, img_list[i]))
             else:
-                img = io.imread(
-                    os.path.join(test_path, "{}_brain_warp.{}".format(i, suff))
-                )
+                try:
+                    img = io.imread(
+                        os.path.join(test_path, "{}_brain_warp.{}".format(i, suff))
+                    )
+                except:
+                    img = io.imread(os.path.join(test_path, img_list[i]))
             img = trans.resize(img, target_size)
         img = img_as_ubyte(img)
         io.imsave(os.path.join(output_mask_path, "{}.{}".format(i, suff)), img)
@@ -321,38 +324,38 @@ def applyMask(
         base_c = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         base_c = imutils.grab_contours(base_c)
         base_c_max.append(max(base_c, key=cv2.contourArea))
-    if not atlas_to_brain_align and use_unet:
-        # FOR ALIGNING ATLAS TO BRAIN
-        num_images = len(glob.glob(os.path.join(mask_path, "*_brain_warp*")))
-        output = os.path.join(mask_path, "..")
-        from mesonet.predict_regions import predictRegion
-
-        mask_generate = True
-        tif_list = glob.glob(os.path.join(image_path, "*tif"))
-        if tif_list:
-            input_path = image_path
-        else:
-            input_path = mask_path
-        predictRegion(
-            input_path,
-            num_images,
-            model,
-            output,
-            mat_save,
-            threshold,
-            mask_generate,
-            git_repo_base,
-            atlas_to_brain_align,
-            dlc_pts,
-            atlas_pts,
-            olfactory_check,
-            use_unet,
-            plot_landmarks,
-            align_once,
-            atlas_label_list,
-            region_labels,
-            original_label,
-        )
+    # if not atlas_to_brain_align and use_unet:
+    #     # FOR ALIGNING ATLAS TO BRAIN
+    #     num_images = len(glob.glob(os.path.join(mask_path, "*_brain_warp*")))
+    #     output = os.path.join(mask_path, "..")
+    #     from mesonet.predict_regions import predictRegion
+    #
+    #     mask_generate = True
+    #     tif_list = glob.glob(os.path.join(image_path, "*tif"))
+    #     if tif_list:
+    #         input_path = image_path
+    #     else:
+    #         input_path = mask_path
+    #     predictRegion(
+    #         input_path,
+    #         num_images,
+    #         model,
+    #         output,
+    #         mat_save,
+    #         threshold,
+    #         mask_generate,
+    #         git_repo_base,
+    #         atlas_to_brain_align,
+    #         dlc_pts,
+    #         atlas_pts,
+    #         olfactory_check,
+    #         use_unet,
+    #         plot_landmarks,
+    #         align_once,
+    #         atlas_label_list,
+    #         region_labels,
+    #         original_label,
+    #     )
     for i, item in enumerate(image_name_arr):
         label_num = 0
         if not atlas_to_brain_align:

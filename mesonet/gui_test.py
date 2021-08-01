@@ -1140,7 +1140,7 @@ class Gui(object):
                 False,
                 0,
                 '',
-                'DongshengXiao_brain_bundary.hdf5',
+                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
                 self.picLen,
                 True,
                 self.threshold,
@@ -1148,10 +1148,10 @@ class Gui(object):
                 False,
                 self.git_repo_base,
                 False,
-                False,
+                True,
                 True,
                 False,
-                False,
+                True,
                 True,
                 False,
                 False,
@@ -1325,7 +1325,8 @@ class Gui(object):
         self.chooseLandmarks()
         atlas_label_list = []
         coords_input_file = ''
-        if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
+        # if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
+        if mask_generate and not haveMasks and use_unet:
             pts = []
             pts2 = []
             predictRegion(
