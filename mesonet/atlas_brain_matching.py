@@ -820,30 +820,52 @@ def atlasBrainMatch(
             # )
             # io.imsave(brain_to_atlas_mask_path, brain_to_atlas_mask)
             hemispheres = ['left', 'right']
-            for hemisphere in hemispheres:
-                if olfactory_check:
-                    cnts_for_olfactory = cv2.findContours(
-                        im.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-                    )
-                    cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
+            olfactory_bulbs_to_use = []
+            if olfactory_check:
+                mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
+                cnts_for_olfactory = cv2.findContours(
+                    mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+                )
+                cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
+                # cnts_for_olfactory, hierarchy = cv2.findContours(
+                #     im_for_cnts, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
+                # )
+                if len(cnts_for_olfactory) == 3:
+                    olfactory_bulbs = sorted(
+                        cnts_for_olfactory, key=cv2.contourArea, reverse=True
+                    )[1:3]
+                else:
                     olfactory_bulbs = sorted(
                         cnts_for_olfactory, key=cv2.contourArea, reverse=True
                     )[2:4]
-                    for bulb in olfactory_bulbs:
-                        cv2.fillPoly(im, pts=[bulb], color=[255, 255, 255])
-                    if len(atlas_label) > 0:
-                        try:
-                            cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[0]], color=[300])
-                            cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[1]], color=[400])
-                            atlas_label[np.where(atlas_label == 300)] = 300
-                            atlas_label[np.where(atlas_label == 400)] = 400
-                        except:
-                            print('No olfactory bulb found!')
+            for hemisphere in hemispheres:
                 new_data = []
                 if hemisphere == 'left':
                     mask_path = mask_warped_path_alt_left
+                    mask_warped_to_use = atlas_mask_left_warped
+                    if olfactory_check:
+                        bulb = olfactory_bulbs[0]
+                        bulb_fill = 300
                 else:
                     mask_path = mask_warped_path_alt_right
+                    mask_warped_to_use = atlas_mask_right_warped
+                    if olfactory_check:
+                        if len(olfactory_bulbs) > 1:
+                            bulb = olfactory_bulbs[1]
+                        bulb_fill = 400
+                if olfactory_check:
+                    olfactory_bulbs_to_use = olfactory_bulbs
+                    try:
+                        cv2.fillPoly(mask_warped_to_use, pts=[bulb], color=[255, 255, 255])
+                        io.imsave(mask_path, mask_warped_to_use)
+                    except:
+                        print('No olfactory bulb found!')
+                    # if len(atlas_label) > 0:
+                    #     try:
+                    #         cv2.fillPoly(atlas_label, pts=[bulb], color=[bulb_fill])
+                    #         atlas_label[np.where(atlas_label == bulb_fill)] = bulb_fill
+                    #     except:
+                    #         print('No olfactory bulb found!')
                 img_edited = Image.open(mask_path)
                 # Generates a transparent version of the brain atlas.
                 img_rgba = img_edited.convert("RGBA")
@@ -1074,6 +1096,7 @@ def atlasBrainMatch(
                     atlas_to_brain_align,
                     git_repo_base,
                     olfactory_check,
+                    olfactory_bulbs_to_use,
                     atlas_label
                 )
                 atlas_label_list.append(atlas_label)

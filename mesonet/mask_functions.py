@@ -138,6 +138,7 @@ def atlas_to_mask(
     atlas_to_brain_align,
     git_repo_base,
     olfactory_check,
+    olfactory_bulbs_to_use,
     atlas_label
 ):
     """
@@ -168,6 +169,14 @@ def atlas_to_mask(
                 mask_input.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
             )
             cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
+        if len(cnts_for_olfactory) == 3:
+            olfactory_bulbs = sorted(
+                cnts_for_olfactory, key=cv2.contourArea, reverse=True
+            )[1:3]
+        else:
+            olfactory_bulbs = sorted(
+                cnts_for_olfactory, key=cv2.contourArea, reverse=True
+            )[2:4]
         io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:
@@ -178,9 +187,6 @@ def atlas_to_mask(
             if len(atlas_label) > 0:
                 atlas_label[np.where(mask_input == 0)] = 1000
             if olfactory_check:
-                olfactory_bulbs = sorted(
-                    cnts_for_olfactory, key=cv2.contourArea, reverse=True
-                )[2:4]
                 for bulb in olfactory_bulbs:
                     cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
                     cv2.fillPoly(mask_input_orig, pts=[bulb], color=[255, 255, 255])
@@ -196,6 +202,18 @@ def atlas_to_mask(
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
             mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
+            if olfactory_check:
+                for bulb in olfactory_bulbs_to_use:
+                    cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
+                    cv2.fillPoly(mask_input_orig, pts=[bulb], color=[255, 255, 255])
+                if len(atlas_label) > 0:
+                    try:
+                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[0]], color=[300])
+                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs[1]], color=[400])
+                        atlas_label[np.where(atlas_label == 300)] = 300
+                        atlas_label[np.where(atlas_label == 400)] = 400
+                    except:
+                        print('No olfactory bulb found!')
         io.imsave(os.path.join(mask_output_path, "{}_mask_no_atlas.png".format(n)), mask_input_orig)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
@@ -623,7 +641,7 @@ def applyMask(
                 cortex_mask_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
             )
             cortex_cnt = imutils.grab_contours(cortex_cnt)
-            cv2.drawContours(img, cortex_cnt, -1, (0, 0, 255), 3)
+            # cv2.drawContours(img, cortex_cnt, -1, (0, 0, 255), 3)
         labels_x = []
         labels_y = []
         areas = []
