@@ -906,7 +906,8 @@ def atlasBrainMatch(
                         olfactory_warped_right = sorted(
                             olfactory_warped_cnts_right, key=cv2.contourArea, reverse=True
                         )[-1]
-            olfactory_bulbs_to_use_list.append([olfactory_warped_left, olfactory_warped_right])
+            if olfactory_check:
+                olfactory_bulbs_to_use_list.append([olfactory_warped_left, olfactory_warped_right])
             brain_to_atlas_mask = cv2.bitwise_or(
                 brain_to_atlas_warped_left, brain_to_atlas_warped_right
             )

@@ -431,7 +431,7 @@ def applyMask(
                 watershed_run_rule = True
             else:
                 watershed_run_rule = i == 0
-        if align_once:
+        if align_once and not use_voxelmorph:
             watershed_run_rule = i == 0
 
         labels_from_region = []
