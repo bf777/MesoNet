@@ -115,6 +115,7 @@ def predictRegion(
             plot_landmarks,
             align_once,
             atlas_label_list,
+            [],
             region_labels,
             original_label,
         )

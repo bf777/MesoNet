@@ -309,6 +309,7 @@ def atlasBrainMatch(
     dst_list = []
     vxm_template_list = []
     br_list = []
+    olfactory_bulbs_to_use_list = []
 
     voxelmorph_model_path = os.path.join(
         git_repo_base, "models", "voxelmorph", voxelmorph_model
@@ -827,9 +828,6 @@ def atlasBrainMatch(
                     mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
                 cnts_for_olfactory = imutils.grab_contours(cnts_for_olfactory)
-                # cnts_for_olfactory, hierarchy = cv2.findContours(
-                #     im_for_cnts, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
-                # )
                 if len(cnts_for_olfactory) == 3:
                     olfactory_bulbs = sorted(
                         cnts_for_olfactory, key=cv2.contourArea, reverse=True
@@ -860,6 +858,7 @@ def atlasBrainMatch(
                         io.imsave(mask_path, mask_warped_to_use)
                     except:
                         print('No olfactory bulb found!')
+                    mask_warped_to_use = cv2.cvtColor(mask_warped_to_use, cv2.COLOR_BGR2GRAY)
                     # if len(atlas_label) > 0:
                     #     try:
                     #         cv2.fillPoly(atlas_label, pts=[bulb], color=[bulb_fill])
@@ -886,8 +885,28 @@ def atlasBrainMatch(
                           brain_atlas_transparent)
                 if hemisphere == 'left':
                     brain_to_atlas_warped_left = cv2.warpAffine(brain_atlas_transparent, warp_coords_brain_atlas_left, (512, 512))
+                    if olfactory_check:
+                        olfactory_warped_left = cv2.warpAffine(mask_warped_to_use, warp_coords_brain_atlas_left, (512, 512))
+                        olfactory_warped_cnts_left = cv2.findContours(
+                            olfactory_warped_left.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+                        )
+                        olfactory_warped_cnts_left = imutils.grab_contours(olfactory_warped_cnts_left)
+                        olfactory_warped_left = sorted(
+                            olfactory_warped_cnts_left, key=cv2.contourArea, reverse=True
+                        )[-1]
                 else:
                     brain_to_atlas_warped_right = cv2.warpAffine(brain_atlas_transparent, warp_coords_brain_atlas_right, (512, 512))
+                    olfactory_warped_right = cv2.warpAffine(mask_warped_to_use, warp_coords_brain_atlas_right, (512, 512))
+                    if olfactory_check:
+                        olfactory_warped_right = cv2.warpAffine(mask_warped_to_use, warp_coords_brain_atlas_right, (512, 512))
+                        olfactory_warped_cnts_right = cv2.findContours(
+                            olfactory_warped_right.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+                        )
+                        olfactory_warped_cnts_right = imutils.grab_contours(olfactory_warped_cnts_right)
+                        olfactory_warped_right = sorted(
+                            olfactory_warped_cnts_right, key=cv2.contourArea, reverse=True
+                        )[-1]
+            olfactory_bulbs_to_use_list.append([olfactory_warped_left, olfactory_warped_right])
             brain_to_atlas_mask = cv2.bitwise_or(
                 brain_to_atlas_warped_left, brain_to_atlas_warped_right
             )
@@ -1033,6 +1052,7 @@ def atlasBrainMatch(
                 atlas_to_brain_align,
                 git_repo_base,
                 olfactory_check,
+                [],
                 atlas_label
             )
             atlas_label_list.append(atlas_label)
@@ -1096,7 +1116,7 @@ def atlasBrainMatch(
                     atlas_to_brain_align,
                     git_repo_base,
                     olfactory_check,
-                    olfactory_bulbs_to_use,
+                    [],
                     atlas_label
                 )
                 atlas_label_list.append(atlas_label)
@@ -1122,6 +1142,7 @@ def atlasBrainMatch(
         plot_landmarks,
         align_once,
         atlas_label_list,
+        olfactory_bulbs_to_use_list,
         region_labels,
-        original_label,
+        original_label
     )

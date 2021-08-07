@@ -202,7 +202,7 @@ def atlas_to_mask(
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
             mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
-            if olfactory_check:
+            if olfactory_check and len(olfactory_bulbs_to_use) > 0:
                 for bulb in olfactory_bulbs_to_use:
                     cv2.fillPoly(mask_input, pts=[bulb], color=[255, 255, 255])
                     cv2.fillPoly(mask_input_orig, pts=[bulb], color=[255, 255, 255])
@@ -268,6 +268,7 @@ def applyMask(
     plot_landmarks,
     align_once,
     atlas_label_list,
+    olfactory_bulbs_to_use_list,
     region_labels=True,
     original_label=False,
 ):
@@ -382,6 +383,7 @@ def applyMask(
             mask_warped_path = os.path.join(
                 mask_path, "{}_mask_warped.png".format(str(i))
             )
+            olfactory_bulbs_to_use = olfactory_bulbs_to_use_list[i]
             atlas_to_mask(
                 atlas_path,
                 mask_input_path,
@@ -392,6 +394,7 @@ def applyMask(
                 atlas_to_brain_align,
                 git_repo_base,
                 olfactory_check,
+                olfactory_bulbs_to_use,
                 []
             )
         new_data = []
@@ -422,7 +425,7 @@ def applyMask(
         # io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:
-            watershed_run_rule = i == 0
+            watershed_run_rule = True
         else:
             if len(tif_list) == 0:
                 watershed_run_rule = True
@@ -537,7 +540,7 @@ def applyMask(
                 labels_cnts.append(cnt_orig)
                 try:
                     cv2.drawContours(img, cnt_orig, -1, (255, 0, 0), 1)
-                    # io.imsave(os.path.join(segmented_save_path, "check_contour.png"), img)
+                    io.imsave(os.path.join(segmented_save_path, "check_contour.png"), img)
                 except:
                     print("Could not draw contour!")
                 # try:
