@@ -1082,6 +1082,7 @@ def atlasBrainMatch(
                 output_mask_path,
                 n,
                 use_unet,
+                use_voxelmorph,
                 atlas_to_brain_align,
                 git_repo_base,
                 olfactory_check,

@@ -96,6 +96,7 @@ def predictRegion(
     if not mask_generate:
         plot_landmarks = False
         use_dlc = False
+        use_voxelmorph = False
         # Predicts and identifies brain regions based on output mask
         applyMask(
             input_file,
@@ -112,6 +113,7 @@ def predictRegion(
             olfactory_check,
             use_unet,
             use_dlc,
+            use_voxelmorph,
             plot_landmarks,
             align_once,
             atlas_label_list,
