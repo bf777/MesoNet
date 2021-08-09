@@ -1,5 +1,8 @@
 # MesoNet
-MesoNet is a comprehensive Python toolbox for automated registration and segmentation of mesoscale mouse brain images.
+
+<img src="https://github.com/bf777/MesoNet/blob/master/img/logo.png" width="200" height="200" align="left">
+
+**MesoNet** is a comprehensive Python toolbox for automated registration and segmentation of mesoscale mouse brain images.
 You can use it to:
 - Automatically identify cortical landmarks
 - Register a brain atlas to your mesoscale calcium activity data (or vice versa)
