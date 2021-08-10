@@ -190,52 +190,6 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
     return dst
 
 
-def homography_match(warp_from, warp_to, output_mask_path, n):
-    # Create ORB detector with 5000 features.
-    orb_detector = cv2.ORB_create(5000)
-
-    # Find keypoints and descriptors.
-    # The first arg is the image, second arg is the mask
-    #  (which is not reqiured in this case).
-    kp1, d1 = orb_detector.detectAndCompute(warp_from, None)  # im
-    kp2, d2 = orb_detector.detectAndCompute(warp_to, None)  # atlas_warped
-
-    # Match features between the two images.
-    # We create a Brute Force matcher with
-    # Hamming distance as measurement mode.
-    matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
-    # Match the two sets of descriptors.
-    matches = matcher.match(d1, d2)
-
-    # Sort matches on the basis of their Hamming distance.
-    matches.sort(key=lambda x: x.distance)
-
-    # Take the top 90 % matches forward.
-    matches = matches[: int(len(matches) * 90)]
-    no_of_matches = len(matches)
-
-    # Define empty matrices of shape no_of_matches * 2.
-    p1 = np.zeros((no_of_matches, 2))
-    p2 = np.zeros((no_of_matches, 2))
-
-    for i in range(len(matches)):
-        p1[i, :] = kp1[matches[i].queryIdx].pt
-        p2[i, :] = kp2[matches[i].trainIdx].pt
-
-    # Find the homography matrix.
-    homography, mask = cv2.findHomography(p1, p2, cv2.RANSAC)
-
-    # Use this matrix to transform the
-    # colored image wrt the reference image.
-    atlas_warped = cv2.warpPerspective(warp_to, homography, (512, 512))
-    atlas_homography_transform_path = os.path.join(
-        output_mask_path, "{}_atlas_homography.png".format(str(n))
-    )
-    io.imsave(atlas_homography_transform_path, atlas_warped)
-    return atlas_warped
-
-
 def atlasBrainMatch(
     brain_img_dir,
     sensory_img_dir,
@@ -322,14 +276,6 @@ def atlasBrainMatch(
         glob.glob(os.path.join(git_repo_base, "atlases", vxm_template_path, "*.png"))[0]
     )
 
-    # Prepare template for DeepLabCut + VoxelMorph
-    # convert_to_png(dlc_template_path)
-    # dlc_template = cv2.imread(
-    #     glob.glob(os.path.join(git_repo_base, "atlases", dlc_template_path, "*.png"))[0]
-    # )
-    # dlc_template = np.uint8(dlc_template)
-    # dlc_template = cv2.resize(dlc_template, (512, 512))
-
     # Prepare output folder
     cwd = os.getcwd()
     output_mask_path = os.path.join(cwd, "../output_mask")
@@ -363,8 +309,6 @@ def atlasBrainMatch(
     # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_ROIs.mat'))
     atlas = im
     # FOR ALIGNING BRAIN TO ATLAS
-    # im_binary = np.uint8(im)
-
     for num, file in enumerate(os.listdir(cwd)):
         if fnmatch.fnmatch(file, "*.png") and "mask" not in file:
             dlc_img_arr.append(os.path.join(cwd, file))
@@ -377,6 +321,7 @@ def atlasBrainMatch(
             for tif_im in tif_stack:
                 brain_img_arr.append(tif_im)
     # i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
+
     # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
     coord_circles_img = cv2.imread(
         os.path.join(
@@ -423,8 +368,6 @@ def atlasBrainMatch(
         for num, file in enumerate(brain_img_arr):
             img_name = str(os.path.splitext(os.path.basename(file))[0])
             sensory_img_for_brain = os.path.join(sensory_img_dir, img_name)
-            print(img_name)
-            print(sensory_img_for_brain)
             if glob.glob(sensory_img_for_brain):
                 sensory_img_for_brain_dir = os.listdir(sensory_img_for_brain)
                 sensory_img_for_brain_dir.sort(key=natural_sort_key)
@@ -483,24 +426,16 @@ def atlasBrainMatch(
             atlas_coord = (coord_atlas[0], coord_atlas[1])
             atlas_list.append(atlas_coord)
         atlas_list = [atlas_list[i] for i in landmark_arr]
+
         # Initialize result as max value
-
         landmark_indices = landmark_indices[0 : len(landmark_arr)]
-
-        # atlas_indices = min_landmark_arr
         atlas_indices = landmark_arr
-
-        # print('atlas indices: {}'.format(atlas_indices))
-        # print('landmark indices: {}'.format(landmark_indices))
-        # print('x coords: {}'.format(x_coord_flat))
 
         pts_dist = np.absolute(
             np.asarray(atlas_list) - np.asarray((im.shape[0] / 2, im.shape[1] / 2))
         )
         pts_avg_dist = [np.mean(v) for v in pts_dist]
-        # print("bregma dist: {}".format(pts_avg_dist))
         bregma_index = np.argmin(np.asarray(pts_avg_dist))
-        # print("bregma index: {}".format(bregma_index))
 
         for j in landmark_indices:
             sub_dlc_pts.append([x_coord_flat[j], y_coord_flat[j]])
@@ -557,7 +492,6 @@ def atlasBrainMatch(
             im = cv2.resize(im, (512, 512))
 
         if atlas_to_brain_align:
-            # atlas_mask_dir = os.path.join(git_repo_base, "atlases/Atlas_workflow1_smooth_binary.png")
             if use_voxelmorph and not use_dlc:
                 atlas_mask_dir = os.path.join(
                     git_repo_base, "atlases/Atlas_for_Voxelmorph_border.png"
@@ -585,8 +519,6 @@ def atlasBrainMatch(
         atlas_label_mask_dir_right = os.path.join(
             git_repo_base, "atlases/diff_colour_regions/atlas_right_hemisphere.csv"
         )
-        # atlas_label_mask_left = atlas_from_mat(atlas_label_mask_dir_left, [])
-        # atlas_label_mask_right = atlas_from_mat(atlas_label_mask_dir_right, [])
         atlas_label_mask_left = np.genfromtxt(
             atlas_label_mask_dir_left, delimiter=","
         )
@@ -784,12 +716,6 @@ def atlasBrainMatch(
                     )
                     warp_coords = cv2.getAffineTransform(pts_np, atlas_pts_np)
                     atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
-                    print(warp_coords)
-                    # vxm_template = cv2.warpAffine(vxm_template, warp_coords, (512, 512))
-                    # try:
-                    #    atlas_warped = niftyreg_align(git_repo_base, atlas_warped, output_mask_path, n)
-                    # except:
-                    #    print("ERROR: could not use niftyreg to warp atlas {}! Please check inputs.".format(str(n)))
 
             # if atlas_to_brain_align:
             if len(atlas_pts_for_input[0]) == 2:
@@ -826,7 +752,6 @@ def atlasBrainMatch(
             if olfactory_check:
                 if align_once and n != 0:
                     olfactory_bulbs = olfactory_bulbs_to_use_pre_align_list[0]
-                    print("OLFACTORY BULBS REUSED: {}".format(len(olfactory_bulbs)))
                 else:
                     mask = cv2.imread(mask_dir, cv2.IMREAD_GRAYSCALE)
                     cnts_for_olfactory = cv2.findContours(
@@ -866,12 +791,6 @@ def atlasBrainMatch(
                     except:
                         print('No olfactory bulb found!')
                     mask_warped_to_use = cv2.cvtColor(mask_warped_to_use, cv2.COLOR_BGR2GRAY)
-                    # if len(atlas_label) > 0:
-                    #     try:
-                    #         cv2.fillPoly(atlas_label, pts=[bulb], color=[bulb_fill])
-                    #         atlas_label[np.where(atlas_label == bulb_fill)] = bulb_fill
-                    #     except:
-                    #         print('No olfactory bulb found!')
                 img_edited = Image.open(mask_path)
                 # Generates a transparent version of the brain atlas.
                 img_rgba = img_edited.convert("RGBA")
@@ -964,9 +883,6 @@ def atlasBrainMatch(
             # four peaks of sensory activity
             if sensory_match:
                 original_label = True
-                # COMMENT OUT FOR ALIGNING BRAIN TO ATLAS
-                # mask_dir
-                # atlas_first_transform_path
                 if atlas_to_brain_align:
                     dst = getMaskContour(
                         mask_dir,
@@ -1002,26 +918,6 @@ def atlasBrainMatch(
                 dst = im
             dst = np.uint8(dst)
 
-        # if use_voxelmorph:
-        #     if atlas_to_brain_align:
-        #         _, flow = voxelmorph_align(
-        #             voxelmorph_model_path, br_vxm, vxm_template, exist_transform, flow_path
-        #         )
-        #     else:
-        #         dst, flow = voxelmorph_align(
-        #             voxelmorph_model_path, dst, vxm_template, exist_transform, flow_path
-        #         )
-        #     flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n)))
-        #     np.save(flow_path_after, flow)
-        #     if not exist_transform:
-        #         if atlas_to_brain_align:
-        #             dst_gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
-        #             dst = vxm_transform(dst_gray, flow_path_after)
-        #             ret, dst = cv2.threshold(
-        #                 dst, 5, 255, cv2.THRESH_BINARY
-        #             )
-        #             dst = np.uint8(dst)
-
         if use_dlc:
             if atlas_to_brain_align:
                 io.imsave(mask_warped_path, atlas_mask_warped)
@@ -1037,17 +933,11 @@ def atlasBrainMatch(
                     atlas_mask_left, atlas_mask_right
                 )
             atlas_mask_warped = cv2.cvtColor(atlas_mask_warped, cv2.COLOR_BGR2GRAY)
-            #
-            # atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
             ret, atlas_mask_warped = cv2.threshold(
                 atlas_mask_warped, 5, 255, cv2.THRESH_BINARY
             )
             atlas_mask_warped = np.uint8(atlas_mask_warped)
             original_label = True
-            # else:
-                # atlas_mask_warped = atlas_mask
-                #
-                # atlas_mask_warped = vxm_transform(atlas_mask_warped, flow_path_after)
             io.imsave(mask_warped_path, atlas_mask_warped)
         # Resize images back to 512x512
         dst = cv2.resize(dst, (im.shape[0], im.shape[1]))
@@ -1097,20 +987,21 @@ def atlasBrainMatch(
             bregma_list.append(dlc_pts[n][bregma_val])
 
     # Carries out VoxelMorph on each motif-based functional map (MBFM) that has been aligned to a raw brain image
-    # if use_dlc and use_voxelmorph and align_once:
     if use_voxelmorph:
-        for (n_post, dst_post), vxm_template_post in zip(enumerate(dst_list), vxm_template_list):
-            _, flow_post = voxelmorph_align(
+        for (n_post, dst_post), vxm_template_post in zip(enumerate([dst_list[1]]), [vxm_template_list[1]]):
+            output_img, flow_post = voxelmorph_align(
                voxelmorph_model_path, dst_post, vxm_template_post, exist_transform, flow_path
             )
             flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n_post)))
             np.save(flow_path_after, flow_post)
+            output_path_after = os.path.join(output_mask_path, "{}_output_img.png".format(str(n_post)))
+            io.imsave(output_path_after, output_img)
             if not exist_transform:
                 dst_gray = cv2.cvtColor(atlas, cv2.COLOR_BGR2GRAY)
                 dst_post = vxm_transform(dst_gray, flow_path_after)
                 ret, dst_post = cv2.threshold(
-                    dst_post, 5, 255, cv2.THRESH_BINARY
-                )
+                    dst_post, 1, 255, cv2.THRESH_BINARY
+                ) # 5, 255
                 dst_post = np.uint8(dst_post)
 
             mask_warped_path = os.path.join(
@@ -1140,11 +1031,11 @@ def atlasBrainMatch(
             if atlas_to_brain_align:
                 if original_label:
                     atlas_label = []
-                if use_voxelmorph:
-                    try:
-                        olfactory_bulbs_to_use_check = olfactory_bulbs_to_use_list[n_post]
-                    except:
+                if use_voxelmorph and olfactory_check:
+                    if align_once:
                         olfactory_bulbs_to_use_check = olfactory_bulbs_to_use_list[0]
+                    else:
+                        olfactory_bulbs_to_use_check = olfactory_bulbs_to_use_list[n_post]
                 else:
                     olfactory_bulbs_to_use_check = []
                 atlas_label = atlas_to_mask(

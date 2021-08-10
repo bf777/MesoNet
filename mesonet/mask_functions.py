@@ -205,8 +205,6 @@ def atlas_to_mask(
                         atlas_label[np.where(atlas_label == 400)] = 400
                     except:
                         print('No olfactory bulb found!')
-            # if use_voxelmorph and olfactory_check:
-            #     mask_input = cv2.bitwise_and(mask_input, mask_warped)
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
@@ -332,7 +330,7 @@ def applyMask(
         image_name_arr = glob.glob(os.path.join(mask_path, "*_brain_warp.png"))
         image_name_arr.sort(key=natural_sort_key)
 
-    region_bgr_lower = (220, 220, 220)
+    region_bgr_lower = (220, 220, 220) # 220
     region_bgr_upper = (255, 255, 255)
     base_c_max = []
     count = 0
@@ -499,8 +497,6 @@ def applyMask(
                 300,
                 400,
             ]
-            # atlas_label_df = pd.DataFrame(atlas_label)
-            # atlas_label_df.to_csv(os.path.join(save_path, "atlas_label.csv"))
             cnts_orig = []
             # Find contours in original aligned atlas
             if atlas_to_brain_align and not original_label:
@@ -539,19 +535,14 @@ def applyMask(
                 )
                 cnts_orig = imutils.grab_contours(cnts_orig)
             if not use_dlc:
-                # cnts_orig = cv2.findContours(
-                #    atlas_bw.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-                #)
                 cnts_orig, hierarchy = cv2.findContours(
                     atlas_bw.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
                 )[-2:]
-                # cnts_orig = imutils.grab_contours(cnts_orig)
             labels_cnts = []
             for (num_label, cnt_orig) in enumerate(cnts_orig):
                 labels_cnts.append(cnt_orig)
                 try:
                     cv2.drawContours(img, cnt_orig, -1, (255, 0, 0), 1)
-                    io.imsave(os.path.join(segmented_save_path, "check_contour.png"), img)
                 except:
                     print("Could not draw contour!")
                 # try:
@@ -655,7 +646,6 @@ def applyMask(
                 cortex_mask_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
             )
             cortex_cnt = imutils.grab_contours(cortex_cnt)
-            # cv2.drawContours(img, cortex_cnt, -1, (0, 0, 255), 3)
         labels_x = []
         labels_y = []
         areas = []
@@ -723,7 +713,7 @@ def applyMask(
                 except:
                     label_for_mat = coord_label_num
                     print(
-                        "WARNING: label was not found in region. Order of labels may be incorrect!"
+                        "WARNING: label {} was not found in region. Order of labels may be incorrect!".format(str(coord_idx))
                     )
             else:
                 label_for_mat = coord_label_num
