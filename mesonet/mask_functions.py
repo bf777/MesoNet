@@ -391,7 +391,10 @@ def applyMask(
             mask_warped_path = os.path.join(
                 mask_path, "{}_mask_warped.png".format(str(i))
             )
-            olfactory_bulbs_to_use = olfactory_bulbs_to_use_list[i]
+            if olfactory_check:
+                olfactory_bulbs_to_use = olfactory_bulbs_to_use_list[i]
+            else:
+                olfactory_bulbs_to_use = []
             atlas_to_mask(
                 atlas_path,
                 mask_input_path,
