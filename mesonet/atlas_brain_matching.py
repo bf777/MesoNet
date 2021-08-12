@@ -773,13 +773,18 @@ def atlasBrainMatch(
                         )[2:4]
                 if align_once and n == 0:
                     olfactory_bulbs_to_use_pre_align_list.append(olfactory_bulbs)
+            if olfactory_check and len(olfactory_bulbs) == 0:
+                # If there's no olfactory bulbs found, disable future olfactory
+                # bulb checking
+                olfactory_check = False
             for hemisphere in hemispheres:
                 new_data = []
                 if hemisphere == 'left':
                     mask_path = mask_warped_path_alt_left
                     mask_warped_to_use = atlas_mask_left_warped
                     if olfactory_check:
-                        bulb = olfactory_bulbs[0]
+                        if len(olfactory_bulbs) >= 1:
+                            bulb = olfactory_bulbs[0]
                         bulb_fill = 300
                 else:
                     mask_path = mask_warped_path_alt_right
@@ -993,7 +998,12 @@ def atlasBrainMatch(
 
     # Carries out VoxelMorph on each motif-based functional map (MBFM) that has been aligned to a raw brain image
     if use_voxelmorph:
-        for (n_post, dst_post), vxm_template_post in zip(enumerate([dst_list[1]]), [vxm_template_list[1]]):
+        align_once = True
+        if len(dst_list) == 1:
+            n_to_use = 0
+        else:
+            n_to_use = 1
+        for (n_post, dst_post), vxm_template_post in zip(enumerate([dst_list[n_to_use]]), [vxm_template_list[n_to_use]]):
             output_img, flow_post = voxelmorph_align(
                voxelmorph_model_path, dst_post, vxm_template_post, exist_transform, flow_path
             )
@@ -1036,7 +1046,7 @@ def atlasBrainMatch(
             if atlas_to_brain_align:
                 if original_label:
                     atlas_label = []
-                if use_voxelmorph and olfactory_check:
+                if use_voxelmorph and olfactory_check and use_unet and use_dlc:
                     if align_once:
                         olfactory_bulbs_to_use_check = olfactory_bulbs_to_use_list[0]
                     else:

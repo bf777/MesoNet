@@ -187,7 +187,8 @@ def atlas_to_mask(
                 mask_input = cv2.bitwise_and(atlas, mask_warped)
                 mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
             else:
-                olfactory_bulbs_to_add = olfactory_bulbs
+                if olfactory_check:
+                    olfactory_bulbs_to_add = olfactory_bulbs
                 mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
                 mask_input = cv2.bitwise_and(atlas, mask_input)
                 mask_input = cv2.bitwise_and(mask_input, mask_warped)
@@ -205,6 +206,13 @@ def atlas_to_mask(
                         atlas_label[np.where(atlas_label == 400)] = 400
                     except:
                         print('No olfactory bulb found!')
+                        # If olfactory bulbs that match with labelling atlas
+                        # can't be found, regenerate the original atlas
+                        mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
+                        mask_input_orig = mask_input
+                        mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
+                        mask_input = cv2.bitwise_and(atlas, mask_input)
+                        mask_input = cv2.bitwise_and(mask_input, mask_warped)
         else:
             # FOR ALIGNING BRAIN TO ATLAS
             mask_input = cv2.bitwise_and(atlas, mask_warped)
@@ -221,6 +229,12 @@ def atlas_to_mask(
                         atlas_label[np.where(atlas_label == 400)] = 400
                     except:
                         print('No olfactory bulb found!')
+                        # If olfactory bulbs that match with labelling atlas
+                        # can't be found, regenerate the original atlas
+                        mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
+                        mask_input_orig = mask_input
+                        mask_input = cv2.bitwise_and(atlas, mask_warped)
+                        mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
         io.imsave(os.path.join(mask_output_path, "{}_mask_no_atlas.png".format(n)), mask_input_orig)
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
