@@ -422,7 +422,10 @@ def applyMask(
         else:
             bregma_x, bregma_y = [round(img.shape[0]/2), round(img.shape[1]/2)]
             original_label = True
-        mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
+        if use_voxelmorph and i == 1:
+            mask = cv2.imread(os.path.join(mask_path, "{}.png".format(0)))
+        else:
+            mask = cv2.imread(os.path.join(mask_path, "{}.png".format(i)))
         mask = cv2.resize(mask, (img.shape[0], img.shape[1]))
         # Get the region of the mask that is white
         mask_color = cv2.inRange(mask, region_bgr_lower, region_bgr_upper)

@@ -536,6 +536,11 @@ def atlasBrainMatch(
         atlas_mask = cv2.resize(atlas_mask, (im.shape[0], im.shape[1]))
         atlas_mask = np.uint8(atlas_mask)
         mask_dir = os.path.join(cwd, "../output_mask/{}.png".format(n))
+        if use_voxelmorph and n == 1:
+            try:
+                os.remove(mask_dir)
+            except:
+                print("Cannot remove second U-Net output for VoxelMorph!")
 
         print("Performing first transformation of atlas {}...".format(n))
 
@@ -1013,8 +1018,8 @@ def atlasBrainMatch(
             )
 
             io.imsave(atlas_first_transform_path_post, dst_post)
-
-            atlas_path = os.path.join(output_mask_path, "{}_atlas.png".format(str(n_post)))
+            if align_once and use_voxelmorph:
+                atlas_path = os.path.join(output_mask_path, "{}_atlas.png".format(str(0)))
 
             brain_warped_path = os.path.join(
                 output_mask_path, "{}_brain_warp.png".format(str(n_post))
