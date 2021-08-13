@@ -754,7 +754,7 @@ def atlasBrainMatch(
             # io.imsave(brain_to_atlas_mask_path, brain_to_atlas_mask)
             hemispheres = ['left', 'right']
             olfactory_bulbs_to_use = []
-            if olfactory_check:
+            if olfactory_check and use_unet:
                 if align_once and n != 0:
                     olfactory_bulbs = olfactory_bulbs_to_use_pre_align_list[0]
                 else:
@@ -773,27 +773,27 @@ def atlasBrainMatch(
                         )[2:4]
                 if align_once and n == 0:
                     olfactory_bulbs_to_use_pre_align_list.append(olfactory_bulbs)
-            if olfactory_check and len(olfactory_bulbs) == 0:
-                # If there's no olfactory bulbs found, disable future olfactory
-                # bulb checking
-                olfactory_check = False
+                if len(olfactory_bulbs) == 0:
+                    # If there's no olfactory bulbs found, disable future olfactory
+                    # bulb checking
+                    olfactory_check = False
             for hemisphere in hemispheres:
                 new_data = []
                 if hemisphere == 'left':
                     mask_path = mask_warped_path_alt_left
                     mask_warped_to_use = atlas_mask_left_warped
-                    if olfactory_check:
+                    if olfactory_check and use_unet:
                         if len(olfactory_bulbs) >= 1:
                             bulb = olfactory_bulbs[0]
                         bulb_fill = 300
                 else:
                     mask_path = mask_warped_path_alt_right
                     mask_warped_to_use = atlas_mask_right_warped
-                    if olfactory_check:
+                    if olfactory_check and use_unet:
                         if len(olfactory_bulbs) > 1:
                             bulb = olfactory_bulbs[1]
                         bulb_fill = 400
-                if olfactory_check:
+                if olfactory_check and use_unet:
                     olfactory_bulbs_to_use = olfactory_bulbs
                     try:
                         cv2.fillPoly(mask_warped_to_use, pts=[bulb], color=[255, 255, 255])
@@ -822,7 +822,7 @@ def atlasBrainMatch(
                 if hemisphere == 'left':
                     if atlas_to_brain_align:
                         brain_to_atlas_warped_left = cv2.warpAffine(brain_atlas_transparent, warp_coords_left, (512, 512))
-                        if olfactory_check:
+                        if olfactory_check and use_unet:
                             olfactory_warped_left = cv2.warpAffine(mask_warped_to_use, warp_coords_left, (512, 512))
                             olfactory_warped_cnts_left = cv2.findContours(
                                 olfactory_warped_left.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -833,7 +833,7 @@ def atlasBrainMatch(
                             )[-1]
                     else:
                         brain_to_atlas_warped_left = cv2.warpAffine(brain_atlas_transparent, warp_coords_brain_atlas_left, (512, 512))
-                        if olfactory_check:
+                        if olfactory_check and use_unet:
                             olfactory_warped_left = cv2.warpAffine(mask_warped_to_use, warp_coords_brain_atlas_left, (512, 512))
                             olfactory_warped_cnts_left = cv2.findContours(
                                 olfactory_warped_left.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -846,7 +846,7 @@ def atlasBrainMatch(
                     if atlas_to_brain_align:
                         brain_to_atlas_warped_right = cv2.warpAffine(brain_atlas_transparent, warp_coords_right, (512, 512))
                         olfactory_warped_right = cv2.warpAffine(mask_warped_to_use, warp_coords_right, (512, 512))
-                        if olfactory_check:
+                        if olfactory_check and use_unet:
                             olfactory_warped_right = cv2.warpAffine(mask_warped_to_use, warp_coords_right, (512, 512))
                             olfactory_warped_cnts_right = cv2.findContours(
                                 olfactory_warped_right.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -858,7 +858,7 @@ def atlasBrainMatch(
                     else:
                         brain_to_atlas_warped_right = cv2.warpAffine(brain_atlas_transparent, warp_coords_brain_atlas_right, (512, 512))
                         olfactory_warped_right = cv2.warpAffine(mask_warped_to_use, warp_coords_brain_atlas_right, (512, 512))
-                        if olfactory_check:
+                        if olfactory_check and use_unet:
                             olfactory_warped_right = cv2.warpAffine(mask_warped_to_use, warp_coords_brain_atlas_right, (512, 512))
                             olfactory_warped_cnts_right = cv2.findContours(
                                 olfactory_warped_right.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
@@ -867,7 +867,7 @@ def atlasBrainMatch(
                             olfactory_warped_right = sorted(
                                 olfactory_warped_cnts_right, key=cv2.contourArea, reverse=True
                             )[-1]
-            if olfactory_check:
+            if olfactory_check and use_unet:
                 olfactory_bulbs_to_use_list.append([olfactory_warped_left, olfactory_warped_right])
             brain_to_atlas_mask = cv2.bitwise_or(
                 brain_to_atlas_warped_left, brain_to_atlas_warped_right
