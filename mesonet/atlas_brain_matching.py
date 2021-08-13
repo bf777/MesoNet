@@ -607,76 +607,83 @@ def atlasBrainMatch(
                     left = [1, 3, 5]
                     right = [3, 5, 7]
                 else:
-                    left = [x for x in landmark_indices if x in range(0, 6)][0:2]
-                    right = [x for x in landmark_indices if x in range(3, 9)][0:2]
+                    # left = [x for x in landmark_indices if x in range(0, 6)][0:2]
+                    # right = [x for x in landmark_indices if x in range(3, 9)][0:2]
+                    left = [x for x in landmark_arr if x in [0, 1, 2, 3, 4, 5]][0:3]
+                    right = [x for x in landmark_arr if x in [3, 4, 5, 6, 7, 8]][0:3]
+                    print(landmark_indices)
+                    print(landmark_arr)
+                    print(left)
+                    print(right)
 
-                try:
-                    atlas_pts_left = np.array(
-                        [
-                            atlas_pts[align_val][left[0]],
-                            atlas_pts[align_val][left[1]],
-                            atlas_pts[align_val][left[2]],
-                        ],
-                        dtype=np.float32,
-                    )
-                    atlas_pts_right = np.array(
-                        [
-                            atlas_pts[align_val][right[0]],
-                            atlas_pts[align_val][right[1]],
-                            atlas_pts[align_val][right[2]],
-                        ],
-                        dtype=np.float32,
-                    )
-                    dlc_pts_left = np.array(
-                        [
-                            dlc_pts[align_val][left[0]],
-                            dlc_pts[align_val][left[1]],
-                            dlc_pts[align_val][left[2]],
-                        ],
-                        dtype=np.float32,
-                    )
-                    dlc_pts_right = np.array(
-                        [
-                            dlc_pts[align_val][right[0]],
-                            dlc_pts[align_val][right[1]],
-                            dlc_pts[align_val][right[2]],
-                        ],
-                        dtype=np.float32,
-                    )
+                # try:
+                atlas_pts_left = np.array(
+                    [
+                        atlas_pts[align_val][left[0]],
+                        atlas_pts[align_val][left[1]],
+                        atlas_pts[align_val][left[2]],
+                    ],
+                    dtype=np.float32,
+                )
+                atlas_pts_right = np.array(
+                    [
+                        atlas_pts[align_val][right[0]],
+                        atlas_pts[align_val][right[1]],
+                        atlas_pts[align_val][right[2]],
+                    ],
+                    dtype=np.float32,
+                )
+                dlc_pts_left = np.array(
+                    [
+                        dlc_pts[align_val][left[0]],
+                        dlc_pts[align_val][left[1]],
+                        dlc_pts[align_val][left[2]],
+                    ],
+                    dtype=np.float32,
+                )
+                dlc_pts_right = np.array(
+                    [
+                        dlc_pts[align_val][right[0]],
+                        dlc_pts[align_val][right[1]],
+                        dlc_pts[align_val][right[2]],
+                    ],
+                    dtype=np.float32,
+                )
 
-                except:
-                    atlas_pts_left = np.array(
-                        [
-                            atlas_pts[align_val][0],
-                            atlas_pts[align_val][2],
-                            atlas_pts[align_val][3],
-                        ],
-                        dtype=np.float32,
-                    )
-                    atlas_pts_right = np.array(
-                        [
-                            atlas_pts[align_val][1],
-                            atlas_pts[align_val][2],
-                            atlas_pts[align_val][3],
-                        ],
-                        dtype=np.float32,
-                    )
-                    dlc_pts_left = np.array(
-                        [
-                            dlc_pts[align_val][0],
-                            dlc_pts[align_val][2],
-                            dlc_pts[align_val][3],
-                        ],
-                        dtype=np.float32,
-                    )
-                    dlc_pts_right = np.array(
-                        [
-                            dlc_pts[align_val][1],
-                            dlc_pts[align_val][2],
-                            dlc_pts[align_val][3],
-                        ],
-                        dtype=np.float32,
-                    )
+                # except:
+                #     # Old: left: 0, 2, 3; right: 1, 2, 3
+                #     atlas_pts_left = np.array(
+                #         [
+                #             atlas_pts[align_val][0],
+                #             atlas_pts[align_val][1],
+                #             atlas_pts[align_val][2],
+                #         ],
+                #         dtype=np.float32,
+                #     )
+                #     atlas_pts_right = np.array(
+                #         [
+                #             atlas_pts[align_val][5],
+                #             atlas_pts[align_val][6],
+                #             atlas_pts[align_val][7],
+                #         ],
+                #         dtype=np.float32,
+                #     )
+                #     dlc_pts_left = np.array(
+                #         [
+                #             dlc_pts[align_val][0],
+                #             dlc_pts[align_val][1],
+                #             dlc_pts[align_val][2],
+                #         ],
+                #         dtype=np.float32,
+                #     )
+                #     dlc_pts_right = np.array(
+                #         [
+                #             dlc_pts[align_val][5],
+                #             dlc_pts[align_val][6],
+                #             dlc_pts[align_val][7],
+                #         ],
+                #         dtype=np.float32,
+                #     )
 
                 warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
                 warp_coords_right = cv2.getAffineTransform(atlas_pts_right, dlc_pts_right)
