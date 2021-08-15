@@ -603,14 +603,30 @@ def atlasBrainMatch(
                 left = np.argsort(left).tolist()
                 right = np.argsort(right).tolist()
                 right = [x + 1 for x in right]
-                if set([1, 3, 5, 7]).issubset(landmark_arr):
-                    left = [1, 3, 5]
-                    right = [3, 5, 7]
+                # if set([1, 3, 5, 7]).issubset(landmark_arr):
+                if set([0, 3, 5, 6]).issubset(landmark_arr) and len(landmark_arr) >= 7:
+                    left = [0, 3, 5]
+                    right = [3, 5, 6]
+                    # OLD METHOD FOR PREFERENTIALLY USING TOP CENTRE AND LAMBDA
+                    # elif 4 in landmark_arr and 6 in landmark_arr:
+                    #     # If top centre and lambda landmarks are selected,
+                    #     # add the first landmark from the left hemisphere and the
+                    #     # last one from the right hemisphere.
+                    #     centreline_pts = [landmark_arr.index(x) for x in landmark_arr if x in [4, 6]]
+                    #     left = [x for x in landmark_arr if x in [0, 1, 2, 3, 5]][0]
+                    #     right = [landmark_arr.index(x) for x in reversed(landmark_arr) if x in [8, 7, 5, 4, 3]][0]
+                    #     left = centreline_pts.extend([left])
+                    #     right = [right].extend(centreline_pts)
+                    #     print(landmark_indices)
+                    #     print(landmark_arr)
+                    #     print(left)
+                    #     print(right)
                 else:
                     # left = [x for x in landmark_indices if x in range(0, 6)][0:2]
                     # right = [x for x in landmark_indices if x in range(3, 9)][0:2]
-                    left = [x for x in landmark_arr if x in [0, 1, 2, 3, 4, 5]][0:3]
-                    right = [x for x in landmark_arr if x in [3, 4, 5, 6, 7, 8]][0:3]
+                    left = [landmark_arr.index(x) for x in landmark_arr if x in [0, 1, 2, 3, 4, 5]][0:3]
+                    # right = [landmark_arr.index(x) for x in reversed(landmark_arr) if x in [8, 7, 6, 5, 4, 3]][0:3]
+                    right =  [landmark_arr.index(x) for x in landmark_arr if x in [3, 4, 5, 6, 7, 8]][-3:]
                     print(landmark_indices)
                     print(landmark_arr)
                     print(left)
