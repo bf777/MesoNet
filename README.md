@@ -7,12 +7,15 @@ You can use it to:
 - Automatically identify cortical landmarks
 - Register a brain atlas to your mesoscale calcium activity data (or vice versa)
 - Segment brain data based on a brain atlas
-- Use one of our machine learning  models (or train your own) to identify and classify brain regions without using any landmarks!
+- Use one of our machine learning  models (or train your own) to segment brain regions without using any landmarks!
 
 We developed atlas-to-brain and brain-to-atlas approaches to make the software flexible, easy to use and robust.
 
-We offer an easy to use GUI, as well as a powerful command line interface (CLI) allowing you to integrate the toolbox
-with your own neural imaging workflow.
+We offer an easy to use GUI, as well as a powerful command line interface (CLI) allowing you to integrate the toolbox with your own neural imaging workflow.
+
+We also extend our pipeline to make use of functional sensory maps and spontaneous cortical activity motifs.
+
+We provided six end-to-end automated pipelines to allow users to quickly output results from input images.
 
 MesoNet is built primarily on the U-net machine learning model
 [(Ronneberger, Fischer, and Brox, 2015)](http://dx.doi.org/10.1007/978-3-319-24574-4_28),
@@ -39,7 +42,4 @@ on older versions of Windows and on MacOS, but these platforms have not been tes
 a GPU is _strongly_ recommended for faster training and processing.
 
 ## Contributors
-The code was written by [Brandon Forys](https://github.com/bf777);
-[Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, trained
-the U-net models provided with MesoNet, and developed the brain atlas alignment approach. They are in the
-[Murphy Lab](https://murphylab.med.ubc.ca/) in UBC's Department of Psychiatry.
+[Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, collected data,trained the DeeLabCut, U-Net and VoxelMorph models provided with MesoNet, and developed the brain atlas alignment approach. [Brandon Forys](https://github.com/bf777) wrote the code of GUI and CLI. They are in the [Murphy Lab](https://murphylab.med.ubc.ca/) in UBC’s Department of Psychiatry.
