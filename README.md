@@ -1,6 +1,6 @@
 # MesoNet
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bf777/MesoNet/blob/master/mesonet_demo_colab.ipynb) [![Open in Code Ocean](https://codeocean.com/codeocean-assets/badge/open-in-code-ocean.svg)](https://codeocean.com/capsule/1919930/tree)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bf777/MesoNet/blob/master/mesonet_demo_colab.ipynb) [![Open in Code Ocean](https://codeocean.com/codeocean-assets/badge/open-in-code-ocean.svg)](https://codeocean.com/capsule/1919930/tree) [![DOI](https://zenodo.org/badge/197092510.svg)](https://zenodo.org/badge/latestdoi/197092510)
 
 <img src="https://github.com/bf777/MesoNet/blob/master/img/logo.png" width="200" height="200" align="left">
 
