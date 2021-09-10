@@ -1,6 +1,6 @@
 # MesoNet
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bf777/MesoNet/blob/master/mesonet_demo_colab.ipynb) [![Open in Code Ocean](https://codeocean.com/codeocean-assets/badge/open-in-code-ocean.svg)](https://codeocean.com/capsule/1919930/tree) [![DOI](https://zenodo.org/badge/197092510.svg)](https://zenodo.org/badge/latestdoi/197092510)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bf777/MesoNet/blob/master/mesonet_demo_colab.ipynb) [![Open in Code Ocean](https://codeocean.com/codeocean-assets/badge/open-in-code-ocean.svg)](https://codeocean.com/capsule/1919930/tree) [![DOI](https://zenodo.org/badge/197092510.svg)](https://zenodo.org/badge/latestdoi/197092510) [![CC BY 4.0][cc-by-shield]][cc-by]
 
 <img src="https://github.com/bf777/MesoNet/blob/master/img/logo.png" width="200" height="200" align="left">
 
@@ -44,3 +44,12 @@ MesoNet has been tested on Windows 8.1, Windows 10, and Linux (Ubuntu 16.04 and 
 
 ## Contributors
 [Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, collected data, trained the DeepLabCut, U-Net and VoxelMorph models provided with MesoNet, and developed the brain atlas alignment approach. [Brandon Forys](https://github.com/bf777) wrote the code of GUI and CLI. They are in the [Murphy Lab](https://murphylab.med.ubc.ca/) in UBC’s Department of Psychiatry.
+
+This work is licensed under a
+[Creative Commons Attribution 4.0 International License][cc-by].
+
+[![CC BY 4.0][cc-by-image]][cc-by]
+
+[cc-by]: http://creativecommons.org/licenses/by/4.0/
+[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
+[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
