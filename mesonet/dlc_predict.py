@@ -156,10 +156,10 @@ def DLCPredict(
                 config, [video_output_path], videotype=".mp4", save_as_csv=True
             )
             deeplabcut.create_labeled_video(config, [video_name], filtered=True)
-            if "2." in deeplabcut.__version__:
-                scorer_name = "DeepCut"
-            else:
-                scorer_name = "DLC"
+#             if "2." in deeplabcut.__version__:
+#                 scorer_name = "DeepCut"
+#             else:
+            scorer_name = "DLC"
             output_video_name = ""
             coords_input = ""
             for filename in glob.glob(
