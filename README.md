@@ -11,6 +11,8 @@ You can use it to:
 - Segment brain data based on a brain atlas
 - Use one of our machine learning  models (or train your own) to segment brain regions without using any landmarks!
 
+**Read the MesoNet article in [Nature Communications](https://doi.org/10.1038/s41467-021-26255-2)**.
+
 We developed atlas-to-brain and brain-to-atlas approaches to make the software flexible, easy to use and robust.
 
 We offer an easy to use GUI, as well as a powerful command line interface (CLI) allowing you to integrate the toolbox with your own neural imaging workflow.
@@ -44,6 +46,26 @@ MesoNet has been tested on Windows 8.1, Windows 10, and Linux (Ubuntu 16.04 and 
 
 ## Contributors
 [Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, collected data, trained the DeepLabCut, U-Net and VoxelMorph models provided with MesoNet, and developed the brain atlas alignment approach. [Brandon Forys](https://github.com/bf777) wrote the code of GUI and CLI. They are in the [Murphy Lab](https://murphylab.med.ubc.ca/) in UBC’s Department of Psychiatry.
+
+## Citing
+If you use our software, please cite the original research article:
+
+Xiao, D., Forys, B.J., Vanni, M.P. et al. MesoNet allows automated scaling and segmentation of mouse mesoscale cortical maps using machine learning. Nat Commun 12, 5992 (2021). https://doi.org/10.1038/s41467-021-26255-2
+
+BibTex:
+```
+@article{2021,
+  doi = {10.1038/s41467-021-26255-2},
+  url = {https://doi.org/10.1038/s41467-021-26255-2},
+  year = {2021},
+  month = oct,
+  publisher = {Springer Science and Business Media {LLC}},
+  volume = {12},
+  number = {1},
+  author = {Dongsheng Xiao and Brandon J. Forys and Matthieu P. Vanni and Timothy H. Murphy},
+  title = {{MesoNet} allows automated scaling and segmentation of mouse mesoscale cortical maps using machine learning}
+}
+```
 
 This work is licensed under a
 [Creative Commons Attribution 4.0 International License][cc-by].
