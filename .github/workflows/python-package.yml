@@ -1,6 +1,4 @@
-# This workflow will install Python dependencies and run tests with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
+# Adapted from https://github.com/DeepLabCut/DeepLabCut/blob/master/.github/workflows/python-package.yml
 name: Python package
 
 on:
@@ -11,14 +9,13 @@ on:
 
 jobs:
   build:
-
     runs-on: ${{ matrix.os }}
+    
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-11, windows-latest]
         python-version: [3.7, 3.8, 3.9]
-        # Adapted from https://github.com/DeepLabCut/DeepLabCut/blob/master/.github/workflows/python-package.yml
         include:
           - os: ubuntu-latest
             path: ~/.cache/pip
