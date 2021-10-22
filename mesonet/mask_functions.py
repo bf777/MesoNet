@@ -20,7 +20,7 @@ import scipy
 import pylab
 from PIL import Image
 import pandas as pd
-from keras import backend as k
+from tensorflow.keras import backend as k
 from polylabel import polylabel
 
 # Set background colour as black to fix issue with more than one background region being identified.
