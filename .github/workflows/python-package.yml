@@ -47,7 +47,7 @@ jobs:
         python -m pytest
         
     - name: Run shell script to install models from OSF
-      run:
+      run: |
         mesonet/get_default_models.sh
         
     - name: Run functional tests
