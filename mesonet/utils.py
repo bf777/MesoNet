@@ -2,7 +2,7 @@
 MesoNet
 Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
-Licensed under the MIT License (see LICENSE for details)
+Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
 """
 import yaml
 import glob
@@ -261,9 +261,12 @@ def find_git_repo():
 
         root_folder = "C:\\"
         git_repo_marker = "mesonet.txt"
-        if platform == "linux" or platform == "linux2" or platform == "darwin":
-            # linux or mac
+        if platform == "linux" or platform == "linux2":
+            # linux
             root_folder = "/home"
+        elif platform == "darwin":
+            # mac
+            root_folder = "/Users"
         elif platform == "win32":
             # Windows
             root_folder = "C:\\"

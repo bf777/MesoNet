@@ -2,7 +2,7 @@
 MesoNet
 Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
-Licensed under the MIT License (see LICENSE for details)
+Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
 """
 # __init__.py
 from mesonet.utils import *

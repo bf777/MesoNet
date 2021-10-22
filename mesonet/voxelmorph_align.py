@@ -2,7 +2,7 @@
 MesoNet
 Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
-Licensed under the MIT License (see LICENSE for details)
+Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
 The method "vxm_data_generator" is adapted from VoxelMorph:
 Balakrishnan, G., Zhao, A., Sabuncu, M. R., Guttag, J., & Dalca, A. V. (2019). VoxelMorph: A Learning Framework for
     Deformable Medical Image Registration. IEEE Transactions on Medical Imaging, 38(8), 1788–1800.

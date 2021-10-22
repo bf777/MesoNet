@@ -2,7 +2,7 @@
 MesoNet
 Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
-Licensed under the MIT License (see LICENSE for details)
+Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
 """
 import deeplabcut
 from mesonet.atlas_brain_matching import atlasBrainMatch
@@ -142,7 +142,7 @@ def DLCPredict(
             os.mkdir(video_output_path)
         if not coords_input_file:
             # fourcc = cv2.VideoWriter_fourcc(*'DIB ')
-            if platform == "linux" or platform == "linux2":
+            if platform == "linux" or platform == "linux2" or platform == "darwin":
                 fourcc = cv2.VideoWriter_fourcc("M", "P", "E", "G")
             else:
                 fourcc = -1

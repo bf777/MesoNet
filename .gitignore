@@ -18,3 +18,6 @@ mesonet/models/voxelmorph/old/*.h5
 
 # Old versions of scripts kept as backups
 mesonet/*_old.py
+
+# test results
+tests/results/
