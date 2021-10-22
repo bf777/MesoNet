@@ -45,7 +45,7 @@ jobs:
         
     - name: Run shell script to install models from OSF
       run: |
-        ./mesonet/get_default_models.sh
+        sh ./mesonet/get_default_models.sh
         
     - name: Run functional tests
       run: |
