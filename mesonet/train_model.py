@@ -9,7 +9,7 @@ from mesonet.model import *
 from mesonet.data import *
 import numpy as np
 import pandas as pd
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint
 from mesonet.utils import parse_yaml
 from mesonet.dlc_predict import DLC_edit_bodyparts
 
