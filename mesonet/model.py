@@ -6,8 +6,8 @@ Licensed under the Creative Commons Attribution 4.0 International License (see L
 This file has been adapted from model.py in https://github.com/zhixuhao/unet
 """
 from tensorflow.keras.models import *
-from keras.layers import *
-from keras.optimizers import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.optimizers import *
 
 
 def unet(pretrained_weights=None, input_size=(512, 512, 1)):

@@ -6,7 +6,7 @@ Licensed under the Creative Commons Attribution 4.0 International License (see L
 This file has been adapted from data.py in https://github.com/zhixuhao/unet
 """
 from __future__ import print_function
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 import os
 import skimage.io as io
