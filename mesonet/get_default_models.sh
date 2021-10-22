@@ -16,4 +16,5 @@ osf -p svztu fetch 7_U-Net_model/DongshengXiao_brain_bundary.hdf5 models/Dongshe
 osf -p svztu fetch 7_U-Net_model/DongshengXiao_unet_motif_based_functional_atlas.hdf5 models/DongshengXiao_unet_motif_based_functional_atlas.hdf5
 
 # Get VoxelMorph model
+mkdir models/voxelmorph
 osf -p svztu fetch 8_VoxelMorph_model/VoxelMorph_Motif_based_functional_map_model_transformed1000.h5 models/voxelmorph/VoxelMorph_Motif_based_functional_map_model_transformed1000.h5
