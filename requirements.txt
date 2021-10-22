@@ -13,4 +13,4 @@ imgaug
 voxelmorph
 neurite
 osfclient
-pytables
+tables
