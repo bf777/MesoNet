@@ -48,10 +48,12 @@ jobs:
         
     - name: Run shell script to install models from OSF
       run: |
-        cd mesonet
         sh get_default_models.sh
+      working-directory: |
+        ./mesonet
         
     - name: Run functional tests
       run: |
-        cd ../tests
         python test.py
+      working-directory: |
+        ./tests
