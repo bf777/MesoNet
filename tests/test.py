@@ -26,35 +26,35 @@ if __name__ == '__main__':
 
     # Try to make output folders
     try:
-        os.mkdir(output_file_atlas_brain)
+        os.makedirs(output_file_atlas_brain)
     except OSError:
         print ("Creation of the directory %s failed" % output_file_atlas_brain)
     else:
         print ("Successfully created the directory %s " % output_file_atlas_brain)
 
     try:
-        os.mkdir(output_file_brain_atlas)
+        os.makedirs(output_file_brain_atlas)
     except OSError:
         print ("Creation of the directory %s failed" % output_file_brain_atlas)
     else:
         print ("Successfully created the directory %s " % output_file_brain_atlas)
 
     try:
-        os.mkdir(output_file_sensory)
+        os.makedirs(output_file_sensory)
     except OSError:
         print ("Creation of the directory %s failed" % output_file_sensory)
     else:
         print ("Successfully created the directory %s " % output_file_sensory)
 
     try:
-        os.mkdir(output_file_MBFM_U_Net)
+        os.makedirs(output_file_MBFM_U_Net)
     except OSError:
         print ("Creation of the directory %s failed" % output_file_MBFM_U_Net)
     else:
         print ("Successfully created the directory %s " % output_file_MBFM_U_Net)
 
     try:
-        os.mkdir(output_file_voxelmorph)
+        os.makedirs(output_file_voxelmorph)
     except OSError:
         print ("Creation of the directory %s failed" % output_file_voxelmorph)
     else:
