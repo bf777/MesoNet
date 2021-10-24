@@ -47,13 +47,9 @@ jobs:
 #         python -m pytest
         
     - name: Run shell script to install models from OSF
-      run: |
-        sh get_default_models.sh
-      working-directory: |
-        ./mesonet
+      working-directory: ./mesonet
+      run: sh get_default_models.sh
         
     - name: Run functional tests
-      run: |
-        python test.py
-      working-directory: |
-        ./tests
+      working-directory: ./tests
+      run: python test.py
