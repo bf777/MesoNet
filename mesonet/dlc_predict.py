@@ -145,7 +145,7 @@ def DLCPredict(
             if platform == "linux" or platform == "linux2" or platform == "darwin":
                 fourcc = cv2.VideoWriter_fourcc("M", "P", "E", "G")
             else:
-                fourcc = -1
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             out = cv2.VideoWriter(video_name, fourcc, 30, size)
             for i in img_array:
                 # print("img {} written!".format(i))
