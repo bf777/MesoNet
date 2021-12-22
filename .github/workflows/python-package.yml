@@ -6,6 +6,9 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+    
+env:
+  MESONET_GIT: ${{ github.workspace }}
 
 jobs:
   build:
@@ -33,9 +36,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         
-    - name: Sets environment variable for git repo location
-      env:
-        MESONET_GIT: ${{ env.GITHUB_WORKSPACE }}
+    - name: Prints environment variable for git repo location
       run: echo "The MesoNet git repository is located at ${{ env.MESONET_GIT }}"
         
     - name: Install dependencies
