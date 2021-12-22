@@ -36,6 +36,7 @@ jobs:
     - name: Sets environment variable for git repo location
       env:
         MESONET_GIT: pwd
+      run: echo "$MESONET_GIT"
         
     - name: Install dependencies
       run: |
