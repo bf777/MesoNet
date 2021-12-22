@@ -33,9 +33,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         
-    - name: Install dependencies
-      env: |
+    - name: Sets environment variable for git repo location
+      env:
         MESONET_GIT: pwd
+        
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         python -m pip install .
