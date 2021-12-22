@@ -35,8 +35,8 @@ jobs:
         
     - name: Sets environment variable for git repo location
       env:
-        MESONET_GIT: $(pwd)
-      run: echo "$MESONET_GIT"
+        MESONET_GIT: ${{ env.PWD }}
+      run: echo "The MesoNet git repository is located at ${{ env.PWD }}"
         
     - name: Install dependencies
       run: |
