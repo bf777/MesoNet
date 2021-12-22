@@ -243,7 +243,8 @@ def find_git_repo():
     # Preferred (faster) option to find mesonet git repo is to set it as an environment variable
     git_repo_base = ""
     try:
-        git_repo_base = os.environ["MESONET_GIT"]
+        git_repo_base = os.getenv("MESONET_GIT")
+        print('MesoNet git repo found at {}, skipping directory check...'.format(git_repo_base))
     except:
         # If we can't find the environment variable, search for the mesonet git repository
         # solution to find git repository on computer adapted from:
