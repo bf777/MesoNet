@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 import neurite as ne
 import matplotlib.pyplot as plt
+import pathlib
 
 
 def config_project(
@@ -269,7 +270,9 @@ def find_git_repo():
             root_folder = "/Users"
         elif platform == "win32":
             # Windows
-            root_folder = "C:\\"
+            # Get letter of current drive
+            drive_letter = pathlib.Path.home().drive
+            root_folder = "{}\\".format(drive_letter)
         elif in_colab:
             root_folder = "/content"
         for root, dirs, files in os.walk(root_folder):
