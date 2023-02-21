@@ -152,6 +152,8 @@ def DLCPredict(
                 out.write(i)
             out.release()
 
+            print('DLC config file path: {}'.format(config))
+
             deeplabcut.analyze_videos(
                 config, [video_output_path], videotype=".mp4", save_as_csv=True
             )
