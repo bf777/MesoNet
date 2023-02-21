@@ -755,7 +755,7 @@ class Gui(object):
             except:
                 if self.saveFolderName_str.get != newSaveFolderName:
                     self.saveFolderName_str.set(self.cwd)
-                    save_path_err = "No save file selected!"
+                save_path_err = "No save file selected!"
                 print(save_path_err)
                 self.statusHandler(save_path_err)
         elif openOrSave == 2:
@@ -961,7 +961,6 @@ class Gui(object):
         elif glob.glob(os.path.join(folderName, "*.png")):
             file_list = glob.glob(os.path.join(folderName, "*.png"))
             file_list.sort(key=natural_sort_key)
-            print(file_list)
         elif glob.glob(os.path.join(folderName, "*.tif")):
             is_tif = True
             tif_list = glob.glob(os.path.join(folderName, "*.tif"))
@@ -1000,7 +999,7 @@ class Gui(object):
         selected = int(w.curselection()[0])
         new_model = self.modelListBox.get(selected)
         self.model = new_model
-        print(self.model)
+        print('Model selected: {}'.format(self.model))
         self.root.update()
 
     def onSelectVxm(self, event):
@@ -1008,7 +1007,7 @@ class Gui(object):
         selected_vxm = int(w_vxm.curselection()[0])
         new_vxm_model = self.vxmModelListBox.get(selected_vxm)
         self.vxm_model = new_vxm_model
-        print(self.vxm_model)
+        print('Model selected: {}'.format(self.vxm_model))
         self.root.update()
 
     def forward(self, event):
@@ -1104,7 +1103,7 @@ class Gui(object):
         elif command == 'atlas_to_brain':
             threading.Thread(target=
             self.PredictDLC(
-                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.config_path,
                 self.folderName,
                 self.saveFolderName,
                 False,
@@ -1134,7 +1133,7 @@ class Gui(object):
         elif command == 'brain_to_atlas':
             threading.Thread(target=
             self.PredictDLC(
-                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.config_path,
                 self.folderName,
                 self.saveFolderName,
                 False,
@@ -1164,7 +1163,7 @@ class Gui(object):
         elif command == 'atlas_to_brain_sensory':
             threading.Thread(target=
             self.PredictDLC(
-                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.config_path,
                 self.folderName,
                 self.saveFolderName,
                 False,
@@ -1212,7 +1211,7 @@ class Gui(object):
         elif command == 'MBFM_brain_to_atlas_vxm':
             threading.Thread(target=
             self.PredictDLC(
-                os.path.join(self.model_top_dir, 'atlas-DongshengXiao-2020-08-03', 'config.yaml'),
+                self.config_path,
                 self.folderName,
                 self.saveFolderName,
                 False,

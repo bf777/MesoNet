@@ -3,9 +3,10 @@ Task: atlas
 scorer: DongshengXiao
 date: Aug3
 multianimalproject:
+identity:
 
     # Project path (change when moving around)
-project_path: C:/Users/mind reader/Desktop/mesonet/mesonet\dlc
+project_path: /Users/brandon/Desktop/Murphy_Lab/MesoNet_paper/MesoNet_deploy/MesoNet/mesonet/dlc/atlas-DongshengXiao-2020-08-03
 
     # Annotation data set configuration (and individual video cropping parameters)
 video_sets:
@@ -21,6 +22,10 @@ bodyparts:
 - r7
 - r8
 - r9
+
+    # Fraction of video to start/stop when extracting frames for labeling/refinement
+
+    # Fraction of video to start/stop when extracting frames for labeling/refinement
 start: 0
 stop: 1
 numframes2pick: 491
@@ -52,7 +57,7 @@ colormap: jet
     # Training,Evaluation and Analysis configuration
 TrainingFraction:
 - 0.95
-iteration: 0
+iteration: 2
 default_net_type: resnet_50
 default_augmenter: default
 snapshotindex: -1
@@ -60,7 +65,6 @@ batch_size: 1
 
     # Cropping Parameters (for analysis and outlier frame detection)
 cropping: false
-croppedtraining:
     #if cropping is true for analysis, then set the values here:
 x1: 0
 x2: 640
@@ -72,4 +76,5 @@ corner2move2:
 - 50
 - 50
 move2corner: true
+croppedtraining:
 resnet: 50
