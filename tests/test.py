@@ -25,40 +25,55 @@ if __name__ == '__main__':
     output_file_voxelmorph = os.path.join(git_repo_base, '..', 'tests', 'results', 'mesonet_output_voxelmorph')
 
     # Try to make output folders
-    try:
-        os.makedirs(output_file_atlas_brain)
-    except OSError:
-        print ("Creation of the directory %s failed" % output_file_atlas_brain)
+    if not os.path.isdir(output_file_atlas_brain):
+        try:
+            os.makedirs(output_file_atlas_brain)
+        except OSError:
+            print("Creation of the directory %s failed" % output_file_atlas_brain)
+        else:
+            print("Successfully created the directory %s " % output_file_atlas_brain)
     else:
-        print ("Successfully created the directory %s " % output_file_atlas_brain)
+        print("Directory %s already exists!" % output_file_atlas_brain)
 
-    try:
-        os.makedirs(output_file_brain_atlas)
-    except OSError:
-        print ("Creation of the directory %s failed" % output_file_brain_atlas)
+    if not os.path.isdir(output_file_brain_atlas):
+        try:
+            os.makedirs(output_file_brain_atlas)
+        except OSError:
+            print("Creation of the directory %s failed" % output_file_brain_atlas)
+        else:
+            print("Successfully created the directory %s " % output_file_brain_atlas)
     else:
-        print ("Successfully created the directory %s " % output_file_brain_atlas)
+        print("Directory %s already exists!" % output_file_brain_atlas)
 
-    try:
-        os.makedirs(output_file_sensory)
-    except OSError:
-        print ("Creation of the directory %s failed" % output_file_sensory)
+    if not os.path.isdir(output_file_sensory):
+        try:
+            os.makedirs(output_file_sensory)
+        except OSError:
+            print("Creation of the directory %s failed" % output_file_sensory)
+        else:
+            print("Successfully created the directory %s " % output_file_sensory)
     else:
-        print ("Successfully created the directory %s " % output_file_sensory)
+        print("Directory %s already exists!" % output_file_sensory)
 
-    try:
-        os.makedirs(output_file_MBFM_U_Net)
-    except OSError:
-        print ("Creation of the directory %s failed" % output_file_MBFM_U_Net)
+    if not os.path.isdir(output_file_MBFM_U_Net):
+        try:
+            os.makedirs(output_file_MBFM_U_Net)
+        except OSError:
+            print("Creation of the directory %s failed" % output_file_MBFM_U_Net)
+        else:
+            print("Successfully created the directory %s " % output_file_MBFM_U_Net)
     else:
-        print ("Successfully created the directory %s " % output_file_MBFM_U_Net)
+        print("Directory %s already exists!" % output_file_MBFM_U_Net)
 
-    try:
-        os.makedirs(output_file_voxelmorph)
-    except OSError:
-        print ("Creation of the directory %s failed" % output_file_voxelmorph)
+    if not os.path.isdir(output_file_voxelmorph):
+        try:
+            os.makedirs(output_file_voxelmorph)
+        except OSError:
+            print("Creation of the directory %s failed" % output_file_voxelmorph)
+        else:
+            print("Successfully created the directory %s " % output_file_voxelmorph)
     else:
-        print ("Successfully created the directory %s " % output_file_voxelmorph)
+        print("Directory %s already exists!" % output_file_voxelmorph)
 
     # Define name of U-Net model
     model_name = os.path.join(git_repo_base, 'models', 'DongshengXiao_brain_bundary.hdf5')
@@ -82,7 +97,7 @@ if __name__ == '__main__':
 
     ## 1. Atlas to brain
     # Atlas-to-brain warp with U-Net and DeepLabCut
-    print('1. Atlas-to-brain warp with U-Net and DeepLabCut')
+    print('\n1. Atlas-to-brain warp with U-Net and DeepLabCut')
     config_file_atlas_brain = mesonet.config_project(input_file, output_file_atlas_brain, 'test',
                                                      atlas_to_brain_align=True, use_voxelmorph=False,
                                                      use_unet=True, use_dlc=True,
@@ -100,7 +115,7 @@ if __name__ == '__main__':
 
     ## 2. Brain to atlas
     # Brain-to-atlas warp with DeepLabCut
-    print('2. Brain-to-atlas warp with DeepLabCut')
+    print('\n2. Brain-to-atlas warp with DeepLabCut')
     config_file_brain_atlas = mesonet.config_project(input_file, output_file_brain_atlas, 'test',
                                                      atlas_to_brain_align=False, use_voxelmorph=False,
                                                      use_unet=True, use_dlc=True, sensory_match=False,
@@ -116,9 +131,9 @@ if __name__ == '__main__':
 
     print('Output aligned brain images and atlases can be found in `results/mesonet_output_brain_atlas/output_overlay`')
 
-    ## 3. Atlas to brain + sensory
+    # 3. Atlas to brain + sensory
     # Atlas-to-brain warp with U-Net, DeepLabCut, and sensory maps
-    print('3. Atlas-to-brain warp with U-Net, DeepLabCut, and sensory maps')
+    print('\n3. Atlas-to-brain warp with U-Net, DeepLabCut, and sensory maps')
     config_file_sensory = mesonet.config_project(input_file_sensory_raw, output_file_sensory, 'test',
                                                  atlas_to_brain_align=True, use_voxelmorph=False, use_unet=True,
                                                  use_dlc=True, sensory_match=True, sensory_path=input_file_sensory_maps,
@@ -137,7 +152,7 @@ if __name__ == '__main__':
 
     ## 4. MBFM + U-Net
     # Motif-based functional maps (MBFMs) with atlas directly applied using U-Net
-    print('4. Motif-based functional maps (MBFMs) with atlas directly applied using U-Net')
+    print('\n4. Motif-based functional maps (MBFMs) with atlas directly applied using U-Net')
     config_file_MBFM_U_Net = mesonet.config_project(input_file_MBFM, output_file_MBFM_U_Net, 'test',
                                                     atlas_to_brain_align=True, use_voxelmorph=False, use_unet=True,
                                                     use_dlc=False, sensory_match=False, mat_save=False, mask_generate=False,
@@ -151,7 +166,7 @@ if __name__ == '__main__':
 
     ## 5. VoxelMorph
     # Local deformation warp with VoxelMorph and DeepLabCut
-    print('5. Local deformation warp with VoxelMorph and DeepLabCut')
+    print('\n5. Local deformation warp with VoxelMorph and DeepLabCut')
     config_file_voxelmorph = mesonet.config_project(input_file_voxelmorph, output_file_voxelmorph, 'test',
                                                     atlas_to_brain_align=False, use_voxelmorph=True, use_unet=True,
                                                     use_dlc=True, sensory_match=False, mat_save=False, config=dlc_config,

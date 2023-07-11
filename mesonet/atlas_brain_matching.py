@@ -375,7 +375,8 @@ def atlasBrainMatch(
                     sensory_im = io.imread(
                         os.path.join(sensory_img_dir, img_name, file_im)
                     )
-                    sensory_im = trans.resize(sensory_im, (512, 512))
+                    sensory_im = np.uint8(sensory_im)
+                    sensory_im = cv2.resize(sensory_im, (512, 512))
                     io.imsave(
                         os.path.join(sensory_img_dir, img_name, file_im), sensory_im
                     )
@@ -935,9 +936,12 @@ def atlasBrainMatch(
                         align_val,
                         False,
                     )
+                    print(np.shape(atlas_mask_warped))
+                    atlas_mask_warped = np.uint8(atlas_mask_warped)
                     atlas_mask_warped = cv2.resize(
                         atlas_mask_warped, (im.shape[0], im.shape[1])
                     )
+                    atlas_mask_warped = (atlas_mask_warped * 255).astype(np.uint8)
                 else:
                     dst = atlas_warped
         else:
@@ -986,6 +990,7 @@ def atlasBrainMatch(
             io.imsave(vxm_template_output_path, vxm_template_list[n])
 
         if atlas_to_brain_align:
+            dst = (dst * 255).astype(np.uint8)
             io.imsave(atlas_path, dst)
             br_list.append(br)
         else:
@@ -1033,6 +1038,7 @@ def atlasBrainMatch(
             flow_path_after = os.path.join(output_mask_path, "{}_flow.npy".format(str(n_post)))
             np.save(flow_path_after, flow_post)
             output_path_after = os.path.join(output_mask_path, "{}_output_img.png".format(str(n_post)))
+            output_img = (output_img * 255).astype(np.uint8)
             io.imsave(output_path_after, output_img)
             if not exist_transform:
                 dst_gray = cv2.cvtColor(atlas, cv2.COLOR_BGR2GRAY)

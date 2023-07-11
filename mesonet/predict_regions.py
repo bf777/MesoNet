@@ -4,10 +4,10 @@ Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
 https://github.com/bf777/MesoNet
 Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
 """
-from mesonet.model import *
 from mesonet.mask_functions import *
 import os
 from mesonet.utils import parse_yaml
+from keras.models import load_model
 
 
 def predictRegion(
@@ -90,7 +90,7 @@ def predictRegion(
         atlas_to_brain_align=atlas_to_brain_align,
     )
     # Makes predictions on each image
-    results = model_to_use.predict_generator(test_gen, num_images, verbose=1)
+    results = model_to_use.predict(test_gen, steps=num_images, verbose=1)
     # Saves output mask
     saveResult(output_mask_path, results)
     if not mask_generate:
