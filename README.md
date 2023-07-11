@@ -35,7 +35,7 @@ We recommend using their supplied Anaconda environments.
 `source activate DEEPLABCUT` on Linux/Mac. 
 3. Clone this git repository: `git clone https://github.com/bf777/MesoNet.git`
 * NOTE: If you are on Windows, please clone the repository to a location on `C://` as the git repository search function does not currently support other drives.
-5. Enter the git repository folder using `cd mesonet`, then run `python setup.py install` to install additional
+5. Enter the git repository folder using `cd mesonet`, then run `pip install .` to install additional
 dependencies for MesoNet (installation via pip coming soon!)
 6. Run `bash get_default_models.sh` to download pre-trained DeepLabCut, U-Net, and VoxelMorph models from [OSF](https://osf.io/svztu/) for use on your data.
 

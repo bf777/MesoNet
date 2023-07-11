@@ -20,7 +20,7 @@ import scipy
 import pylab
 from PIL import Image
 import pandas as pd
-from tensorflow.keras import backend as k
+from keras import backend as k
 from polylabel import polylabel
 
 # Set background colour as black to fix issue with more than one background region being identified.
@@ -109,11 +109,16 @@ def saveResult(save_path, npyfile, flag_multi_class=False, num_class=2):
     """
     for i, item in enumerate(npyfile):
         img = (
-            labelVisualize(num_class, COLOR_DICT, item)
-            if flag_multi_class
-            else item[:, :, 0]
+            labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
         )
-        io.imsave(os.path.join(save_path, "{}.png".format(i)), img)
+
+        # Convert to L (Fix for #18)
+        img = img.astype(np.uint8)
+        img_to_save = Image.fromarray(img)
+        # img_L.convert('L')
+
+        img_to_save.save(os.path.join(save_path, "{}.png".format(i)))
+        # io.imsave(os.path.join(save_path, "{}.png".format(i)), img_to_save)
 
 
 def returnResult(save_path, npyfile):
@@ -178,6 +183,7 @@ def atlas_to_mask(
                 olfactory_bulbs = sorted(
                     cnts_for_olfactory, key=cv2.contourArea, reverse=True
                 )[2:4]
+        mask_input = (mask_input * 255).astype(np.uint8)
         io.imsave(os.path.join(mask_output_path, "{}_mask.png".format(n)), mask_input)
         # Adds the common white regions of the atlas and U-net mask together into a binary image.
         if atlas_to_brain_align:

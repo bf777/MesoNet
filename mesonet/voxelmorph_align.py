@@ -98,7 +98,7 @@ def vxm_transform(x_data, flow_path):
 
     # preliminary sizing
     flow_data = np.load(flow_path)
-    x_data = rgb2gray(x_data)
+    # x_data = rgb2gray(x_data)
     x_data = np.expand_dims(x_data, axis=0)
     x_data = x_data[..., np.newaxis]
 
