@@ -31,8 +31,8 @@ as adapted in [zhixuhao](https://github.com/zhixuhao)'s [unet repository](https:
 1. For DeepLabCut functionality (necessary for identifying brain atlas landmarks!),
 [install and set up a DeepLabCut environment](https://github.com/AlexEMG/DeepLabCut/blob/master/docs/installation.md).
 We recommend using their supplied Anaconda environments.
-2. Activate the DeepLabCut environment (as described above, usually `activate DEEPLABCUT` on Windows or 
-`source activate DEEPLABCUT` on Linux/Mac. 
+2. Activate the DeepLabCut environment (as described above, usually `activate DEEPLABCUT` on Windows, 
+`source activate DEEPLABCUT` on Linux, or `source activate DEEPLABCUT-M1` on Mac with silicon chips. 
 3. Clone this git repository: `git clone https://github.com/bf777/MesoNet.git`
 * NOTE: If you are on Windows, please clone the repository to a location on `C://` as the git repository search function does not currently support other drives.
 5. Enter the git repository folder using `cd mesonet`, then run `pip install .` to install additional
@@ -42,7 +42,7 @@ dependencies for MesoNet (installation via pip coming soon!)
 Follow our tutorial [on the wiki](https://github.com/bf777/MesoNet/wiki/Quick-Start-Guide).
 
 ## Supported platforms
-MesoNet has been tested on Windows 8.1, Windows 10, and Linux (Ubuntu 16.04 and Arch 5.7); it should also work on older versions of Windows and on MacOS, but these platforms have not been tested. It works with or without a GPU, but a GPU is _strongly_ recommended for faster training and processing. MesoNet can be used with or without a GUI, and can be run on headless platforms such as Google Colab.
+MesoNet has been tested on Windows 8.1, Windows 10, macOS 13 (Ventura) with Apple silicon, Linux (Ubuntu 16.04 and Arch 5.7); it should also work on older versions of Windows and on macOS, but these platforms have not been tested. It works with or without a GPU, but a GPU is _strongly_ recommended for faster training and processing. MesoNet can be used with or without a GUI, and can be run on headless platforms such as Google Colab.
 
 ## Contributors
 [Dongsheng Xiao](https://github.com/DongshengXiao) designed the processing pipeline, collected data, trained the DeepLabCut, U-Net and VoxelMorph models provided with MesoNet, and developed the brain atlas alignment approach. [Brandon Forys](https://github.com/bf777) wrote the code of GUI and CLI. They are in the [Murphy Lab](https://murphylab.med.ubc.ca/) in UBC’s Department of Psychiatry.

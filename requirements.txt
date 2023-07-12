@@ -14,3 +14,4 @@ voxelmorph
 neurite
 osfclient
 tables
+protobuf

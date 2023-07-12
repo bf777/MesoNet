@@ -89,7 +89,7 @@ def trainGenerator(
         seed=seed,
     )
     train_generator = zip(image_generator, mask_generator)
-    for (img, mask) in train_generator:
+    for img, mask in train_generator:
         img, mask = adjustData(img, mask, flag_multi_class, num_class)
         yield (img, mask)
 

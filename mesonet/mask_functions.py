@@ -109,7 +109,9 @@ def saveResult(save_path, npyfile, flag_multi_class=False, num_class=2):
     """
     for i, item in enumerate(npyfile):
         img = (
-            labelVisualize(num_class, COLOR_DICT, item) if flag_multi_class else item[:, :, 0]
+            labelVisualize(num_class, COLOR_DICT, item)
+            if flag_multi_class
+            else item[:, :, 0]
         )
 
         # Convert to L (Fix for #18)
@@ -145,7 +147,7 @@ def atlas_to_mask(
     git_repo_base,
     olfactory_check,
     olfactory_bulbs_to_use,
-    atlas_label
+    atlas_label,
 ):
     """
     Overlays the U-net mask and a smoothing mask for the cortical boundaries on the transformed brain atlas.
@@ -206,12 +208,16 @@ def atlas_to_mask(
                     cv2.fillPoly(mask_input_orig, pts=[bulb], color=[255, 255, 255])
                 if len(atlas_label) > 0:
                     try:
-                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs_to_add[0]], color=[300])
-                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs_to_add[1]], color=[400])
+                        cv2.fillPoly(
+                            atlas_label, pts=[olfactory_bulbs_to_add[0]], color=[300]
+                        )
+                        cv2.fillPoly(
+                            atlas_label, pts=[olfactory_bulbs_to_add[1]], color=[400]
+                        )
                         atlas_label[np.where(atlas_label == 300)] = 300
                         atlas_label[np.where(atlas_label == 400)] = 400
                     except:
-                        print('No olfactory bulb found!')
+                        print("No olfactory bulb found!")
                         # If olfactory bulbs that match with labelling atlas
                         # can't be found, regenerate the original atlas
                         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
@@ -229,19 +235,26 @@ def atlas_to_mask(
                     cv2.fillPoly(mask_input_orig, pts=[bulb], color=[255, 255, 255])
                 if len(atlas_label) > 0:
                     try:
-                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs_to_use[0]], color=[300])
-                        cv2.fillPoly(atlas_label, pts=[olfactory_bulbs_to_use[1]], color=[400])
+                        cv2.fillPoly(
+                            atlas_label, pts=[olfactory_bulbs_to_use[0]], color=[300]
+                        )
+                        cv2.fillPoly(
+                            atlas_label, pts=[olfactory_bulbs_to_use[1]], color=[400]
+                        )
                         atlas_label[np.where(atlas_label == 300)] = 300
                         atlas_label[np.where(atlas_label == 400)] = 400
                     except:
-                        print('No olfactory bulb found!')
+                        print("No olfactory bulb found!")
                         # If olfactory bulbs that match with labelling atlas
                         # can't be found, regenerate the original atlas
                         mask_input = cv2.imread(mask_input_path, cv2.IMREAD_GRAYSCALE)
                         mask_input_orig = mask_input
                         mask_input = cv2.bitwise_and(atlas, mask_warped)
                         mask_input_orig = cv2.bitwise_and(mask_input, mask_warped)
-        io.imsave(os.path.join(mask_output_path, "{}_mask_no_atlas.png".format(n)), mask_input_orig)
+        io.imsave(
+            os.path.join(mask_output_path, "{}_mask_no_atlas.png".format(n)),
+            mask_input_orig,
+        )
     else:
         mask_input = cv2.bitwise_and(atlas, mask_warped)
         if len(atlas_label) > 0:
@@ -350,7 +363,7 @@ def applyMask(
         image_name_arr = glob.glob(os.path.join(mask_path, "*_brain_warp.png"))
         image_name_arr.sort(key=natural_sort_key)
 
-    region_bgr_lower = (220, 220, 220) # 220
+    region_bgr_lower = (220, 220, 220)  # 220
     region_bgr_upper = (255, 255, 255)
     base_c_max = []
     count = 0
@@ -427,7 +440,7 @@ def applyMask(
                 git_repo_base,
                 olfactory_check,
                 olfactory_bulbs_to_use,
-                []
+                [],
             )
         new_data = []
         if len(tif_list) != 0 and atlas_to_brain_align:
@@ -440,7 +453,7 @@ def applyMask(
         if use_dlc:
             bregma_x, bregma_y = bregma_list[i]
         else:
-            bregma_x, bregma_y = [round(img.shape[0]/2), round(img.shape[1]/2)]
+            bregma_x, bregma_y = [round(img.shape[0] / 2), round(img.shape[1] / 2)]
             original_label = True
         if use_voxelmorph and i == 1:
             mask = cv2.imread(os.path.join(mask_path, "{}.png".format(0)))
@@ -565,7 +578,7 @@ def applyMask(
                     atlas_bw.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE
                 )[-2:]
             labels_cnts = []
-            for (num_label, cnt_orig) in enumerate(cnts_orig):
+            for num_label, cnt_orig in enumerate(cnts_orig):
                 labels_cnts.append(cnt_orig)
                 try:
                     cv2.drawContours(img, cnt_orig, -1, (255, 0, 0), 1)
@@ -644,7 +657,7 @@ def applyMask(
                 [orig_list_labels_sorted_left, orig_list_labels_sorted_right]
             )
             vertical_check = np.asarray([val[0] for val in orig_list_labels_sorted])
-            for (orig_coord_val, orig_coord) in enumerate(orig_list_labels_sorted):
+            for orig_coord_val, orig_coord in enumerate(orig_list_labels_sorted):
                 vertical_close = np.where((abs(vertical_check - orig_coord[0]) <= 5))
                 vertical_close_slice = vertical_close[0]
                 vertical_matches = np.asarray(orig_list_labels_sorted)[
@@ -739,7 +752,9 @@ def applyMask(
                 except:
                     label_for_mat = coord_label_num
                     print(
-                        "WARNING: label {} was not found in region. Order of labels may be incorrect!".format(str(coord_idx))
+                        "WARNING: label {} was not found in region. Order of labels may be incorrect!".format(
+                            str(coord_idx)
+                        )
                     )
             else:
                 label_for_mat = coord_label_num
@@ -971,4 +986,4 @@ def applyMask(
     if dlc_pts:
         os.chdir("../..")
     else:
-        os.chdir(os.path.join(save_path, '..'))
+        os.chdir(os.path.join(save_path, ".."))

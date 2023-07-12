@@ -173,7 +173,7 @@ def config_project(
             voxelmorph_model=voxelmorph_model,
             template_path=template_path,
             flow_path=flow_path,
-            coords_input_file=coords_input_file
+            coords_input_file=coords_input_file,
         )
     elif mode == "train":
         filename = "mesonet_train_config.yaml"
@@ -243,8 +243,12 @@ def find_git_repo():
     # Preferred (faster) option to find mesonet git repo is to set it as an environment variable
     git_repo_base = ""
     try:
-        git_repo_base = os.path.join(os.getenv("MESONET_GIT"), 'mesonet')
-        print('MesoNet git repo found at {}, skipping directory check...'.format(git_repo_base))
+        git_repo_base = os.path.join(os.getenv("MESONET_GIT"), "mesonet")
+        print(
+            "MesoNet git repo found at {}, skipping directory check...".format(
+                git_repo_base
+            )
+        )
     except:
         # If we can't find the environment variable, search for the mesonet git repository
         # solution to find git repository on computer adapted from:
@@ -340,9 +344,9 @@ def plot_flow(flow_dir, output_dir):
     flow_files = glob.glob(os.path.join(flow_dir, "*.npy"))
     if flow_files:
         for flow_idx, flow_file in enumerate(flow_files):
-            print('Reading flow file {}'.format(flow_idx))
+            print("Reading flow file {}".format(flow_idx))
             flow_np = np.load(flow_file)
             ne.plot.flow([flow_np.squeeze()], width=5, show=False)
-            plt.savefig(os.path.join(output_dir, '{}_flow_img.png'.format(flow_idx)))
+            plt.savefig(os.path.join(output_dir, "{}_flow_img.png".format(flow_idx)))
     else:
         print("No .npy flow files found in current directory!")
