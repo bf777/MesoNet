@@ -14,4 +14,4 @@ voxelmorph
 neurite
 osfclient
 tables
-protobuf
+protobuf==3.20.0
