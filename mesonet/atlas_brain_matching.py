@@ -57,7 +57,7 @@ def coords_to_mat(
             x_pt = pt[0]
             y_pt = pt[1]
             pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
-            pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
+            pt_adj_to_mat = np.array(pt_adj, dtype=object)
             if not os.path.isdir(os.path.join(output_mask_path, "mat_coords")):
                 os.mkdir(os.path.join(output_mask_path, "mat_coords"))
             scipy.io.savemat(
@@ -77,7 +77,7 @@ def sensory_to_mat(sub_dlc_pts, bregma_pt, i, output_mask_path):
         x_pt = pt[0]
         y_pt = pt[1]
         pt_adj = [landmark, x_pt - x_bregma, y_pt - y_bregma]
-        pt_adj_to_mat = np.array(pt_adj, dtype=np.object)
+        pt_adj_to_mat = np.array(pt_adj, dtype=object)
         if not os.path.isdir(os.path.join(output_mask_path, "mat_coords")):
             os.mkdir(os.path.join(output_mask_path, "mat_coords"))
         scipy.io.savemat(
