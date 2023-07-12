@@ -18,7 +18,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/bf777/mesonet",
-    install_requires=['imutils', 'scikit-image', 'scipy', 'numpy', 'keras==2.10', 'opencv-python',
+    install_requires=['imutils', 'scikit-image', 'scipy', 'numpy', 'keras==2.11', 'opencv-python',
                       'Pillow', 'deeplabcut', 'pandas', 'matplotlib', 'python-polylabel',
                       'imgaug', 'voxelmorph', 'osfclient', 'h5py', 'tables', 'protobuf==3.20.2'],
     packages=['mesonet', ],
