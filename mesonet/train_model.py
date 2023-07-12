@@ -15,9 +15,19 @@ from mesonet.dlc_predict import DLC_edit_bodyparts
 
 
 def trainModel(
-    input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs,
-        rotation_range=0.3, width_shift_range=0.05, height_shift_range=0.05, shear_range=0.05, zoom_range=0.05,
-        horizontal_flip=True, fill_mode="nearest"
+    input_file,
+    model_name,
+    log_folder,
+    git_repo_base,
+    steps_per_epoch,
+    epochs,
+    rotation_range=0.3,
+    width_shift_range=0.05,
+    height_shift_range=0.05,
+    shear_range=0.05,
+    zoom_range=0.05,
+    horizontal_flip=True,
+    fill_mode="nearest",
 ):
     """
     Trains a U-Net model based on the brain images and corresponding masks supplied to input_file
@@ -96,7 +106,17 @@ def train_model(config_file):
     horizontal_flip = cfg["horizontal_flip"]
     fill_mode = cfg["fill_mode"]
     trainModel(
-        input_file, model_name, log_folder, git_repo_base, steps_per_epoch, epochs,
-        rotation_range, width_shift_range, height_shift_range, shear_range, zoom_range,
-        horizontal_flip, fill_mode
+        input_file,
+        model_name,
+        log_folder,
+        git_repo_base,
+        steps_per_epoch,
+        epochs,
+        rotation_range,
+        width_shift_range,
+        height_shift_range,
+        shear_range,
+        zoom_range,
+        horizontal_flip,
+        fill_mode,
     )

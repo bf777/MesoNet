@@ -33,7 +33,6 @@ class GuiTrain:
     DEFAULT_NAME = "Labeler"
 
     def __init__(self):
-
         self.root_train = Tk()
         self.root_train.resizable(False, False)
         self.Title = self.root_train.title("MesoNet Trainer")

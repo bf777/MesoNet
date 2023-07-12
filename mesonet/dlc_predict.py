@@ -145,22 +145,22 @@ def DLCPredict(
             if platform == "linux" or platform == "linux2" or platform == "darwin":
                 fourcc = cv2.VideoWriter_fourcc("M", "P", "E", "G")
             else:
-                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             out = cv2.VideoWriter(video_name, fourcc, 30, size)
             for i in img_array:
                 # print("img {} written!".format(i))
                 out.write(i)
             out.release()
 
-            print('DLC config file path: {}'.format(config))
+            print("DLC config file path: {}".format(config))
 
             deeplabcut.analyze_videos(
                 config, [video_output_path], videotype=".mp4", save_as_csv=True
             )
             deeplabcut.create_labeled_video(config, [video_name], filtered=True)
-#             if "2." in deeplabcut.__version__:
-#                 scorer_name = "DeepCut"
-#             else:
+            #             if "2." in deeplabcut.__version__:
+            #                 scorer_name = "DeepCut"
+            #             else:
             scorer_name = "DLC"
             output_video_name = ""
             coords_input = ""
@@ -183,7 +183,9 @@ def DLCPredict(
                 ret, frame = cap.read()
                 if not ret:
                     break
-                cv2.imwrite(os.path.join(video_output_path, "{}.png".format(str(i))), frame)
+                cv2.imwrite(
+                    os.path.join(video_output_path, "{}.png".format(str(i))), frame
+                )
                 i += 1
         else:
             coords_input = coords_input_file

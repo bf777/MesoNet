@@ -286,9 +286,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.uNetCheck.grid(
-            row=8, column=4, columnspan=5, padx=2, sticky=N + S + W
-        )
+        self.uNetCheck.grid(row=8, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         self.dlcCheck = Checkbutton(
             self.root,
@@ -297,9 +295,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.dlcCheck.grid(
-            row=9, column=4, columnspan=5, padx=2, sticky=N + S + W
-        )
+        self.dlcCheck.grid(row=9, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         self.vxmCheck = Checkbutton(
             self.root,
@@ -308,9 +304,7 @@ class Gui(object):
             onvalue=True,
             offvalue=False,
         )
-        self.vxmCheck.grid(
-            row=10, column=4, columnspan=5, padx=2, sticky=N + S + W
-        )
+        self.vxmCheck.grid(row=10, column=4, columnspan=5, padx=2, sticky=N + S + W)
 
         self.olfactoryCheck = Checkbutton(
             self.root,
@@ -501,7 +495,7 @@ class Gui(object):
         self.predictDLCButton = Button(
             self.root,
             text="Predict brain regions\nusing landmarks",
-            command=lambda: self.EnterThread('predict_dlc')
+            command=lambda: self.EnterThread("predict_dlc"),
         )
         self.predictDLCButton.grid(
             row=20, column=4, columnspan=5, padx=2, sticky=N + S + W + E
@@ -529,7 +523,7 @@ class Gui(object):
         self.predictAllImButton = Button(
             self.root,
             text="Predict brain regions directly\nusing pretrained U-net model",
-            command=lambda: self.EnterThread('predict_regions')
+            command=lambda: self.EnterThread("predict_regions"),
         )
         self.predictAllImButton.grid(
             row=21, column=4, columnspan=5, padx=2, sticky=N + S + W + E
@@ -571,10 +565,7 @@ class Gui(object):
 
         # Buttons to run pre-defined pipelines
         # Label
-        self.pipelinesLabel = Label(
-            self.root,
-            text="Quick Start: Automated pipelines"
-        )
+        self.pipelinesLabel = Label(self.root, text="Quick Start: Automated pipelines")
 
         self.pipelinesLabel.grid(
             row=0, column=9, columnspan=1, padx=2, sticky=N + S + W + E
@@ -584,7 +575,7 @@ class Gui(object):
         self.atlasToBrainButton = Button(
             self.root,
             text="1 - Atlas to brain",
-            command=lambda: self.EnterThread('atlas_to_brain')
+            command=lambda: self.EnterThread("atlas_to_brain"),
         )
         self.atlasToBrainButton.grid(
             row=1, column=9, columnspan=1, padx=2, sticky=N + S + W + E
@@ -594,7 +585,7 @@ class Gui(object):
         self.brainToAtlasButton = Button(
             self.root,
             text="2 - Brain to atlas",
-            command=lambda: self.EnterThread('brain_to_atlas')
+            command=lambda: self.EnterThread("brain_to_atlas"),
         )
         self.brainToAtlasButton.grid(
             row=2, column=9, columnspan=1, padx=2, sticky=N + S + W + E
@@ -604,7 +595,7 @@ class Gui(object):
         self.atlasToBrainSensoryButton = Button(
             self.root,
             text="3 - Atlas to brain +\nsensory maps",
-            command=lambda: self.EnterThread('atlas_to_brain_sensory')
+            command=lambda: self.EnterThread("atlas_to_brain_sensory"),
         )
         self.atlasToBrainSensoryButton.grid(
             row=3, column=9, columnspan=1, padx=2, sticky=N + S + W + E
@@ -614,7 +605,7 @@ class Gui(object):
         self.MBFMUNetButton = Button(
             self.root,
             text="4 - Motif-based functional maps (MBFMs) +\nMBFM-U-Net",
-            command=lambda: self.EnterThread('MBFM_U_Net')
+            command=lambda: self.EnterThread("MBFM_U_Net"),
         )
         self.MBFMUNetButton.grid(
             row=4, column=9, columnspan=1, padx=2, sticky=N + S + W + E
@@ -624,7 +615,7 @@ class Gui(object):
         self.MBFMBrainToAtlasVxmButton = Button(
             self.root,
             text="5 - Motif-based functional maps (MBFMs) +\nBrain-to-atlas + VoxelMorph",
-            command=lambda: self.EnterThread('MBFM_brain_to_atlas_vxm')
+            command=lambda: self.EnterThread("MBFM_brain_to_atlas_vxm"),
         )
         self.MBFMBrainToAtlasVxmButton.grid(
             row=5, column=9, columnspan=1, padx=2, sticky=N + S + W + E
@@ -999,7 +990,7 @@ class Gui(object):
         selected = int(w.curselection()[0])
         new_model = self.modelListBox.get(selected)
         self.model = new_model
-        print('Model selected: {}'.format(self.model))
+        print("Model selected: {}".format(self.model))
         self.root.update()
 
     def onSelectVxm(self, event):
@@ -1007,7 +998,7 @@ class Gui(object):
         selected_vxm = int(w_vxm.curselection()[0])
         new_vxm_model = self.vxmModelListBox.get(selected_vxm)
         self.vxm_model = new_vxm_model
-        print('Model selected: {}'.format(self.vxm_model))
+        print("Model selected: {}".format(self.vxm_model))
         self.root.update()
 
     def forward(self, event):
@@ -1052,193 +1043,216 @@ class Gui(object):
             self.landmark_arr.append(8)
 
     def EnterThread(self, command):
-        if command == 'predict_regions':
-            threading.Thread(target=
-            self.PredictRegions(
-                self.folderName,
-                self.picLen,
-                self.model,
-                self.saveFolderName,
-                int(self.mat_save.get()),
-                self.threshold,
-                False,
-                self.git_repo_base,
-                self.region_labels.get(),
-                self.olfactory_check.get(),
-                self.unet_select.get(),
-                self.plot_landmarks.get(),
-                self.align_once.get(),
-                self.region_labels.get(),
-            )).start()
-        elif command == 'predict_dlc':
-            threading.Thread(target=
-            self.PredictDLC(
-                self.config_path,
-                self.folderName,
-                self.saveFolderName,
-                False,
-                int(self.sensory_align.get()),
-                self.sensoryName,
-                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
-                self.picLen,
-                int(self.mat_save.get()),
-                self.threshold,
-                True,
-                self.haveMasks,
-                self.git_repo_base,
-                self.region_labels.get(),
-                self.unet_select.get(),
-                self.dlc_select.get(),
-                self.atlas_to_brain_align.get(),
-                self.olfactory_check.get(),
-                self.plot_landmarks.get(),
-                self.align_once.get(),
-                self.original_label.get(),
-                self.vxm_select.get(),
-                self.exist_transform.get(),
-                os.path.join(self.model_top_dir, "voxelmorph", self.vxm_model),
-                self.templateName,
-                self.flowName
-            )).start()
-        elif command == 'atlas_to_brain':
-            threading.Thread(target=
-            self.PredictDLC(
-                self.config_path,
-                self.folderName,
-                self.saveFolderName,
-                False,
-                0,
-                '',
-                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
-                self.picLen,
-                True,
-                self.threshold,
-                True,
-                False,
-                self.git_repo_base,
-                False,
-                True,
-                True,
-                True,
-                True,
-                True,
-                False,
-                False,
-                False,
-                False,
-                '',
-                '',
-                ''
-            )).start()
-        elif command == 'brain_to_atlas':
-            threading.Thread(target=
-            self.PredictDLC(
-                self.config_path,
-                self.folderName,
-                self.saveFolderName,
-                False,
-                0,
-                '',
-                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
-                self.picLen,
-                True,
-                self.threshold,
-                True,
-                False,
-                self.git_repo_base,
-                False,
-                True,
-                True,
-                False,
-                True,
-                True,
-                False,
-                False,
-                False,
-                False,
-                '',
-                '',
-                ''
-            )).start()
-        elif command == 'atlas_to_brain_sensory':
-            threading.Thread(target=
-            self.PredictDLC(
-                self.config_path,
-                self.folderName,
-                self.saveFolderName,
-                False,
-                1,
-                self.sensoryName,
-                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
-                self.picLen,
-                True,
-                self.threshold,
-                True,
-                False,
-                self.git_repo_base,
-                False,
-                True,
-                True,
-                True,
-                True,
-                True,
-                False,
-                False,
-                False,
-                False,
-                '',
-                '',
-                ''
-            )).start()
-        elif command == 'MBFM_U_Net':
-            threading.Thread(target=
-            self.PredictRegions(
-                self.folderName,
-                self.picLen,
-                os.path.join(self.model_top_dir, 'DongshengXiao_unet_motif_based_functional_atlas.hdf5'),
-                self.saveFolderName,
-                True,
-                self.threshold,
-                False,
-                self.git_repo_base,
-                False,
-                True,
-                True,
-                False,
-                False,
-                False,
-            )).start()
-        elif command == 'MBFM_brain_to_atlas_vxm':
-            threading.Thread(target=
-            self.PredictDLC(
-                self.config_path,
-                self.folderName,
-                self.saveFolderName,
-                False,
-                0,
-                '',
-                os.path.join(self.model_top_dir, 'DongshengXiao_brain_bundary.hdf5'),
-                self.picLen,
-                True,
-                self.threshold,
-                True,
-                False,
-                self.git_repo_base,
-                False,
-                True,
-                True,
-                False,
-                True,
-                True,
-                True,
-                False,
-                True,
-                False,
-                os.path.join(self.model_top_dir, "voxelmorph",
-                             "VoxelMorph_Motif_based_functional_map_model_transformed1000.h5"),
-                self.templateName,
-                self.flowName
-            )).start()
+        if command == "predict_regions":
+            threading.Thread(
+                target=self.PredictRegions(
+                    self.folderName,
+                    self.picLen,
+                    self.model,
+                    self.saveFolderName,
+                    int(self.mat_save.get()),
+                    self.threshold,
+                    False,
+                    self.git_repo_base,
+                    self.region_labels.get(),
+                    self.olfactory_check.get(),
+                    self.unet_select.get(),
+                    self.plot_landmarks.get(),
+                    self.align_once.get(),
+                    self.region_labels.get(),
+                )
+            ).start()
+        elif command == "predict_dlc":
+            threading.Thread(
+                target=self.PredictDLC(
+                    self.config_path,
+                    self.folderName,
+                    self.saveFolderName,
+                    False,
+                    int(self.sensory_align.get()),
+                    self.sensoryName,
+                    os.path.join(
+                        self.model_top_dir, "DongshengXiao_brain_bundary.hdf5"
+                    ),
+                    self.picLen,
+                    int(self.mat_save.get()),
+                    self.threshold,
+                    True,
+                    self.haveMasks,
+                    self.git_repo_base,
+                    self.region_labels.get(),
+                    self.unet_select.get(),
+                    self.dlc_select.get(),
+                    self.atlas_to_brain_align.get(),
+                    self.olfactory_check.get(),
+                    self.plot_landmarks.get(),
+                    self.align_once.get(),
+                    self.original_label.get(),
+                    self.vxm_select.get(),
+                    self.exist_transform.get(),
+                    os.path.join(self.model_top_dir, "voxelmorph", self.vxm_model),
+                    self.templateName,
+                    self.flowName,
+                )
+            ).start()
+        elif command == "atlas_to_brain":
+            threading.Thread(
+                target=self.PredictDLC(
+                    self.config_path,
+                    self.folderName,
+                    self.saveFolderName,
+                    False,
+                    0,
+                    "",
+                    os.path.join(
+                        self.model_top_dir, "DongshengXiao_brain_bundary.hdf5"
+                    ),
+                    self.picLen,
+                    True,
+                    self.threshold,
+                    True,
+                    False,
+                    self.git_repo_base,
+                    False,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                    False,
+                    "",
+                    "",
+                    "",
+                )
+            ).start()
+        elif command == "brain_to_atlas":
+            threading.Thread(
+                target=self.PredictDLC(
+                    self.config_path,
+                    self.folderName,
+                    self.saveFolderName,
+                    False,
+                    0,
+                    "",
+                    os.path.join(
+                        self.model_top_dir, "DongshengXiao_brain_bundary.hdf5"
+                    ),
+                    self.picLen,
+                    True,
+                    self.threshold,
+                    True,
+                    False,
+                    self.git_repo_base,
+                    False,
+                    True,
+                    True,
+                    False,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                    False,
+                    "",
+                    "",
+                    "",
+                )
+            ).start()
+        elif command == "atlas_to_brain_sensory":
+            threading.Thread(
+                target=self.PredictDLC(
+                    self.config_path,
+                    self.folderName,
+                    self.saveFolderName,
+                    False,
+                    1,
+                    self.sensoryName,
+                    os.path.join(
+                        self.model_top_dir, "DongshengXiao_brain_bundary.hdf5"
+                    ),
+                    self.picLen,
+                    True,
+                    self.threshold,
+                    True,
+                    False,
+                    self.git_repo_base,
+                    False,
+                    True,
+                    True,
+                    True,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                    False,
+                    "",
+                    "",
+                    "",
+                )
+            ).start()
+        elif command == "MBFM_U_Net":
+            threading.Thread(
+                target=self.PredictRegions(
+                    self.folderName,
+                    self.picLen,
+                    os.path.join(
+                        self.model_top_dir,
+                        "DongshengXiao_unet_motif_based_functional_atlas.hdf5",
+                    ),
+                    self.saveFolderName,
+                    True,
+                    self.threshold,
+                    False,
+                    self.git_repo_base,
+                    False,
+                    True,
+                    True,
+                    False,
+                    False,
+                    False,
+                )
+            ).start()
+        elif command == "MBFM_brain_to_atlas_vxm":
+            threading.Thread(
+                target=self.PredictDLC(
+                    self.config_path,
+                    self.folderName,
+                    self.saveFolderName,
+                    False,
+                    0,
+                    "",
+                    os.path.join(
+                        self.model_top_dir, "DongshengXiao_brain_bundary.hdf5"
+                    ),
+                    self.picLen,
+                    True,
+                    self.threshold,
+                    True,
+                    False,
+                    self.git_repo_base,
+                    False,
+                    True,
+                    True,
+                    False,
+                    True,
+                    True,
+                    True,
+                    False,
+                    True,
+                    False,
+                    os.path.join(
+                        self.model_top_dir,
+                        "voxelmorph",
+                        "VoxelMorph_Motif_based_functional_map_model_transformed1000.h5",
+                    ),
+                    self.templateName,
+                    self.flowName,
+                )
+            ).start()
 
     def PredictRegions(
         self,
@@ -1323,7 +1337,7 @@ class Gui(object):
         self.statusHandler("Processing...")
         self.chooseLandmarks()
         atlas_label_list = []
-        coords_input_file = ''
+        coords_input_file = ""
         # if mask_generate and not haveMasks and atlas_to_brain_align and use_unet:
         if mask_generate and not haveMasks and use_unet:
             pts = []
