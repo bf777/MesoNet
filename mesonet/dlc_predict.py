@@ -13,6 +13,7 @@ import glob
 import imageio
 import os
 import numpy as np
+import re
 from sys import platform
 
 
@@ -234,7 +235,7 @@ def DLCPredictBehavior(config, input_file, output):
     for filename in glob.glob(os.path.join(input_file, "*.mp4")):
         video_array.append(os.path.join(input_file, filename))
 
-    for _ in glob.glob(os.path.join(input_file, "*.png")):
+    for s in glob.glob(os.path.join(input_file, "*.png")):
         _nsre = re.compile("([0-9]+)")
         return [
             int(text) if text.isdigit() else text.lower() for text in re.split(_nsre, s)
