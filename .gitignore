@@ -10,6 +10,12 @@ dist/
 *.iml
 *.idea
 
+# DLC
+mesonet/dlc/dlc-models/
+mesonet/dlc/labeled-data/
+mesonet/dlc/training-datasets/
+mesonet/dlc/videos/
+
 # U-net models (user needs to download these manually as they are too large to be hosted on GitHub)
 mesonet/models/*.hdf5
 mesonet/models/*.h5
@@ -21,3 +27,5 @@ mesonet/*_old.py
 
 # test results
 tests/results/
+
+*.pyc

@@ -6,11 +6,11 @@ multianimalproject:
 identity:
 
     # Project path (change when moving around)
-project_path: /Users/brandon/Desktop/Murphy_Lab/MesoNet_paper/MesoNet_deploy/MesoNet/mesonet/dlc/atlas-DongshengXiao-2020-08-03
+project_path: D:\Library\MesoNet\mesonet\dlc
 
     # Annotation data set configuration (and individual video cropping parameters)
 video_sets:
-  C:/Users/mind reader/Desktop/atlas-DongshengXiao-2020-08-03/videos/DLC_atlas.avi:
+  C:\Users\user\Desktop\mesonet\atlas-DongshengXiao-2020-08-03\videos\DLC_atlas.avi:
     crop: 0, 512, 0, 512
 bodyparts:
 - l1
@@ -26,9 +26,11 @@ bodyparts:
     # Fraction of video to start/stop when extracting frames for labeling/refinement
 
     # Fraction of video to start/stop when extracting frames for labeling/refinement
+
+    # Fraction of video to start/stop when extracting frames for labeling/refinement
 start: 0
 stop: 1
-numframes2pick: 491
+numframes2pick: 982
 
     # Plotting configuration
 skeleton:
@@ -76,5 +78,4 @@ corner2move2:
 - 50
 - 50
 move2corner: true
-croppedtraining:
 resnet: 50
