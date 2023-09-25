@@ -987,7 +987,7 @@ def atlasBrainMatch(
                 original_label = True
                 if atlas_to_brain_align:
                     dst = getMaskContour(
-                        mask_dir,
+                        str(mask_dir),
                         atlas_warped,
                         sensory_peak_pts[align_val],
                         sensory_atlas_pts[align_val],
