@@ -11,6 +11,7 @@ VoxelMorph is distributed under the Apache License 2.0.
 """
 
 from mesonet.mask_functions import *
+import numpy as np
 import voxelmorph as vxm
 from skimage.color import rgb2gray
 
@@ -97,7 +98,7 @@ def vxm_transform(x_data, flow_path):
     # use this deformation field instead of computing a new one.
 
     # preliminary sizing
-    flow_data = np.load(flow_path)
+    flow_data = np.load(flow_path, allow_pickle=True)
     # x_data = rgb2gray(x_data)
     x_data = np.expand_dims(x_data, axis=0)
     x_data = x_data[..., np.newaxis]
