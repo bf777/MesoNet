@@ -93,7 +93,7 @@ class Gui(object):
         else:
             self.git_repo_base = os.path.join(git_repo, "mesonet")
         self.config_path = os.path.join(
-            self.git_repo_base, self.config_dir, "config.yaml"
+            self.git_repo_base, self.config_dir, "atlas-DongshengXiao-2020-08-03", "config.yaml"
         )
         self.behavior_config_path = os.path.join(
             self.git_repo_base, self.config_dir, "behavior", " config.yaml"
