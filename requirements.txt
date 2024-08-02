@@ -2,7 +2,7 @@ imutils
 scikit-image
 scipy
 numpy
-keras==2.11
+keras==2.13.1
 opencv-python
 Pillow
 deeplabcut
