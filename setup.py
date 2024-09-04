@@ -25,7 +25,7 @@ setuptools.setup(
                       'tensorflow-metal ; platform_system=="Darwin"',
                       'deeplabcut[gui]',
                       'tf_keras',
-                      'keras==2.12.0',
+                      'keras==2.13.1',
                       'numpy==1.23.5',
                       'tensorpack',
                       'tf_slim',
