@@ -21,6 +21,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/bf777/mesonet",
     install_requires=['notebook<7.0.0',
+                      'tensorflow==2.12.0 ; platform_system=="Linux"',
+                      'tensorflow==2.12.0 ; platform_system=="Windows"',
                       'tensorflow-macos==2.12.0 ; platform_system=="Darwin"',
                       'tensorflow-metal ; platform_system=="Darwin"',
                       'deeplabcut[gui]',
