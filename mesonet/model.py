@@ -1,10 +1,9 @@
-"""
-MesoNet
-Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
-https://github.com/bf777/MesoNet
-Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
-This file has been adapted from model.py in https://github.com/zhixuhao/unet
-"""
+# MesoNet
+# Authors: Brandon Forys and Dongsheng Xiao, Murphy Lab
+# https://github.com/bf777/MesoNet
+# Licensed under the Creative Commons Attribution 4.0 International License (see LICENSE for details)
+# This file has been adapted from model.py in https://github.com/zhixuhao/unet
+
 from keras.models import *
 from keras.layers import *
 from keras.optimizers import *

@@ -13,8 +13,6 @@ from sys import platform
 import scipy.io as sio
 import cv2
 import numpy as np
-# import neurite as ne
-import matplotlib.pyplot as plt
 import pathlib
 
 
