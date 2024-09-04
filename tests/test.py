@@ -91,17 +91,17 @@ if __name__ == '__main__':
     dlc_config = os.path.join(git_repo_base, 'dlc', dlc_model_name, 'config.yaml')
 
     # Run without DLC GUI (headless)
-    os.environ["DLClight"]="True"
+    os.environ["DLClight"] = "True"
 
     # Prepare a MesoNet project for predicting pose locations using five default pipelines
 
-    ## 1. Atlas to brain
+    # 1. Atlas to brain
     # Atlas-to-brain warp with U-Net and DeepLabCut
     print('\n1. Atlas-to-brain warp with U-Net and DeepLabCut')
     config_file_atlas_brain = mesonet.config_project(input_file, output_file_atlas_brain, 'test',
                                                      atlas_to_brain_align=True, use_voxelmorph=False,
                                                      use_unet=True, use_dlc=True,
-    sensory_match=False, mat_save=False, config=dlc_config, model=model)
+                                                     sensory_match=False, mat_save=False, config=dlc_config, model=model)
 
     # Identify outer edges of the cortex
     mesonet.predict_regions(config_file_atlas_brain)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     print('Output aligned brain images and atlases can be found in `results/mesonet_output_atlas_brain/output_overlay`')
 
-    ## 2. Brain to atlas
+    # 2. Brain to atlas
     # Brain-to-atlas warp with DeepLabCut
     print('\n2. Brain-to-atlas warp with DeepLabCut')
     config_file_brain_atlas = mesonet.config_project(input_file, output_file_brain_atlas, 'test',
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     print('Output aligned brain images and atlases can be found in `results/mesonet_output_sensory/output_overlay`')
 
-    ## 4. MBFM + U-Net
+    # 4. MBFM + U-Net
     # Motif-based functional maps (MBFMs) with atlas directly applied using U-Net
     print('\n4. Motif-based functional maps (MBFMs) with atlas directly applied using U-Net')
     config_file_MBFM_U_Net = mesonet.config_project(input_file_MBFM, output_file_MBFM_U_Net, 'test',
@@ -164,7 +164,7 @@ if __name__ == '__main__':
     print('Output cortex masks can be found in `results/mesonet_output_MBFM_U_Net/output_mask`')
     print('Output aligned brain images and atlases can be found in `results/mesonet_output_MBFM_U_Net/output_overlay`')
 
-    ## 5. VoxelMorph
+    # 5. VoxelMorph
     # Local deformation warp with VoxelMorph and DeepLabCut
     print('\n5. Local deformation warp with VoxelMorph and DeepLabCut')
     config_file_voxelmorph = mesonet.config_project(input_file_voxelmorph, output_file_voxelmorph, 'test',

@@ -7,7 +7,6 @@ Licensed under the Creative Commons Attribution 4.0 International License (see L
 from mesonet.utils import natural_sort_key, convert_to_png
 from mesonet.mask_functions import atlas_to_mask, applyMask
 
-# from mesonet.niftyreg_align import niftyreg_align
 from mesonet.voxelmorph_align import voxelmorph_align, vxm_transform
 import numpy as np
 import pandas as pd
@@ -16,7 +15,6 @@ import imutils
 import math
 import scipy.io
 import skimage.io as io
-import skimage.transform as trans
 from skimage.transform import PiecewiseAffineTransform, warp
 import imageio
 import os
