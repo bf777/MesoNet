@@ -33,6 +33,13 @@ class GuiTrain:
     DEFAULT_NAME = "Labeler"
 
     def __init__(self):
+        self.old_y = None
+        self.old_x = None
+        self.image_resize = None
+        self.imageFileName = None
+        self.j = None
+        self.picLen = None
+        self.imgDisplayed = None
         self.root_train = Tk()
         self.root_train.resizable(False, False)
         self.Title = self.root_train.title("MesoNet Trainer")
@@ -239,11 +246,11 @@ class GuiTrain:
         # Image controls
         # Buttons below will only display if an image is displayed
         self.nextButton = Button(
-            self.root_train, text="->", command=lambda: self.forward(None)
+            self.root_train, text="->", command=lambda: self.forward()
         )
         self.nextButton.grid(row=14, column=2, columnspan=1)
         self.previousButton = Button(
-            self.root_train, text="<-", command=lambda: self.backward(None)
+            self.root_train, text="<-", command=lambda: self.backward()
         )
         self.previousButton.grid(row=14, column=0, columnspan=1)
 
@@ -360,12 +367,12 @@ class GuiTrain:
         imageNumLabel = Label(self.root_train, textvariable=imageNumPrep)
         imageNumLabel.grid(row=4, column=2, columnspan=1)
 
-    def forward(self, event):
+    def forward(self):
         self.ImageDisplay(1, self.folderName, 0)
         self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
         self.draw = ImageDraw.Draw(self.mask)
 
-    def backward(self, event):
+    def backward(self):
         self.ImageDisplay(-1, self.folderName, 0)
         self.mask = Image.new("L", (self.cv_dim, self.cv_dim))
         self.draw = ImageDraw.Draw(self.mask)
@@ -405,7 +412,7 @@ class GuiTrain:
         self.old_x = event.x
         self.old_y = event.y
 
-    def reset(self, event):
+    def reset(self):
         self.old_x, self.old_y = None, None
 
     def mask_save(self, mask_folder, img_name):

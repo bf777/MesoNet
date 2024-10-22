@@ -32,6 +32,19 @@ class Gui(object):
 
     def __init__(self, git_repo, config_file):
         # The main window of the app
+        self.existTransformCheck = None
+        self.flowEntryBox = None
+        self.flowEntryButton = None
+        self.flowName_str = None
+        self.flowEntryLabel = None
+        self.templateEntryBox = None
+        self.templateEntryButton = None
+        self.templateName_str = None
+        self.templateEntryLabel = None
+        self.vxmModelListBox = None
+        self.vxmModelLabel = None
+        self.vxm_model_select = None
+        self.vxm_window = None
         self.root = Tk()
         self.root.resizable(False, False)
 
