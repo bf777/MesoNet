@@ -9,6 +9,7 @@ dist/
 *.xml
 *.iml
 *.idea
+*.DS_Store
 
 # U-net models (user needs to download these manually as they are too large to be hosted on GitHub)
 mesonet/models/*.hdf5
