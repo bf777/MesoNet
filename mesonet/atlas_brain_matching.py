@@ -873,7 +873,7 @@ def atlasBrainMatch(
                             mask_warped_to_use, pts=[bulb], color=[255, 255, 255]
                         )
                         io.imsave(mask_path, mask_warped_to_use)
-                    except OSError:
+                    except:
                         print("No olfactory bulb found!")
                     mask_warped_to_use = cv2.cvtColor(
                         mask_warped_to_use, cv2.COLOR_BGR2GRAY
