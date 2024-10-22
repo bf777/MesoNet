@@ -13,7 +13,7 @@ import pandas as pd
 import cv2
 import imutils
 import math
-import scipy.io
+from scipy.io import savemat, loadmat
 import skimage.io as io
 from skimage.transform import PiecewiseAffineTransform, warp
 import imageio
@@ -33,7 +33,7 @@ def find_peaks(img):
     img = cv2.imread(str(img), 0)
     im = img.copy()
     x_min = int(np.around(im.shape[0] / 2))
-    im1 = im[:, x_min : im.shape[0]]
+    im1 = im[:, x_min: im.shape[0]]
     im2 = im[:, 0:x_min]
     (minVal, max_val, minLoc, max_loc) = cv2.minMaxLoc(im1)
     (minVal2, maxVal2, minLoc2, maxLoc2) = cv2.minMaxLoc(im2)
@@ -47,7 +47,7 @@ def find_peaks(img):
 
 
 def coords_to_mat(
-    sub_dlc_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr
+        sub_dlc_pts, i, output_mask_path, bregma_present, bregma_index, landmark_arr
 ):
     if bregma_present:
         x_bregma, y_bregma = sub_dlc_pts[bregma_index]
@@ -58,7 +58,7 @@ def coords_to_mat(
             pt_adj_to_mat = np.array(pt_adj, dtype=object)
             if not os.path.isdir(os.path.join(output_mask_path, "mat_coords")):
                 os.mkdir(os.path.join(output_mask_path, "mat_coords"))
-            scipy.io.savemat(
+            savemat(
                 os.path.join(
                     output_mask_path,
                     "mat_coords/landmarks_{}_{}.mat".format(i, landmark),
@@ -78,7 +78,7 @@ def sensory_to_mat(sub_dlc_pts, bregma_pt, i, output_mask_path):
         pt_adj_to_mat = np.array(pt_adj, dtype=object)
         if not os.path.isdir(os.path.join(output_mask_path, "mat_coords")):
             os.mkdir(os.path.join(output_mask_path, "mat_coords"))
-        scipy.io.savemat(
+        savemat(
             os.path.join(
                 output_mask_path,
                 "mat_coords/sensory_peaks_{}_{}.mat".format(i, landmark),
@@ -98,7 +98,7 @@ def atlas_from_mat(input_file, mat_cnt_list):
     file = input_file
     atlas_base = np.zeros((512, 512), dtype="uint8")
     if glob.glob(os.path.join(input_file, "*.mat")):
-        mat = scipy.io.loadmat(file)
+        mat = loadmat(file)
         mat_shape = mat[list(mat.keys())[3]]
         if len(mat_shape.shape) > 2:
             for val in range(0, mat_shape.shape[2]):
@@ -136,6 +136,7 @@ def atlas_from_mat(input_file, mat_cnt_list):
 
 
 def atlas_rotate(dlc_pts, im):
+    # Check if DeepLabCut coordinates are within reasonable bounds, otherwise moves them out of bounds to not be used
     dlc_y_pts = [
         coord if (190 <= coord[0] <= 330) else (1000, 1000) for coord in dlc_pts
     ]
@@ -147,10 +148,11 @@ def atlas_rotate(dlc_pts, im):
     im_rotate_mat = cv2.getRotationMatrix2D(
         (im.shape[1] / 2, im.shape[0] / 2), rotate_deg, 1.0
     )
+
     im_rotated = cv2.warpAffine(im, im_rotate_mat, (512, 512))
     x_min = int(np.around(im_rotated.shape[0] / 2))
     im_left = im_rotated[:, 0:x_min]
-    im_right = im_rotated[:, x_min : im_rotated.shape[0]]
+    im_right = im_rotated[:, x_min: im_rotated.shape[0]]
     return im_left, im_right
 
 
@@ -189,29 +191,29 @@ def getMaskContour(mask_dir, atlas_img, predicted_pts, actual_pts, cwd, n, main_
 
 
 def atlasBrainMatch(
-    brain_img_dir,
-    sensory_img_dir,
-    coords_input,
-    sensory_match,
-    mat_save,
-    threshold,
-    git_repo_base,
-    region_labels,
-    landmark_arr_orig,
-    use_unet,
-    use_dlc,
-    atlas_to_brain_align,
-    model,
-    olfactory_check,
-    plot_landmarks,
-    align_once,
-    original_label,
-    use_voxelmorph,
-    exist_transform,
-    voxelmorph_model="motif_model_atlas.h5",
-    vxm_template_path="templates",
-    dlc_template_path="dlc_templates",
-    flow_path="",
+        brain_img_dir,
+        sensory_img_dir,
+        coords_input,
+        sensory_match,
+        mat_save,
+        threshold,
+        git_repo_base,
+        region_labels,
+        landmark_arr_orig,
+        use_unet,
+        use_dlc,
+        atlas_to_brain_align,
+        model,
+        olfactory_check,
+        plot_landmarks,
+        align_once,
+        original_label,
+        use_voxelmorph,
+        exist_transform,
+        voxelmorph_model="motif_model_atlas.h5",
+        vxm_template_path="templates",
+        dlc_template_path="dlc_templates",
+        flow_path="",
 ):
     """
     Align and overlap brain atlas onto brain image based on four landmark locations in the brain image and the atlas.
@@ -248,7 +250,7 @@ def atlasBrainMatch(
     a new transformation.
     :param voxelmorph_model: the name of a .h5 model located in the models folder of the git repository for MesoNet,
     generated using voxelmorph and containing weights for a voxelmorph local deformation model.
-    :param vxm_template_path: the path to a template atlas (.npy or .mat( to which the brain image will be aligned in
+    :param vxm_template_path: the path to a template atlas (.npy or .mat) to which the brain image will be aligned in
     voxelmorph.
     :param flow_path: the path to a voxelmorph transformation field that will be used to transform all data instead of
     predicting a new transformation if exist_transform is True.
@@ -304,7 +306,6 @@ def atlasBrainMatch(
         im_left = np.uint8(im_left)
         im_right = np.uint8(im_right)
         im = np.uint8(im)
-    # im = atlas_from_mat(os.path.join(git_repo_base, 'atlases/atlas_ROIs.mat'))
     atlas = im
     # FOR ALIGNING BRAIN TO ATLAS
     for num, file in enumerate(os.listdir(cwd)):
@@ -318,7 +319,6 @@ def atlasBrainMatch(
             tif_stack = imageio.mimread(os.path.join(brain_img_dir, file))
             for tif_im in tif_stack:
                 brain_img_arr.append(tif_im)
-    # i_coord, j_coord = np.array([(100, 256, 413, 256), (148, 254, 148, 446)])
 
     # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
     coord_circles_img = cv2.imread(
@@ -345,6 +345,7 @@ def atlasBrainMatch(
             ]
         )
 
+    # Coordinates of all atlas coordinates, assuming 512x512 image size
     atlas_arr = np.array(
         [
             (102, 148),
@@ -362,6 +363,7 @@ def atlasBrainMatch(
     peak_arr_flat = []
     peak_arr_total = []
 
+    # If matching to peaks of sensory activation method is being used
     if sensory_match:
         for num, file in enumerate(brain_img_arr):
             img_name = str(os.path.splitext(os.path.basename(file))[0])
@@ -387,6 +389,7 @@ def atlasBrainMatch(
             peak_arr_flat = []
             peak_arr = []
 
+    # Initialize empty lists for alignment coordinates
     dlc_pts = []
     atlas_pts = []
     sensory_peak_pts = []
@@ -427,7 +430,7 @@ def atlasBrainMatch(
         atlas_list = [atlas_list[i] for i in landmark_arr]
 
         # Initialize result as max value
-        landmark_indices = landmark_indices[0 : len(landmark_arr)]
+        landmark_indices = landmark_indices[0: len(landmark_arr)]
         atlas_indices = landmark_arr
 
         pts_dist = np.absolute(
@@ -490,6 +493,7 @@ def atlasBrainMatch(
             im = np.uint8(im)
             im = cv2.resize(im, (512, 512))
 
+        # Select which atlases to use (all in atlases subfolder)
         if atlas_to_brain_align:
             if use_voxelmorph and not use_dlc:
                 atlas_mask_dir = os.path.join(
@@ -555,7 +559,7 @@ def atlasBrainMatch(
         )
         if use_dlc:
             # First alignment of brain atlas using three cortical landmarks and standard affine transform
-            atlas_pts_for_input = np.array([atlas_pts[n][0 : len(dlc_pts[n])]]).astype(
+            atlas_pts_for_input = np.array([atlas_pts[n][0: len(dlc_pts[n])]]).astype(
                 "float32"
             )
             pts_for_input = np.array([dlc_pts[n]]).astype("float32")
@@ -565,15 +569,24 @@ def atlasBrainMatch(
             else:
                 align_val = n
 
+            # Decision tree depending on how many alignment points are available
+            # 2 points
             if len(atlas_pts_for_input[0]) == 2:
                 atlas_pts_for_input = np.append(
                     atlas_pts_for_input[0], [[0, 0]], axis=0
                 )
                 pts_for_input = np.append(pts_for_input[0], [[0, 0]], axis=0)
+            # 2 or fewer points
             if len(atlas_pts_for_input[0]) <= 2:
                 warp_coords = cv2.estimateAffinePartial2D(
                     atlas_pts_for_input, pts_for_input
                 )[0]
+
+                # Write the rotation matrix to a file
+                with open(os.path.join(output_mask_path, "{}_atlas_transform.txt".format(str(n))), "w") as f:
+                    for row in warp_coords:
+                        np.savetxt(f, [row], fmt='%f')  # Saving each row of the matrix in text format
+
                 if atlas_to_brain_align:
                     atlas_warped_left = cv2.warpAffine(im_left, warp_coords, (512, 512))
                     atlas_warped_right = cv2.warpAffine(
@@ -593,9 +606,16 @@ def atlasBrainMatch(
                     io.imsave(atlas_right_transform_path, atlas_warped_right)
                 else:
                     atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+            # 3 points
             elif len(atlas_pts_for_input[0]) == 3:
                 warp_coords = cv2.getAffineTransform(atlas_pts_for_input, pts_for_input)
+                # Write the rotation matrix to a file
+                with open(os.path.join(output_mask_path, "{}_atlas_transform.txt".format(str(n))), "w") as f:
+                    for row in warp_coords:
+                        np.savetxt(f, [row], fmt='%f')  # Saving each row of the matrix in text format
+
                 atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
+            # 4 or more points
             elif len(atlas_pts_for_input[0]) >= 4:
                 im_final_size = (512, 512)
 
@@ -605,7 +625,7 @@ def atlasBrainMatch(
                 right = np.argsort(right).tolist()
                 right = [x + 1 for x in right]
                 # if set([1, 3, 5, 7]).issubset(landmark_arr):
-                if set([0, 3, 5, 6]).issubset(landmark_arr) and len(landmark_arr) >= 7:
+                if {0, 3, 5, 6}.issubset(landmark_arr) and len(landmark_arr) >= 7:
                     left = [0, 3, 5]
                     right = [3, 5, 6]
                     # OLD METHOD FOR PREFERENTIALLY USING TOP CENTRE AND LAMBDA
@@ -626,16 +646,16 @@ def atlasBrainMatch(
                     # left = [x for x in landmark_indices if x in range(0, 6)][0:2]
                     # right = [x for x in landmark_indices if x in range(3, 9)][0:2]
                     left = [
-                        landmark_arr.index(x)
-                        for x in landmark_arr
-                        if x in [0, 1, 2, 3, 4, 5]
-                    ][0:3]
+                               landmark_arr.index(x)
+                               for x in landmark_arr
+                               if x in [0, 1, 2, 3, 4, 5]
+                           ][0:3]
                     # right = [landmark_arr.index(x) for x in reversed(landmark_arr) if x in [8, 7, 6, 5, 4, 3]][0:3]
                     right = [
-                        landmark_arr.index(x)
-                        for x in landmark_arr
-                        if x in [3, 4, 5, 6, 7, 8]
-                    ][-3:]
+                                landmark_arr.index(x)
+                                for x in landmark_arr
+                                if x in [3, 4, 5, 6, 7, 8]
+                            ][-3:]
                     print(landmark_indices)
                     print(landmark_arr)
                     print(left)
@@ -711,9 +731,21 @@ def atlasBrainMatch(
                 #     )
 
                 warp_coords_left = cv2.getAffineTransform(atlas_pts_left, dlc_pts_left)
+
+                # Write the rotation matrix to a file
+                with open(os.path.join(output_mask_path, "{}_atlas_transform_left.txt".format(str(n))), "w") as f:
+                    for row in warp_coords_left:
+                        np.savetxt(f, [row], fmt='%f')  # Saving each row of the matrix in text format
+
                 warp_coords_right = cv2.getAffineTransform(
                     atlas_pts_right, dlc_pts_right
                 )
+
+                # Write the rotation matrix to a file
+                with open(os.path.join(output_mask_path, "{}_atlas_transform_right.txt".format(str(n))), "w") as f:
+                    for row in warp_coords_right:
+                        np.savetxt(f, [row], fmt='%f')  # Saving each row of the matrix in text format
+
                 warp_coords_brain_atlas_left = cv2.getAffineTransform(
                     dlc_pts_left, atlas_pts_left
                 )
@@ -763,6 +795,7 @@ def atlasBrainMatch(
                     atlas_warped = cv2.warpAffine(im, warp_coords, (512, 512))
 
             # if atlas_to_brain_align:
+            # If 2 points
             if len(atlas_pts_for_input[0]) == 2:
                 atlas_mask_left_warped = cv2.warpAffine(
                     atlas_mask_left, warp_coords, (512, 512)
@@ -773,8 +806,10 @@ def atlasBrainMatch(
                 atlas_mask_warped = cv2.bitwise_or(
                     atlas_mask_left_warped, atlas_mask_right_warped
                 )
+            # If 3 points
             if len(atlas_pts_for_input[0]) == 3:
                 atlas_mask_warped = cv2.warpAffine(atlas_mask, warp_coords, (512, 512))
+            # If 4 or more points
             if len(atlas_pts_for_input[0]) >= 4:
                 atlas_mask_left_warped = cv2.warpAffine(
                     atlas_mask_left, warp_coords_left, (512, 512)
@@ -788,12 +823,10 @@ def atlasBrainMatch(
             atlas_mask_warped = np.uint8(atlas_mask_warped)
             io.imsave(mask_warped_path_alt_left, atlas_mask_left_warped)
             io.imsave(mask_warped_path_alt_right, atlas_mask_right_warped)
-            # brain_to_atlas_mask = cv2.bitwise_or(
-            #     atlas_mask_warped, im
-            # )
-            # io.imsave(brain_to_atlas_mask_path, brain_to_atlas_mask)
+
             hemispheres = ["left", "right"]
-            olfactory_bulbs_to_use = []
+
+            # olfactory_bulbs_to_use = []
             if olfactory_check and use_unet:
                 if align_once and n != 0:
                     olfactory_bulbs = olfactory_bulbs_to_use_pre_align_list[0]
@@ -825,22 +858,22 @@ def atlasBrainMatch(
                     if olfactory_check and use_unet:
                         if len(olfactory_bulbs) >= 1:
                             bulb = olfactory_bulbs[0]
-                        bulb_fill = 300
+                        # bulb_fill = 300
                 else:
                     mask_path = mask_warped_path_alt_right
                     mask_warped_to_use = atlas_mask_right_warped
                     if olfactory_check and use_unet:
                         if len(olfactory_bulbs) > 1:
                             bulb = olfactory_bulbs[1]
-                        bulb_fill = 400
+                        # bulb_fill = 400
                 if olfactory_check and use_unet:
-                    olfactory_bulbs_to_use = olfactory_bulbs
+                    # olfactory_bulbs_to_use = olfactory_bulbs
                     try:
                         cv2.fillPoly(
                             mask_warped_to_use, pts=[bulb], color=[255, 255, 255]
                         )
                         io.imsave(mask_path, mask_warped_to_use)
-                    except:
+                    except OSError:
                         print("No olfactory bulb found!")
                     mask_warped_to_use = cv2.cvtColor(
                         mask_warped_to_use, cv2.COLOR_BGR2GRAY
@@ -1048,7 +1081,6 @@ def atlasBrainMatch(
                 io.imsave(mask_warped_path, atlas_mask)
         else:
             io.imsave(mask_warped_path, dst)
-            # if atlas_to_brain_align:
             if use_voxelmorph:
                 atlas_mask_warped = atlas_mask
             else:
@@ -1060,6 +1092,7 @@ def atlasBrainMatch(
             atlas_mask_warped = np.uint8(atlas_mask_warped)
             original_label = True
             io.imsave(mask_warped_path, atlas_mask_warped)
+
         # Resize images back to 512x512
         dst = cv2.resize(dst, (im.shape[0], im.shape[1]))
         atlas_path = os.path.join(output_mask_path, "{}_atlas.png".format(str(n)))
@@ -1116,7 +1149,7 @@ def atlasBrainMatch(
         else:
             n_to_use = 1
         for (n_post, dst_post), vxm_template_post in zip(
-            enumerate([dst_list[n_to_use]]), [vxm_template_list[n_to_use]]
+                enumerate([dst_list[n_to_use]]), [vxm_template_list[n_to_use]]
         ):
             output_img, flow_post = voxelmorph_align(
                 voxelmorph_model_path,

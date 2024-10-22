@@ -115,14 +115,14 @@ def img_augment_run(input_path, output_path, coords_input, data_gen_args):
 
 
 def img_augment(
-    input_path,
-    output_path,
-    coords_input,
-    brightness_range=0.3,
-    rotation_range=0.3,
-    width_shift_range=0.05,
-    height_shift_range=0.05,
-    zoom_range=0.05,
+        input_path,
+        output_path,
+        coords_input,
+        brightness_range=0.3,
+        rotation_range=0.3,
+        width_shift_range=0.05,
+        height_shift_range=0.05,
+        zoom_range=0.05,
 ):
     data_gen_args = dict(
         rotation_range=rotation_range,

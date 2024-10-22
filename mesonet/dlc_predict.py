@@ -253,6 +253,7 @@ def DLCPredictBehavior(config, input_file, output):
 
         if not os.path.isdir(video_output_path[0]):
             os.mkdir(video_output_path[0])
+
         out = cv2.VideoWriter(video_name, cv2.VideoWriter_fourcc(*"MP4V"), 30, size)
         for i in range(len(img_array)):
             out.write(img_array[i])
