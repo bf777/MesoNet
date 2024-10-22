@@ -9,6 +9,7 @@ dist/
 *.xml
 *.iml
 *.idea
+*.DS_Store
 
 # DLC
 mesonet/dlc/dlc-models/

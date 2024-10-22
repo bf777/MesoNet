@@ -258,7 +258,6 @@ def find_git_repo():
         in_colab = False
         try:
             import google.colab
-
             in_colab = True
         except:
             in_colab = False

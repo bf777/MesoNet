@@ -7,7 +7,7 @@ This file has been adapted from data.py in https://github.com/zhixuhao/unet
 """
 from mesonet.utils import natural_sort_key
 import numpy as np
-import scipy.io as sio
+from scipy.io import loadmat, savemat
 import os
 import glob
 import skimage.io as io
@@ -16,7 +16,6 @@ from skimage.util import img_as_ubyte
 import cv2
 import imageio
 import imutils
-import scipy
 import pylab
 from PIL import Image
 import pandas as pd
@@ -376,7 +375,7 @@ def applyMask(
     colors = [cm(1.0 * i / NUM_COLORS)[0:3] for i in range(NUM_COLORS)]
     colors = [tuple(color_idx * 255 for color_idx in color_t) for color_t in colors]
     for file in mat_files:
-        mat = scipy.io.loadmat(
+        mat = loadmat(
             os.path.join(git_repo_base, "atlases/mat_contour_base/", file)
         )
         mat = mat["vect"]
@@ -384,38 +383,6 @@ def applyMask(
         base_c = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         base_c = imutils.grab_contours(base_c)
         base_c_max.append(max(base_c, key=cv2.contourArea))
-    # if not atlas_to_brain_align and use_unet:
-    #     # FOR ALIGNING ATLAS TO BRAIN
-    #     num_images = len(glob.glob(os.path.join(mask_path, "*_brain_warp*")))
-    #     output = os.path.join(mask_path, "..")
-    #     from mesonet.predict_regions import predictRegion
-    #
-    #     mask_generate = True
-    #     tif_list = glob.glob(os.path.join(image_path, "*tif"))
-    #     if tif_list:
-    #         input_path = image_path
-    #     else:
-    #         input_path = mask_path
-    #     predictRegion(
-    #         input_path,
-    #         num_images,
-    #         model,
-    #         output,
-    #         mat_save,
-    #         threshold,
-    #         mask_generate,
-    #         git_repo_base,
-    #         atlas_to_brain_align,
-    #         dlc_pts,
-    #         atlas_pts,
-    #         olfactory_check,
-    #         use_unet,
-    #         plot_landmarks,
-    #         align_once,
-    #         atlas_label_list,
-    #         region_labels,
-    #         original_label,
-    #     )
     for i, item in enumerate(image_name_arr):
         label_num = 0
         if not atlas_to_brain_align:
@@ -465,12 +432,9 @@ def applyMask(
         io.imsave(os.path.join(save_path, "{}_mask_binary.png".format(i)), mask_color)
         # Marker labelling
         # noise removal
-        kernel = np.ones((3, 3), np.uint8)  # 3, 3
+        # kernel = np.ones((3, 3), np.uint8)  # 3, 3
         mask_color = np.uint8(mask_color)
         thresh_atlas, atlas_bw = cv2.threshold(mask_color, 128, 255, 0)
-        # if atlas_to_brain_align and use_dlc:
-        #    atlas_bw = cv2.dilate(atlas_bw, kernel, iterations=1)  # 1
-        # io.imsave(os.path.join(save_path, "{}_atlas_binary.png".format(i)), atlas_bw)
 
         if not atlas_to_brain_align:
             watershed_run_rule = True
@@ -880,7 +844,7 @@ def applyMask(
                     os.path.join(segmented_save_path, "mat_contour_centre")
                 ):
                     os.mkdir(os.path.join(segmented_save_path, "mat_contour_centre"))
-                sio.savemat(
+                savemat(
                     os.path.join(
                         segmented_save_path,
                         "mat_contour/roi_{}_{}_{}_{}.mat".format(
@@ -894,7 +858,7 @@ def applyMask(
                     },
                     appendmat=False,
                 )
-                sio.savemat(
+                savemat(
                     os.path.join(
                         segmented_save_path,
                         "mat_contour_centre/roi_centre_{}_{}_{}_{}.mat".format(
@@ -908,7 +872,7 @@ def applyMask(
                     },
                     appendmat=False,
                 )
-                sio.savemat(
+                savemat(
                     os.path.join(
                         segmented_save_path,
                         "mat_contour_centre/rel_roi_centre_{}_{}_{}_{}.mat".format(
@@ -951,7 +915,7 @@ def applyMask(
         )
         img_trans_for_mat = np.uint8(img_transparent)
         if mat_save:
-            sio.savemat(
+            savemat(
                 os.path.join(
                     segmented_save_path, "mat_contour/transparent_{}".format(i)
                 ),

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     if not os.path.isdir(output_file_atlas_brain):
         try:
             os.makedirs(output_file_atlas_brain)
-        except OSError:
+        except:
             print("Creation of the directory %s failed" % output_file_atlas_brain)
         else:
             print("Successfully created the directory %s " % output_file_atlas_brain)
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     if not os.path.isdir(output_file_brain_atlas):
         try:
             os.makedirs(output_file_brain_atlas)
-        except OSError:
+        except:
             print("Creation of the directory %s failed" % output_file_brain_atlas)
         else:
             print("Successfully created the directory %s " % output_file_brain_atlas)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     if not os.path.isdir(output_file_sensory):
         try:
             os.makedirs(output_file_sensory)
-        except OSError:
+        except:
             print("Creation of the directory %s failed" % output_file_sensory)
         else:
             print("Successfully created the directory %s " % output_file_sensory)
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     if not os.path.isdir(output_file_MBFM_U_Net):
         try:
             os.makedirs(output_file_MBFM_U_Net)
-        except OSError:
+        except:
             print("Creation of the directory %s failed" % output_file_MBFM_U_Net)
         else:
             print("Successfully created the directory %s " % output_file_MBFM_U_Net)
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     if not os.path.isdir(output_file_voxelmorph):
         try:
             os.makedirs(output_file_voxelmorph)
-        except OSError:
+        except:
             print("Creation of the directory %s failed" % output_file_voxelmorph)
         else:
             print("Successfully created the directory %s " % output_file_voxelmorph)

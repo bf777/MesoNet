@@ -13,7 +13,7 @@ with open("README.md", "r") as fh:
 # pip install "notebook<7.0.0" "tensorflow-macos<2.13.0" "tensorflow-metal"
 setuptools.setup(
     name='mesonet',
-    version='1.20',
+    version='1.21',
     author="Brandon Forys",
     author_email="brandon.forys@psych.ubc.ca",
     description="An automatic brain region identification and segmentation toolbox.",
